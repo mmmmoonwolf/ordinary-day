@@ -56,5 +56,5 @@ export function renderBag(){
   }
   det.appendChild(acts);
 }
-export function openBag(){if(!G.running||!player.alive)return;sel=null;renderBag();$('bag').hidden=false;G.paused=true;ctl.fireHeld=false;joy.id=null;$('joy').hidden=true;$('bagClose').focus();}
+export function openBag(){if(!G.running||!player.alive||!$('pause').hidden)return;sel=null;renderBag();$('bag').hidden=false;G.paused=true;ctl.fireHeld=false;joy.id=null;$('joy').hidden=true;$('bagClose').focus();}
 export function closeBag(){if($('bag').hidden)return;$('bag').hidden=true;G.paused=false;updateLoadout(true);}

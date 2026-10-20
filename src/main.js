@@ -18,9 +18,11 @@ import {initAudio} from './systems/audio.js';
 import {updateGoal} from './systems/goal.js';
 import {updateHUD} from './ui/hud.js';
 import {initInput} from './ui/input.js';
+import {initPause} from './ui/pause.js';
 
 buildCity();
 initInput();
+initPause();
 initSave();
 initAudio();
 

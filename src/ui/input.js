@@ -11,20 +11,21 @@ import {readSave,loadGame,clearSave} from '../systems/save.js';
 import {chipEls,hhmm,say} from './hud.js';
 import {openBag,closeBag} from './bag.js';
 import {isMuted,toggleMute} from '../systems/audio.js';
+import {isPauseOpen,togglePause} from './pause.js';
 
 // ---------- input ----------
 let rightId=null;
 // start screen: offer "continue" when an autosave exists; starting a new day overwrites it
-function showContinue(){
+export function showContinue(){
   const s=readSave(),has=!!s;
   $('bContinue').hidden=!has;$('bStart').classList.toggle('alt',has);$('saveNote').hidden=!has;
   if(has)$('contInfo').textContent='วันที่ '+(Math.floor(s.G.min/1440)+1)+' · '+hhmm(s.G.min);
 }
-function showSound(){$('bSound').textContent='เสียง: '+(isMuted()?'ปิด':'เปิด');}
+function showSound(){for(const id of ['bSound','bSound2'])$(id).textContent='เสียง: '+(isMuted()?'ปิด':'เปิด');}
 export function initInput(){
   addEventListener('keydown',e=>{
-    if(e.code==='Tab'||e.code==='KeyI'){e.preventDefault();$('bag').hidden?openBag():closeBag();return;}
-    if(e.code==='Escape'){closeBag();return;}
+    if(e.code==='Tab'||e.code==='KeyI'){e.preventDefault();if(!isPauseOpen())$('bag').hidden?openBag():closeBag();return;}
+    if(e.code==='Escape'||e.code==='KeyP'){if(!$('bag').hidden)closeBag();else togglePause();return;}
     if(e.code==='KeyM'){toggleMute();showSound();return;}
     if(G.paused)return;
     keys[e.code]=true;
@@ -62,10 +63,10 @@ export function initInput(){
   $('bHeal').addEventListener('click',useHeal);
   $('bPick').addEventListener('click',()=>{if(player.near)pickup(player.near);});
   for(const c of chipEls)c.addEventListener('click',()=>switchTo(c.dataset.slot));
-  $('bStart').addEventListener('click',()=>{clearSave();$('overlay').hidden=true;G.running=true;});
+  $('bStart').addEventListener('click',()=>{clearSave();reset();$('overlay').hidden=true;G.running=true;});
   $('bContinue').addEventListener('click',()=>{if(!loadGame()){showContinue();return;}$('overlay').hidden=true;G.running=true;say('เล่นต่อจากเซฟ · '+$('contInfo').textContent,'',4);});
   showContinue();
-  $('bSound').addEventListener('click',()=>{toggleMute();showSound();});showSound();
+  for(const id of ['bSound','bSound2'])$(id).addEventListener('click',()=>{toggleMute();showSound();});showSound();
   $('bAgain').addEventListener('click',()=>{reset();$('overlay').hidden=true;G.running=true;});
   if(isTouch){$('atkKey').textContent='กดค้าง';}
   $('keys').innerHTML=isTouch

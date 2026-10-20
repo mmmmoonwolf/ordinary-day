@@ -21,7 +21,7 @@ function any() {
     construct() { return any(); },
   });
 }
-const startHidden = new Set(['boss', 'bag', 'pOver', 'joy', 'bPick']);
+const startHidden = new Set(['boss', 'bag', 'pOver', 'joy', 'bPick', 'pause']);
 function el(id) {
   const h = {};
   const e = {
@@ -148,6 +148,26 @@ T.player.pos.x = LZ.x + 1; T.player.pos.z = LZ.z; step(20);
 if (!T.G.over || T.G.endCause !== 'won' || els.oTitle.textContent !== 'คุณรอดแล้ว') bad('reaching the helicopter did not win (over ' + T.G.over + ', cause ' + T.G.endCause + ')');
 if (store.has('ordinary-day.save')) bad('save kept after winning');
 console.log('goal:', els.dayline.textContent, '|', els.oEyebrow.textContent, els.oTitle.textContent, '|', els.sNights.textContent, 'nights | best', store.get('ordinary-day.best'));
+
+// 6) pause menu: P / Esc / background tab pause the game, manual save, back to the title, new day resets
+const pfail = m => errs.push('pause test: ' + m);
+els.bAgain.fire('click'); T.G.running = true; T.player.inv = 1e9; step(10);
+key('KeyP', 'keydown');
+const m0 = T.G.min; step(60);
+if (!T.G.paused || els.pause.hidden || T.G.min !== m0) pfail('P did not pause (paused ' + T.G.paused + ')');
+key('Tab', 'keydown'); if (!els.bag.hidden) pfail('bag opened over the pause menu');
+store.clear(); els.bSaveNow.fire('click');
+if (!store.has('ordinary-day.save') || !els.saveMsg.textContent.startsWith('บันทึกแล้ว')) pfail('manual save failed: ' + els.saveMsg.textContent);
+els.bResume.fire('click'); step(10);
+if (T.G.paused || !els.pause.hidden || T.G.min === m0) pfail('resume did not continue the game');
+key('Escape', 'keydown'); if (!T.G.paused) pfail('Esc did not pause'); key('Escape', 'keydown'); if (T.G.paused) pfail('Esc did not resume');
+document.visibilityState = 'hidden'; handlers['document:visibilitychange'].forEach(f => f()); document.visibilityState = 'visible';
+if (!T.G.paused || els.pause.hidden) pfail('background tab did not pause');
+els.bToTitle.fire('click');
+if (T.G.running || T.G.paused || els.overlay.hidden || els.pStart.hidden || els.bContinue.hidden) pfail('back to title did not show the start screen with continue');
+T.G.min = 3000; els.bStart.fire('click');
+if (T.G.min !== 450 || store.has('ordinary-day.save') || !T.G.running) pfail('new day after back-to-title did not start fresh (min ' + T.G.min + ')');
+console.log('pause: P/Esc/background pause, manual save, back to title, new day OK =', !errs.some(e => e.startsWith('pause test')));
 
 console.log(errs.length ? `FAILED: ${errs.length} runtime errors\n` + errs.slice(0, 3).join('\n---\n') : 'PASSED: no runtime errors');
 process.exit(errs.length ? 1 : 0);
