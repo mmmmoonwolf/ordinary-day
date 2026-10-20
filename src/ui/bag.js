@@ -1,9 +1,9 @@
 import {$} from '../core/util.js';
 import {G} from '../core/state.js';
 import {ctl,joy} from '../core/controls.js';
-import {DEF,GRADES,SLOTNAME,itemColor} from '../config/items.js';
+import {DEF,GRADES,SLOTNAME,itemColor,durPct} from '../config/items.js';
 import {player} from '../entities/player.js';
-import {inv,useItemAt,dropItem} from '../systems/inventory.js';
+import {inv,useItemAt,useFoodAt,dropItem} from '../systems/inventory.js';
 import {feedOnce,updateLoadout} from './hud.js';
 
 // ---------- bag UI ----------
@@ -13,13 +13,14 @@ function itemDesc(it){
   const d=DEF[it.id];
   if(d.kind==='weapon'){
     if(d.gun)return SLOTNAME[d.slot]+' · แม็ก '+d.mag+' นัด · ใช้กระสุน '+DEF[d.ammo].name+(d.auto?' · ยิงอัตโนมัติ':'')+(d.pierce?' · ทะลุได้ '+d.pierce+' ตัว':'')+(d.heavy?' · เดินช้าลงขณะยิง':'')+' · ในแม็กตอนนี้ '+it.mag+' นัด';
-    return SLOTNAME[d.slot]+' · ระยะ '+(d.range||1.4).toFixed(1)+' ม.'+(d.cleave?' · โดนหลายตัวในวงฟัน':'');}
+    return SLOTNAME[d.slot]+' · ระยะ '+(d.range||1.4).toFixed(1)+' ม.'+(d.cleave?' · โดนหลายตัวในวงฟัน':'')+(d.dur?' · ความทนเหลือ '+Math.ceil(durPct(it)*100)+'% (พังเมื่อหมด)':'');}
+  if(d.kind==='food')return (d.food?'อิ่มขึ้น '+d.food+'%':'หายกระหาย '+d.water+'%')+' · มี '+it.n+' ชิ้น';
   if(d.kind==='ammo')return 'มี '+it.n+' นัด (สูงสุด '+d.stack+' นัดต่อช่อง)';
   if(d.kind==='heal')return 'ฟื้น '+Math.round(d.heal*100)+'% ของ HP สูงสุด'+(d.cure?' และรักษาการติดเชื้อ':'')+' · มี '+it.n+' ชิ้น';
   if(d.kind==='revive')return 'ทำงานอัตโนมัติเมื่อ HP หมด ชุบชีวิตด้วย HP 100% (ใช้ครั้งเดียว)';
   return '';
 }
-function cellHTML(it,extra){const d=DEF[it.id];const ct=(d.kind==='ammo'||d.kind==='heal'||d.kind==='revive')?it.n:(d.gun?it.mag:'');const g=d.grade?`<span class="sl">${GRADES[d.grade].name}</span>`:'';return `${extra||g}<span class="nm">${d.name}</span><span class="ct">${ct}</span>`;}
+function cellHTML(it,extra){const d=DEF[it.id];const ct=(d.kind==='ammo'||d.kind==='heal'||d.kind==='revive'||d.kind==='food')?it.n:(d.gun?it.mag:d.dur?Math.ceil(durPct(it)*100)+'%':'');const g=d.grade?`<span class="sl">${GRADES[d.grade].name}</span>`:'';return `${extra||g}<span class="nm">${d.name}</span><span class="ct">${ct}</span>`;}
 export function renderBag(){
   const eq=$('bagEq');eq.innerHTML='';
   for(const s of ['primary','secondary','melee']){
@@ -47,6 +48,7 @@ export function renderBag(){
   const btn=(label,fn,pri,dis)=>{const b=document.createElement('button');b.textContent=label;if(pri)b.className='pri';if(dis)b.disabled=true;b.onclick=()=>{fn();updateLoadout(true);renderBag();};acts.appendChild(b);};
   if(sel.where==='bag'){
     if(d.kind==='weapon')btn(inv.eq[d.slot]?'สลับกับ '+DEF[inv.eq[d.slot].id].name:'ติดตั้ง',()=>{const old=inv.eq[d.slot];inv.eq[d.slot]=it;if(old)inv.bag[sel.i]=old;else inv.bag.splice(sel.i,1);inv.active=d.slot;player.reloadT=0;sel={where:'eq',slot:d.slot};},true);
+    if(d.kind==='food')btn(d.water?'ดื่ม':'กิน',()=>{useFoodAt(sel.i);if(inv.bag[sel.i]!==it)sel=null;},true);
     if(d.kind==='heal')btn('ใช้',()=>{useItemAt(sel.i);if(inv.bag[sel.i]!==it)sel=null;},true,player.hp>=player.maxHp&&!(d.cure&&player.infect>0));
     btn('ทิ้ง',()=>{inv.bag.splice(sel.i,1);dropItem(it);sel=null;});
   } else {

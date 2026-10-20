@@ -15,6 +15,8 @@ import {hurtPlayer} from '../systems/combat.js';
 import {infectPlayer} from '../systems/infection.js';
 import {sfx} from '../systems/audio.js';
 import {say,feed} from '../ui/hud.js';
+import {diffOf} from '../config/difficulty.js';
+import {smashNear} from '../systems/obstacles.js';
 
 // ---------- AI ----------
 export function updateHuman(a,dt){
@@ -73,18 +75,21 @@ export function updateZombie(a,dt){
     if(tgt===player){
       if(a.kind==='boomer'){a.fuse=1.2;sfx.swell(a.pos.x,a.pos.z);return;}
       if(a.kind==='tyrant'){if(a.atk<=0){a.atk=2.2;a.wind=.85;sfx.roar(a.pos.x,a.pos.z,.8);}return;}
-      if(a.atk<=0){a.atk=C.rate;if(hurtPlayer(C.dmg)&&Math.random()<(C.infect||0))infectPlayer();if(a.kind==='sprinter')a.feed=1.3;}
+      if(a.atk<=0){a.atk=C.rate;if(hurtPlayer(C.dmg)&&Math.random()<(C.infect||0)*diffOf(G).infect)infectPlayer();if(a.kind==='sprinter')a.feed=1.3;}
     } else {tgt.state='infected';tgt.turnT=rnd(6,11);tgt.panic=6;tgt.tx=tgt.pos.x-a.pos.x;tgt.tz=tgt.pos.z-a.pos.z;a.feed=1.4;addBlood(tgt.pos.x,tgt.pos.z);}
     return;
   }
   const ox=a.pos.x,oz=a.pos.z;moveAgent(a,tgt.pos.x-a.pos.x,tgt.pos.z-a.pos.z,day&&tgt!==player?sp*1.4:sp,dt);
-  if(Math.hypot(a.pos.x-ox,a.pos.z-oz)<sp*dt*.3){a.stuckT+=dt;if(a.stuckT>1.2){a.stuckT=0;a.lost=3;a.node=nearestNode(a.pos);a.prev=null;}}else a.stuckT=Math.max(0,a.stuckT-dt);
+  if(Math.hypot(a.pos.x-ox,a.pos.z-oz)<sp*dt*.3){a.stuckT+=dt;
+    if(a.kind==='tyrant'&&a.stuckT>.5&&smashNear(a.pos.x,a.pos.z,a.rad+1.4)){a.stuckT=0;a.feed=.9;}   // the Tyrant breaks through what blocks it
+    else if(a.stuckT>1.2){a.stuckT=0;a.lost=3;a.node=nearestNode(a.pos);a.prev=null;}}else a.stuckT=Math.max(0,a.stuckT-dt);
 }
 export function updateDead(a,dt){a.deadT+=dt;const k=Math.min(1,a.deadT*2.2);a.b.body.rotation.x=-k*Math.PI/2;a.b.body.position.y=k*.16;a.moving=0;}
 export function makeNoise(x,z,r){if(G.phase==='night')r*=1.5;for(const a of agents){if(a.state!=='zombie'||a.kind==='walker')continue;const dx=a.pos.x-x,dz=a.pos.z-z;if(dx*dx+dz*dz<r*r)a.heard={x:x+rnd(-2,2),z:z+rnd(-2,2),t:8};}}
 export function hurtZombie(z,dmg,dx,dz,kb,isGun,silent){
   let armored=false;
-  if(isGun&&ZC[z.kind].armor){dmg*=1-ZC[z.kind].armor;armored=true;}
+  // armor only covers the front: a bullet travelling the way the zombie faces hits its back for full damage (v0.5)
+  if(isGun&&ZC[z.kind].armor&&dx*Math.sin(z.face)+dz*Math.cos(z.face)<.3){dmg*=1-ZC[z.kind].armor;armored=true;}
   const kbm=z.kind==='tyrant'?.12:z.kind==='armor'?.5:z.kind==='boomer'?.6:1;
   z.hp-=dmg;z.hitT=.18;if(z.kind!=='tyrant')z.feed=Math.max(z.feed,.22);z.pos.x+=dx*kb*kbm;z.pos.z+=dz*kb*kbm;collide(z.pos,z.rad);
   if(!silent)z.heard={x:player.pos.x,z:player.pos.z,t:5};if(Math.random()<.35)addBlood(z.pos.x,z.pos.z);

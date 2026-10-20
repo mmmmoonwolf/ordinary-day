@@ -46,4 +46,19 @@ export function useHeal(){
 export function useItemAt(i){const e=inv.bag[i],def=DEF[e.id];if(def.kind!=='heal')return;const amt=Math.round(player.maxHp*def.heal);player.hp=Math.min(player.maxHp,player.hp+amt);e.n--;if(e.n<=0)inv.bag.splice(i,1);
   const cured=def.cure&&player.infect>0;if(cured)cureInfection();
   feed('ใช้ '+def.name+' +'+Math.round(def.heal*100)+'%'+(cured?' · ฆ่าเชื้อแล้ว':''));sfx.heal();updateLoadout(true);}
+// food and water: use whichever fixes the lower bar first
+export function eatBest(){
+  if(!player.alive)return;
+  const has=k=>inv.bag.findIndex(e=>DEF[e.id][k]);
+  const order=100-player.water>=100-player.food?['water','food']:['food','water'];
+  for(const k of order){if(player[k]>=95)continue;const i=has(k);if(i>=0){useFoodAt(i);return;}}
+  if(player.food>=95&&player.water>=95){feedOnce('full','ยังไม่หิวและไม่กระหาย');return;}
+  feedOnce('nofood','ไม่มีอาหารหรือน้ำในกระเป๋า','warn');
+}
+export function useFoodAt(i){
+  const e=inv.bag[i],def=DEF[e.id];if(def.kind!=='food')return;
+  if(def.food)player.food=Math.min(100,player.food+def.food);if(def.water)player.water=Math.min(100,player.water+def.water);
+  e.n--;if(e.n<=0)inv.bag.splice(i,1);
+  feed((def.water?'ดื่ม ':'กิน ')+def.name);sfx.eat();updateLoadout(true);
+}
 export function dropItem(it){const a=rnd(0,6.28);spawnDrop(it,player.pos.x+Math.sin(a)*.8,player.pos.z+Math.cos(a)*.8);}

@@ -2,7 +2,8 @@ import {$,rnd} from '../core/util.js';
 import {muzzle} from '../core/renderer.js';
 import {G} from '../core/state.js';
 import {ctl,mouse} from '../core/controls.js';
-import {DEF} from '../config/items.js';
+import {DEF,durPct} from '../config/items.js';
+import {diffOf} from '../config/difficulty.js';
 import {rayWall} from '../world/collision.js';
 import {agents} from '../entities/agents.js';
 import {player} from '../entities/player.js';
@@ -17,10 +18,10 @@ import {say,feed,feedOnce,updateLoadout,gameOver} from '../ui/hud.js';
 // ---------- combat ----------
 export function hurtPlayer(n){
   if(!player.alive||player.inv>0||player.down>0)return false;
-  player.hp-=n;player.lastHit=performance.now()/1000;$('hurt').style.opacity=.85;addBlood(player.pos.x,player.pos.z);sfx.hurt();
+  player.hp-=n*diffOf(G).dmg;player.lastHit=performance.now()/1000;$('hurt').style.opacity=.85;addBlood(player.pos.x,player.pos.z);sfx.hurt();
   if(player.hp<=0){
     const ri=inv.bag.findIndex(e=>e.id==='resurrect');
-    if(ri>=0){inv.bag.splice(ri,1);player.hp=0;player.down=1.8;ctl.fireHeld=false;cureInfection();G.endCause=null;say('Resurrection Kit ทำงาน · คุณฟื้นคืนชีพ','',5);updateLoadout(true);return true;}
+    if(ri>=0){inv.bag.splice(ri,1);player.hp=0;player.down=1.8;ctl.fireHeld=false;cureInfection();player.food=Math.max(player.food,30);player.water=Math.max(player.water,30);G.endCause=null;say('Resurrection Kit ทำงาน · คุณฟื้นคืนชีพ','',5);updateLoadout(true);return true;}
     player.hp=0;player.alive=false;player.state='dead';player.deadT=0;ctl.fireHeld=false;G.endCause=G.endCause||'hurt';clearSave();setTimeout(gameOver,1800);
   }
   return true;
@@ -66,5 +67,12 @@ export function meleeHit(def){
     if(d-(z.rad-.34)>def.range||d<1e-3)continue;if((dx*fx+dz*fz)/d<def.arc)continue;
     if(def.cleave){hurtZombie(z,def.dmg,dx/d,dz/d,def.kb,false);best=best||z;}else if(d<bd){bd=d;best=z;}}
   if(best&&!def.cleave){const dx=best.pos.x-player.pos.x,dz=best.pos.z-player.pos.z,d=Math.hypot(dx,dz);hurtZombie(best,def.dmg,dx/d,dz/d,def.kb,false);}
-  if(best)sfx.thud(best.pos.x,best.pos.z);
+  if(best){sfx.thud(best.pos.x,best.pos.z);wearMelee(def);}
+}
+// melee weapons lose 1 durability per swing that connects and break at 0 (fists never break)
+function wearMelee(def){
+  const w=inv.eq.melee;if(!w||inv.active!=='melee'||DEF[w.id]!==def||!def.dur)return;
+  w.dur=Math.max(0,(w.dur??def.dur)-1);
+  if(w.dur<=0){inv.eq.melee=null;sfx.crack();feed(def.name+' พังแล้ว · หาอาวุธใหม่','warn');updateLoadout(true);}
+  else if(durPct(w)<=.2)updateLoadout();
 }

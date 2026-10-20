@@ -1,7 +1,8 @@
 import {$} from '../core/util.js';
 import {G} from '../core/state.js';
 import {RATE,SPEEDS,NIGHT_START,DAY_START,DUSK_WARN,isNightTod} from '../config/time.js';
-import {DEF,GRADES} from '../config/items.js';
+import {DEF,GRADES,durPct} from '../config/items.js';
+import {diffOf} from '../config/difficulty.js';
 import {agents} from '../entities/agents.js';
 import {d2} from '../entities/movement.js';
 import {player} from '../entities/player.js';
@@ -30,16 +31,18 @@ export function updateLoadout(force){
   if(!player)return;
   const w=curWeapon(),def=DEF[w.id];
   const reserve=def.gun?countAmmo(def.ammo):0;
-  const heals=inv.bag.reduce((s,e)=>s+(DEF[e.id].kind==='heal'?e.n:0),0);
-  const key=[w.id,w.mag,reserve,inv.active,!!inv.eq.primary,!!inv.eq.secondary,!!inv.eq.melee,heals,player.reloadT>0].join('|');
+  const heals=inv.bag.reduce((s,e)=>s+(DEF[e.id].kind==='heal'?e.n:0),0),foods=inv.bag.reduce((s,e)=>s+(DEF[e.id].kind==='food'?e.n:0),0);
+  const key=[w.id,w.mag,w.dur,reserve,inv.active,!!inv.eq.primary,!!inv.eq.secondary,!!inv.eq.melee,heals,foods,player.reloadT>0].join('|');
   if(!force&&key===loadKey)return;loadKey=key;
   $('wName').textContent=def.name;
   const g=def.grade;$('wGrade').textContent=g?GRADES[g].name.toUpperCase()+' GRADE':'';$('loadout').style.setProperty('--wg',g?GRADES[g].color:'rgba(235,231,221,.22)');
   const am=$('wAmmo');
   if(def.gun){am.innerHTML=player.reloadT>0?'<small>รีโหลด…</small>':w.mag+' <small>/ '+reserve+'</small>';am.classList.toggle('low',w.mag<=Math.ceil(def.mag*.2));}
+  else if(def.dur){const p=durPct(w);am.innerHTML=Math.ceil(p*100)+'<small>%</small>';am.title='ความทน';am.classList.toggle('low',p<=.2);}
   else{am.textContent='—';am.classList.remove('low');}
   for(const c of chipEls){const s=c.dataset.slot;c.classList.toggle('on',inv.active===s);c.classList.toggle('empty',s!=='melee'&&!inv.eq[s]);c.title=inv.eq[s]?DEF[inv.eq[s].id].name+gradeTag(inv.eq[s].id):(s==='melee'?'มือเปล่า':'ว่าง');}
   $('healN').textContent=heals;$('bHeal').classList.toggle('empty',!heals);
+  $('eatN').textContent=foods;$('bEat').classList.toggle('empty',!foods);
   $('bReload').disabled=!def.gun;
   $('atkLabel').textContent=def.verb;
 }
@@ -57,6 +60,7 @@ export function updateHUD(dt){
   setText('cH',String(h));setText('cZ',String(z));setText('cK',String(G.kills));
   const bossOn=!!ty&&Math.sqrt(d2(ty,player))<34;if($('boss').hidden===bossOn)$('boss').hidden=!bossOn;if(ty)$('bossfill').style.width=Math.max(0,ty.hp/ty.maxHp*100)+'%';
   const hp=Math.ceil(player.hp);setText('hpnum',String(hp));$('hpfill').style.width=hp+'%';
+  $('foodfill').style.width=Math.ceil(player.food)+'%';$('waterfill').style.width=Math.ceil(player.water)+'%';
   const inf=player.infect>0;if($('infRow').hidden===inf)$('infRow').hidden=!inf;
   if(inf){const pc=Math.floor(player.infect*100);setText('infnum',pc+'%');$('inffill').style.width=pc+'%';}
   const hu=$('hurt');const o=parseFloat(hu.style.opacity||0);if(o>0)hu.style.opacity=Math.max(0,o-dt*1.6).toFixed(3);
@@ -66,16 +70,17 @@ export function updateHUD(dt){
 const ENDINGS={
   hurt:{eyebrow:'GAME OVER',title:'คุณไม่รอด',text:'บาดเจ็บหนักจนไปต่อไม่ไหว'},
   infected:{eyebrow:'GAME OVER',title:'คุณกลายเป็นซอมบี้',text:'เชื้อลามถึง 100% ก่อนได้ใช้ Antibiotic'},
+  starved:{eyebrow:'GAME OVER',title:'คุณไม่รอด',text:'ขาดอาหารหรือน้ำนานเกินไป'},
   won:{eyebrow:'RESCUED',title:'คุณรอดแล้ว',text:'เฮลิคอปเตอร์กู้ภัยพาคุณออกจากเมืองได้สำเร็จ'},
 };
 export function gameOver(){
   if(G.over)return;
   G.over=true;G.running=false;closeBag();clearTip();$('pause').hidden=true;G.paused=false;
   const end=ENDINGS[G.endCause]||ENDINGS.hurt,nights=nightsSurvived(G.min);
-  $('oEyebrow').textContent=end.eyebrow;$('oTitle').textContent=end.title;$('oCause').textContent=end.text;
+  $('oEyebrow').textContent=end.eyebrow+' · '+diffOf(G).name;$('oTitle').textContent=end.title;$('oCause').textContent=end.text;
   $('sNights').textContent=nights;$('sTime').textContent=hhmm(G.min);$('sDay').textContent=Math.floor(G.min/1440)+1;$('sKill').textContent=G.kills;
   $('sKillsBy').innerHTML=Object.keys(ZC).map(k=>'<span>'+ZC[k].name+'<b>'+(G.killsBy[k]||0)+'</b></span>').join('');
-  const {best,isNew}=recordRun({nights,kills:G.kills,won:G.endCause==='won'});
-  $('sBest').innerHTML=(isNew?'<span class="new">สถิติใหม่! </span>':'')+'สถิติดีสุด: รอด '+best.nights+' คืน · กำจัด '+best.kills+' ตัว'+(best.wins?' · รอดสำเร็จ '+best.wins+' ครั้ง':'');
+  const {best,isNew}=recordRun({nights,kills:G.kills,won:G.endCause==='won',diff:G.diff});
+  $('sBest').innerHTML=(isNew?'<span class="new">สถิติใหม่! </span>':'')+'สถิติดีสุด ('+diffOf(G).name+'): รอด '+best.nights+' คืน · กำจัด '+best.kills+' ตัว'+(best.wins?' · รอดสำเร็จ '+best.wins+' ครั้ง':'');
   $('pStart').hidden=true;$('pOver').hidden=false;$('overlay').hidden=false;$('bAgain').focus();
 }

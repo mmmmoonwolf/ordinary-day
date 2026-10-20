@@ -6,6 +6,8 @@ import {agents} from '../entities/agents.js';
 import {d2} from '../entities/movement.js';
 import {player} from '../entities/player.js';
 import {lootSpots} from '../world/city.js';
+import {DEF,durPct} from '../config/items.js';
+import {inv} from '../systems/inventory.js';
 
 // ---------- tips ----------
 // Short hints for new players, each shown the first time its situation happens (remembered per browser).
@@ -25,10 +27,12 @@ const TIPS=[
   ['night',()=>G.phase==='night',()=>'เสียงปืนและการวิ่งเรียกซอมบี้ กลางคืนได้ยินไกลขึ้น 1.5 เท่า ใช้อาวุธประชิดเมื่อทำได้'],
   ['sprinter',()=>near('sprinter',18),()=>'Sprinter วิ่งเร็วกว่าคุณ หนีไม่พ้น หันมาสู้ มันจะชะงักหลังตีคุณ'],
   ['boomer',()=>near('boomer',14),()=>'Boomer พองตัวแล้วระเบิด ยิงจากระยะไกล หรือถอยให้พ้น 4 เมตรตอนมันพอง'],
-  ['armor',()=>near('armor',16),()=>'Armor Walker กันกระสุนได้ครึ่งหนึ่ง อาวุธประชิดทำดาเมจเต็ม ฆ่าได้ดรอปของ Police'],
-  ['tyrant',()=>near('tyrant',30),()=>'Tyrant ขึ้นวงแดงก่อนทุบ ถอยออกจากวงทันที ฆ่าได้ดรอปของ Military'],
+  ['armor',()=>near('armor',16),()=>'Armor Walker กันกระสุนด้านหน้าได้ครึ่งหนึ่ง ยิงด้านหลังหรือใช้อาวุธประชิดได้ดาเมจเต็ม ฆ่าได้ดรอปของ Police'],
+  ['tyrant',()=>near('tyrant',30),()=>'Tyrant ขึ้นวงแดงก่อนทุบ ถอยออกจากวงทันที และมันทุบรถที่ขวางทางได้ ฆ่าได้ดรอปของ Military'],
   ['lowhp',()=>player.alive&&player.hp<40,()=>'HP ใกล้หมด '+T('แตะ ✚','กด H')+' ใช้ยา หรือหลบให้พ้นการโจมตีสัก 6 วินาที HP จะฟื้นเอง'],
   ['infected',()=>player.infect>0,()=>'ติดเชื้อแล้ว HP จะไม่ฟื้นเอง หา Antibiotic (สีฟ้า) '+T('ปุ่ม ✚','ปุ่ม H')+' จะใช้ Antibiotic ก่อน'],
+  ['needs',()=>player.alive&&(player.food<35||player.water<35),()=>'เริ่มหิวหรือกระหาย '+T('แตะ 🍴','กด G')+' กินหรือดื่ม หาอาหารกระป๋องกับน้ำดื่มได้ทั่วเมือง ถ้าแถบใดหมด HP จะลดเรื่อย ๆ'],
+  ['wear',()=>inv.eq.melee&&DEF[inv.eq.melee.id].dur&&durPct(inv.eq.melee)<=.3,()=>'อาวุธประชิดใกล้พัง (ตัวเลข % ที่มุมขวาล่าง) เก็บอันใหม่ไว้สำรองในกระเป๋า'],
   ['dawn',()=>nightsSurvived(G.min)>=1,()=>'รอดคืนแรกแล้ว ตอนเช้าตัวพิเศษถอยไป ออกหาของได้ อีก '+(GOAL_NIGHTS-1)+' คืนเฮลิคอปเตอร์จะมารับ'],
 ];
 export function tipsOff(){return off;}

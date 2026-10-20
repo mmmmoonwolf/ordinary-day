@@ -7,11 +7,12 @@ import {hhmm,updateLoadout} from './hud.js';
 import {closeBag} from './bag.js';
 import {showContinue} from './input.js';
 import {tipsOff,setTipsOff} from './tips.js';
+import {diffOf} from '../config/difficulty.js';
 
 // ---------- pause menu ----------
 // Stops the game like the bag does (G.paused). Opens by itself when the page goes to the background,
 // so a phone player comes back to a paused game instead of a fight.
-const when=()=>'วันที่ '+(Math.floor(G.min/1440)+1)+' · '+hhmm(G.min);
+const when=()=>'วันที่ '+(Math.floor(G.min/1440)+1)+' · '+hhmm(G.min)+' · '+diffOf(G).name;
 export function isPauseOpen(){return !$('pause').hidden;}
 export function openPause(){
   if(!G.running||G.over||!player.alive||isPauseOpen())return;

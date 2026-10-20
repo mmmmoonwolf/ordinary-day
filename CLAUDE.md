@@ -33,13 +33,14 @@
 | `core/controls.js` | สถานะ input ที่หลายไฟล์ใช้ร่วม: `keys`, `ctl.fireHeld` / `ctl.fireQ`, `mouse`, `joy` |
 | `config/time.js` | `DAY_REAL_SECONDS = 300`, `RATE`, `SPEEDS`, `NIGHT_START`, `DAY_START`, `DUSK_WARN`, `isNightTod()` |
 | `config/world.js` | `RC` (เส้นกลางถนน), `OFF` (ระยะทางเท้า), `LIM`, `groundY()` |
-| `config/items.js` | `GRADES`, `DEF` (อาวุธ กระสุน ยา), `SLOTNAME`, `gradeOf()`, `itemColor()` |
-| `config/loot.js` | `POOLS`, `GRADE_W`, `MED_W`, `CAT_W` |
+| `config/items.js` | `GRADES`, `DEF` (อาวุธ กระสุน ยา อาหาร, `dur` ความทนอาวุธประชิด), `SLOTNAME`, `gradeOf()`, `itemColor()`, `durPct()` |
+| `config/loot.js` | `POOLS`, `GRADE_W`, `MED_W`, `CAT_W`, `FOOD_W` |
 | `config/zombies.js` | `ZC` (HP ความเร็ว ระยะมอง ดาเมจ โอกาสติดเชื้อ), `INFECT_MINUTES`, `isSpecial()` |
 | `config/goal.js` | `GOAL_NIGHTS = 7`, `LZ`, `RESCUE_FROM` / `RESCUE_UNTIL`, `nightsSurvived()` |
+| `config/needs.js` · `difficulty.js` | ค่าหิวกระหาย (PLACEHOLDER) · `DIFFS` ง่าย/ปกติ/ยาก (ตัวคูณ PLACEHOLDER), `diffOf(G)` |
 | `world/textures.js` · `materials.js` | texture วาดด้วย canvas, วัสดุที่ใช้ร่วมกัน, `box()`, `part()` |
 | `world/collision.js` · `sidewalk.js` | `solids` (กล่องชน), `collide()`, `rayWall()` · กราฟทางเท้าของ NPC |
-| `world/props.js` · `city.js` | ต้นไม้ เสาไฟ รถ รถพยาบาล ตู้คอนเทนเนอร์ · `buildCity()`, `buildings`, `lootSpots`, `vendorSpots`, `pois`, `LAYOUT` |
+| `world/props.js` · `city.js` | ต้นไม้ เสาไฟ รถ รถพยาบาล ตู้คอนเทนเนอร์ `breakables` (รถ กองขยะ ม้านั่งที่ Tyrant ทุบได้) · `buildCity()`, `buildings`, `lootSpots`, `vendorSpots`, `pois`, `LAYOUT` |
 | `world/item-models.js` · `occlusion.js` | โมเดลอาวุธและไอเท็ม · ทำตึกที่บังผู้เล่นให้โปร่งใส |
 | `entities/agents.js` | ร่างตัวละคร, `agents`, `makeAgent()`, `styleZombie()`, `becomeZombie()`, `setKind()`, `spawnEdge()` |
 | `entities/movement.js` · `ai.js` | `moveAgent()`, `followNodes()` · `updateHuman()`, `updateZombie()`, `hurtZombie()`, `makeNoise()` |
@@ -50,6 +51,7 @@
 | `systems/effects.js` · `game.js` | เลือด วงแหวน tracer ระเบิด · `reset()` เริ่มเกมใหม่ |
 | `systems/audio.js` · `records.js` | เสียงสังเคราะห์ `sfx.*` (no-op ถ้าไม่มี WebAudio), `toggleMute()` · `recordRun()` สถิติดีสุด |
 | `systems/infection.js` · `goal.js` | `infectPlayer()`, `updateInfection()`, `cureInfection()` · `updateGoal()` เฮลิคอปเตอร์ ลูกศร และการชนะ |
+| `systems/needs.js` · `obstacles.js` | `updateNeeds()` หิวกระหาย · `smashNear()`, `restoreObstacles()`, `applyBroken()` สิ่งกีดขวางที่ Tyrant ทุบ |
 | `systems/save.js` | เซฟอัตโนมัติ 1 ช่องใน localStorage: `saveGame()`, `loadGame()`, `readSave()`, `clearSave()`, `autosave()` |
 | `ui/minimap.js` | แผนที่เล็ก `updateMinimap()` พื้นหลังวาดครั้งเดียวจาก `solids` / `LAYOUT` ส่วนที่ขยับวาดทุก 0.1 วินาที จุดสำคัญมาจาก `pois` ใน `world/city.js` |
 | `ui/tips.js` | คำแนะนำครั้งแรกที่เจอสถานการณ์ ตาราง `TIPS` = [key, เงื่อนไข, ข้อความ] `updateTips()`, `setTipsOff()` |
@@ -63,14 +65,14 @@
 - `rand()` (seed 2626) ต้องถูกเรียกเฉพาะใน `buildCity()` ตามลำดับเดิม ไม่อย่างนั้นผังเมืองจะเปลี่ยน ของที่เพิ่มทีหลัง (เช่นรถพยาบาล) ให้วางท้าย `buildCity()` โดยไม่เรียก `rand()` และต่อ `lootSpots` ท้ายสุด
 - โค้ดระดับบนสุดของโมดูล (นอกฟังก์ชัน) ใช้ได้เฉพาะของจากโมดูลชั้นล่าง (`core`, `config`, `world`) เพราะโมดูลชั้นบน import วนกันเอง ตอนโหลดจะยังไม่พร้อม
 - ตัวแปรที่หลายไฟล์ต้องเขียนให้เก็บใน object (`G`, `inv`, `ctl`) หรือมี setter (`setPlayer()`) เพราะ import ที่เป็น `let` เขียนทับจากไฟล์อื่นไม่ได้
-- เพิ่ม field ใหม่ให้ agent, `G`, `inv` หรือไอเท็ม ต้องดูว่าเซฟใน `systems/save.js` ต้องเก็บด้วยไหม ถ้าเปลี่ยนรูปแบบเซฟ ผังเมือง หรือลำดับ `lootSpots` ให้เพิ่ม `SAVE_VERSION` เซฟเก่าจะถูกข้ามแทนที่จะโหลดผิด
+- เพิ่ม field ใหม่ให้ agent, `G`, `inv` หรือไอเท็ม ต้องดูว่าเซฟใน `systems/save.js` ต้องเก็บด้วยไหม ถ้าเปลี่ยนรูปแบบเซฟ ผังเมือง หรือลำดับ `lootSpots` ให้เพิ่ม `SAVE_VERSION` เซฟเก่าจะถูกข้ามแทนที่จะโหลดผิด (`G.broken` เก็บลำดับใน `breakables` ถ้าลำดับการสร้างรถ กองขยะ หรือม้านั่งเปลี่ยนก็ต้องเพิ่มเหมือนกัน)
 - ยังใช้ Three.js r128 จาก CDN ไม่ต้องเพิ่ม build tool จนกว่าจะจำเป็น
 
 ## การทดสอบ
 
 - `node tools/smoke-test.js` (หรือ `npm test`) จำลองเกม 2 วันเต็มแบบไม่มีหน้าจอ (THREE ถูกแทนด้วย stub) โดย import โมดูลใน `src/` แล้วรายงาน error ใช้จับบั๊กตรรกะเท่านั้น ไม่ได้ตรวจภาพ
 - ต้องเปิดผ่าน dev server (`npx serve .`) แล้วทดสอบทั้งจอคอมและจอมือถือ (DevTools device mode) ก่อน commit
-- ทดสอบด้วยตาทุกครั้ง: เริ่มเกม 07:30, การระบาด 09:30, เปลี่ยนเป็นกลางคืน 18:30, รุ่งเช้า 06:00, ยิงปืนทุกแบบ, เปิดกระเป๋า, ตายแล้วเล่นใหม่, รีเฟรชหน้าแล้วกดเล่นต่อ, ติดเชื้อแล้วใช้ Antibiotic, เปิดปิดเสียง, หยุดเกมแล้วเซฟเองและกลับหน้าแรก, เก็บ Resurrection Kit ที่รถพยาบาล, คำแนะนำไม่บังตัวละครบนจอแคบ, แผนที่ไม่ทับ HUD ตอนติดเชื้อและมีข้อความยาว (จอ 360 / 412 / 700 / 1280), ดู HUD ที่จอกว้าง 360 px, เช้าวันที่ 8 ตามลูกศรไปขึ้นเฮลิคอปเตอร์
+- ทดสอบด้วยตาทุกครั้ง: เริ่มเกม 07:30, การระบาด 09:30, เปลี่ยนเป็นกลางคืน 18:30, รุ่งเช้า 06:00, ยิงปืนทุกแบบ, เปิดกระเป๋า, ตายแล้วเล่นใหม่, รีเฟรชหน้าแล้วกดเล่นต่อ, ติดเชื้อแล้วใช้ Antibiotic, เปิดปิดเสียง, หยุดเกมแล้วเซฟเองและกลับหน้าแรก, เก็บ Resurrection Kit ที่รถพยาบาล, คำแนะนำไม่บังตัวละครบนจอแคบ, แผนที่ไม่ทับ HUD ตอนติดเชื้อและมีข้อความยาว (จอ 360 / 412 / 700 / 1280), ดู HUD ที่จอกว้าง 360 px, เช้าวันที่ 8 ตามลูกศรไปขึ้นเฮลิคอปเตอร์, เลือกระดับความยากแล้วเริ่มเกม, กินและดื่มด้วยปุ่ม 🍴, ตีจนอาวุธประชิดพัง, ยิง Armor Walker จากด้านหลัง, Tyrant ทุบรถแล้วรีเฟรชหน้าเล่นต่อ
 
 ## การสรุปงาน
 

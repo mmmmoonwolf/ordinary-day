@@ -65,6 +65,8 @@ export const sfx={
   roar(x,z,len){len=len||1.3;play(len,x,z,90,(t,d,g)=>{tone(t,len,{wave:'sawtooth',f0:75,f1:42,peak:.4*g,attack:.12,dest:d});tone(t,len,{wave:'sawtooth',f0:79,f1:45,peak:.3*g,attack:.12,dest:d});noise(t,len,{f0:600,f1:200,peak:.35*g,attack:.1,dest:d});});},
   shriek(x,z){play(.6,x,z,45,(t,d,g)=>{tone(t,.5,{wave:'sawtooth',f0:700,f1:1500,peak:.16*g,attack:.03,dest:d});noise(t,.45,{type:'bandpass',f0:2200,f1:3200,q:4,peak:.2*g,attack:.03,dest:d});});},
   pickup(){play(.15,undefined,0,1,(t,d)=>{tone(t,.06,{f0:660,peak:.14,dest:d});tone(t+.06,.08,{f0:990,peak:.12,dest:d});});},
+  crack(){play(.35,undefined,0,1,(t,d)=>{noise(t,.25,{type:'highpass',f0:1800,peak:.5,dest:d});tone(t,.2,{wave:'square',f0:220,f1:60,peak:.2,dest:d});});},
+  eat(){play(.4,undefined,0,1,(t,d)=>{for(const k of [0,.12,.24])noise(t+k,.06,{type:'bandpass',f0:1400,q:2,peak:.18,dest:d});});},
   heal(){play(.5,undefined,0,1,(t,d)=>{tone(t,.15,{f0:520,peak:.16,dest:d});tone(t+.12,.3,{f0:780,peak:.14,dest:d});});},
   infect(){play(.9,undefined,0,1,(t,d)=>{for(const k of [0,.28,.6])tone(t+k,.18,{f0:65,f1:45,peak:.6,dest:d});});},
   radio(){play(.3,undefined,0,1,(t,d)=>noise(t,.25,{type:'bandpass',f0:2600,q:3,peak:.1,attack:.02,dest:d}));},
