@@ -13,11 +13,13 @@ import {drops,ringMats} from './systems/drops.js';
 import {runEvents} from './systems/phases.js';
 import {updateSky} from './systems/weather.js';
 import {reset} from './systems/game.js';
+import {autosave,initSave} from './systems/save.js';
 import {updateHUD} from './ui/hud.js';
 import {initInput} from './ui/input.js';
 
 buildCity();
 initInput();
+initSave();
 
 // ---------- loop ----------
 reset();
@@ -26,7 +28,7 @@ function loop(now){
   requestAnimationFrame(loop);
   const dt=Math.min(.05,(now-last)/1000);last=now;frame++;
   if(!G.paused){
-    if(G.running){G.min+=dt*RATE*SPEEDS[G.speedIdx];runEvents();updatePlayer(dt);}
+    if(G.running){G.min+=dt*RATE*SPEEDS[G.speedIdx];runEvents();updatePlayer(dt);autosave(dt);}
     for(let i=agents.length-1;i>=0;i--){
       const a=agents[i];
       if(a.state==='human'||a.state==='infected')updateHuman(a,dt);

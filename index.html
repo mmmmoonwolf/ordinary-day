@@ -89,6 +89,10 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 .stats div{display:grid;gap:2px;font-size:12px;letter-spacing:.1em;color:var(--ink-dim)}
 .stats b{font-family:var(--f-clock);font-size:40px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:.02em}
 .go{font:700 17px var(--f-ui);color:#16130d;background:var(--ink);border:0;padding:14px 28px;cursor:pointer;letter-spacing:.03em}
+.go.alt{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+.go span{font-weight:500;font-variant-numeric:tabular-nums}
+.starts{display:flex;gap:10px;flex-wrap:wrap}
+.savenote{font-size:12px;color:var(--ink-dim);margin:12px 0 0;max-width:40ch}
 #bag{position:fixed;inset:0;z-index:6;display:grid;place-items:center;background:rgba(8,9,10,.62);padding-block:calc(env(safe-area-inset-top,0px) + 16px) calc(env(safe-area-inset-bottom,0px) + 16px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .sheet{width:100%;max-width:540px;max-height:100%;overflow:auto;background:var(--sheet);border:1px solid var(--line);padding:16px 16px 18px;display:grid;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
 .sheet header{display:flex;align-items:baseline;gap:10px}
@@ -187,7 +191,11 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
     <h1>วันธรรมดา</h1>
     <p class="lede">กลางวันซอมบี้ยังเชื่องช้า ใช้เวลานี้เก็บอาวุธและยา พอ 18:30 กลางคืนจะมาพร้อมซอมบี้ที่เร็ว หูไว และของระดับ Police กับ Military ให้เสี่ยงออกไปหา</p>
     <div class="keys" id="keys"></div>
-    <button class="go" id="bStart">เริ่มวันใหม่</button>
+    <div class="starts">
+      <button class="go" id="bContinue" hidden>เล่นต่อ <span id="contInfo"></span></button>
+      <button class="go" id="bStart">เริ่มวันใหม่</button>
+    </div>
+    <p class="savenote" id="saveNote" hidden>เกมบันทึกอัตโนมัติ เริ่มวันใหม่จะลบเซฟเดิม และเซฟจะหายเมื่อตัวละครตาย</p>
   </div>
   <div class="panel" id="pOver" hidden>
     <div class="eyebrow">GAME OVER</div>
@@ -204,6 +212,6 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // ES modules do not load from file:// — tell the player how to open the game instead of showing a dead start button
-if(location.protocol==='file:'){document.querySelector('#pStart .lede').textContent='เปิดไฟล์ตรง ๆ ไม่ได้ ต้องเปิดผ่าน dev server เช่น npx serve . หรือ python3 -m http.server 8000 แล้วเข้า http://localhost:8000 (ดู README)';document.getElementById('bStart').hidden=true;}
+if(location.protocol==='file:'){document.querySelector('#pStart .lede').textContent='เปิดไฟล์ตรง ๆ ไม่ได้ ต้องเปิดผ่าน dev server เช่น npx serve . หรือ python3 -m http.server 8000 แล้วเข้า http://localhost:8000 (ดู README)';document.getElementById('bStart').hidden=true;document.getElementById('bContinue').remove();}
 </script>
 <script type="module" src="src/main.js"></script>

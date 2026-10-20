@@ -9,6 +9,7 @@ import {player} from '../entities/player.js';
 import {hurtZombie,makeNoise} from '../entities/ai.js';
 import {addBlood,tracer} from './effects.js';
 import {inv,curWeapon,countAmmo,takeAmmo} from './inventory.js';
+import {clearSave} from './save.js';
 import {say,feed,feedOnce,updateLoadout,gameOver} from '../ui/hud.js';
 
 // ---------- combat ----------
@@ -18,7 +19,7 @@ export function hurtPlayer(n){
   if(player.hp<=0){
     const ri=inv.bag.findIndex(e=>e.id==='resurrect');
     if(ri>=0){inv.bag.splice(ri,1);player.hp=0;player.down=1.8;ctl.fireHeld=false;say('Resurrection Kit ทำงาน · คุณฟื้นคืนชีพ','',5);updateLoadout(true);return;}
-    player.hp=0;player.alive=false;player.state='dead';player.deadT=0;ctl.fireHeld=false;setTimeout(gameOver,1800);
+    player.hp=0;player.alive=false;player.state='dead';player.deadT=0;ctl.fireHeld=false;clearSave();setTimeout(gameOver,1800);
   }
 }
 export function aimAssist(def){

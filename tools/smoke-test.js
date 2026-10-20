@@ -40,22 +40,26 @@ const els = {};
 const handlers = {};
 let raf = null;
 global.THREE = any();
-global.document = { getElementById: id => els[id] || (els[id] = el(id)), createElement: t => { const e = el(t); e.getContext = () => any(); return e; }, querySelectorAll: () => [] };
+global.document = { getElementById: id => els[id] || (els[id] = el(id)), createElement: t => { const e = el(t); e.getContext = () => any(); return e; }, querySelectorAll: () => [], visibilityState: 'visible', addEventListener: (t, fn) => { (handlers['document:' + t] = handlers['document:' + t] || []).push(fn); } };
 global.matchMedia = () => ({ matches: false });
 global.innerWidth = 1200; global.innerHeight = 800; global.devicePixelRatio = 1;
 global.requestAnimationFrame = f => { raf = f; };
 global.addEventListener = (t, fn) => { (handlers[t] = handlers[t] || []).push(fn); };
 global.window = global;
+const store = new Map();
+global.localStorage = { getItem: k => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: k => store.delete(k) };
 
 // the game modules read the stubs above, so they are imported only now
 await import('../src/main.js');
 const { G } = await import('../src/core/state.js');
 const { agents, becomeZombie, makeAgent } = await import('../src/entities/agents.js');
 const P = await import('../src/entities/player.js');
-const { makeItem } = await import('../src/systems/drops.js');
+const { makeItem, drops } = await import('../src/systems/drops.js');
 const { inv } = await import('../src/systems/inventory.js');
 const { renderBag, openBag, closeBag } = await import('../src/ui/bag.js');
-const T = { inv, get player() { return P.player; }, makeItem, G, agents, becomeZombie, makeAgent, renderBag, openBag, closeBag };
+const S = await import('../src/systems/save.js');
+const { hurtPlayer } = await import('../src/systems/combat.js');
+const T = { inv, get player() { return P.player; }, makeItem, drops, G, agents, becomeZombie, makeAgent, renderBag, openBag, closeBag };
 
 const errs = [];
 let now = 1000;
@@ -86,6 +90,26 @@ T.openBag(); T.renderBag(); T.closeBag();
 console.log('combat: hp', Math.round(p.hp), 'kills', T.G.kills, 'resurrect used', !T.inv.bag.some(e => e.id === 'resurrect'));
 for (let i = 0; i < 20; i++) { key('Space', 'keydown'); step(300); key('Space', 'keyup'); }
 console.log('after night:', els.clock.textContent, els.phaseName.textContent, 'zombie kinds', [...new Set(T.agents.filter(a => a.state === 'zombie').map(a => a.kind))].join(','));
+
+// 3) save system: autosave while playing, load restores the same world, death deletes the save
+const fail = m => errs.push('save test: ' + m);
+els.bAgain.fire('click');
+T.inv.bag.push({ id: 'bandage', n: 3 }, { id: 'a9', n: 40 }); T.inv.eq.secondary = T.makeItem('pistol_c');
+T.G.min = 19 * 60; step(1000);
+if (!store.has('ordinary-day.save')) fail('no autosave after ~17 s of play');
+store.clear(); document.visibilityState = 'hidden'; handlers['document:visibilitychange'].forEach(f => f()); document.visibilityState = 'visible';
+if (!store.has('ordinary-day.save')) fail('no save when the page went to the background');
+S.saveGame();
+const live = () => T.agents.filter(a => a.state !== 'dead' && !a.gone);
+const before = { min: T.G.min, phase: T.G.phase, x: T.player.pos.x, z: T.player.pos.z, hp: T.player.hp, agents: live().map(a => a.state + ':' + a.kind).sort().join(), drops: T.drops.length, inv: JSON.stringify([T.inv.bag, T.inv.eq, T.inv.active, T.inv.cap]) };
+els.bAgain.fire('click'); step(30);
+if (!S.loadGame()) fail('loadGame returned false');
+const after = { min: T.G.min, phase: T.G.phase, x: T.player.pos.x, z: T.player.pos.z, hp: T.player.hp, agents: live().map(a => a.state + ':' + a.kind).sort().join(), drops: T.drops.length, inv: JSON.stringify([T.inv.bag, T.inv.eq, T.inv.active, T.inv.cap]) };
+for (const k in before) if (before[k] !== after[k]) fail(k + ' changed after load: ' + String(before[k]).slice(0, 60) + ' -> ' + String(after[k]).slice(0, 60));
+T.G.running = true; step(300);
+T.inv.bag = T.inv.bag.filter(e => e.id !== 'resurrect'); T.player.inv = 0; T.player.down = 0; hurtPlayer(9999);
+if (store.has('ordinary-day.save')) fail('save still exists after death');
+console.log('save: restored', live().length, 'agents and', T.drops.length, 'drops at', els.clock.textContent, '| deleted on death', !store.has('ordinary-day.save'));
 
 console.log(errs.length ? `FAILED: ${errs.length} runtime errors\n` + errs.slice(0, 3).join('\n---\n') : 'PASSED: no runtime errors');
 process.exit(errs.length ? 1 : 0);
