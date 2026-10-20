@@ -11,6 +11,7 @@ import {ZC} from '../config/zombies.js';
 import {GOAL_NIGHTS,nightsSurvived} from '../config/goal.js';
 import {recordRun} from '../systems/records.js';
 import {sfx} from '../systems/audio.js';
+import {clearTip} from './tips.js';
 
 // ---------- messages ----------
 let msgTimer=0;
@@ -69,7 +70,7 @@ const ENDINGS={
 };
 export function gameOver(){
   if(G.over)return;
-  G.over=true;G.running=false;closeBag();$('pause').hidden=true;G.paused=false;
+  G.over=true;G.running=false;closeBag();clearTip();$('pause').hidden=true;G.paused=false;
   const end=ENDINGS[G.endCause]||ENDINGS.hurt,nights=nightsSurvived(G.min);
   $('oEyebrow').textContent=end.eyebrow;$('oTitle').textContent=end.title;$('oCause').textContent=end.text;
   $('sNights').textContent=nights;$('sTime').textContent=hhmm(G.min);$('sDay').textContent=Math.floor(G.min/1440)+1;$('sKill').textContent=G.kills;

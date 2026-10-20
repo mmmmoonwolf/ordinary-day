@@ -28,8 +28,8 @@ export function spawnDrop(item,x,z,sp){
   const d={item,g,m,x,z,spot:sp||null};drops.push(d);if(sp)sp.drop=d;return d;
 }
 export function removeDrop(d){scene.remove(d.g);const i=drops.indexOf(d);if(i>=0)drops.splice(i,1);if(d.spot)d.spot.drop=null;}
-export function fillDay(chance){for(const s of lootSpots){if(s.drop||s.zone==='police'||s.zone==='military')continue;if(Math.random()<chance)spawnDrop(rollLoot('day',s.zone),s.x,s.z,s);}}
-export function fillNight(){for(const s of lootSpots){if(s.drop)continue;
+export function fillDay(chance){for(const s of lootSpots){if(s.drop||s.zone==='police'||s.zone==='military'||s.zone==='ambulance')continue;if(Math.random()<chance)spawnDrop(rollLoot('day',s.zone),s.x,s.z,s);}}
+export function fillNight(){for(const s of lootSpots){if(s.drop||s.zone==='ambulance')continue;
   if(s.zone==='police')spawnDrop(rollLoot('night',s.zone,'pol'),s.x,s.z,s);
   else if(s.zone==='military'){if(Math.random()<.7)spawnDrop(rollLoot('night',s.zone,'mil'),s.x,s.z,s);}
   else if(Math.random()<.4)spawnDrop(rollLoot('night',s.zone),s.x,s.z,s);}}

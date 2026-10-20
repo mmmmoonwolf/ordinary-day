@@ -42,6 +42,9 @@ body{background:var(--ground);color:var(--ink);font-family:var(--f-ui);overflow:
 #msg.radio{color:var(--amber)}
 #msg.alarm{color:#ff8f7c}
 #msg.night{color:#b9c8f0}
+#tip{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 248px);transform:translate(-50%,8px);width:min(420px,calc(100vw - 40px));display:grid;gap:2px;background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--amber);padding:9px 12px;font-size:14px;line-height:1.5;text-shadow:0 1px 3px rgba(0,0,0,.6);opacity:0;transition:opacity .4s,transform .4s;backdrop-filter:blur(4px)}
+#tip.show{opacity:1;transform:translate(-50%,0)}
+#tip b{font-size:10px;letter-spacing:.16em;color:var(--amber)}
 .vitals{position:absolute;left:max(16px,calc(env(safe-area-inset-left,0px) + 12px));top:calc(env(safe-area-inset-top,0px) + 14px);display:grid;gap:7px;width:178px}
 .hp-label{display:flex;justify-content:space-between;font-size:11px;letter-spacing:.12em;color:var(--ink-dim);text-shadow:0 1px 3px rgba(0,0,0,.7)}
 .bar{height:6px;background:rgba(0,0,0,.5);border:1px solid var(--line)}
@@ -145,6 +148,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
   .clock{top:calc(env(safe-area-inset-top,0px) + 72px)}
   #boss{top:calc(env(safe-area-inset-top,0px) + 196px)}
   #msg{top:calc(env(safe-area-inset-top,0px) + 222px)}
+  #tip{font-size:12.5px;padding:7px 10px;line-height:1.45}
   .hint{display:none}
   .loadout{width:220px}
 }
@@ -157,7 +161,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
   .tools{gap:3px}
   .counts{column-gap:6px;font-size:10px}
 }
-@media (prefers-reduced-motion:reduce){#msg,#hpfill{transition:none}#feed div{animation-duration:3s}#phase.dusk i{animation:none}}
+@media (prefers-reduced-motion:reduce){#msg,#hpfill,#tip{transition:none}#feed div{animation-duration:3s}#phase.dusk i{animation:none}}
 </style>
 
 <div id="game"></div>
@@ -177,6 +181,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
   <div class="clock"><div id="clock">07:30</div><div id="dayline">วันที่ 1 · วันอังคาร</div><div id="phase" class="day"><i></i><b id="phaseName">DAY</b><span id="phaseEta"></span></div><div id="lz" hidden><b id="lzArrow">↑</b><span id="lzDist"></span></div></div>
   <div id="boss" hidden><span>TYRANT</span><div class="bar"><i id="bossfill"></i></div></div>
   <div id="msg"></div>
+  <div id="tip" aria-live="polite"><b>คำแนะนำ</b><span id="tipText"></span></div>
   <div class="tools">
     <button id="bPause" title="หยุดเกม (P หรือ Esc)" aria-label="หยุดเกม">❚❚</button>
     <button id="bBag" title="กระเป๋า (Tab)">กระเป๋า</button>
@@ -208,6 +213,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
       <button class="go" id="bResume">เล่นต่อ</button>
       <button class="go alt" id="bSaveNow">เซฟเกม</button>
       <button class="go alt" id="bSound2">เสียง: เปิด</button>
+      <button class="go alt" id="bTips">คำแนะนำ: เปิด</button>
       <button class="go alt" id="bToTitle">เซฟแล้วกลับหน้าแรก</button>
     </div>
     <p class="savenote" id="saveMsg"></p>

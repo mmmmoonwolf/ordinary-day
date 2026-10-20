@@ -37,6 +37,15 @@ export function car(x,z,alongX,police){
   for(const s of [-1,1])for(const t of [-1,1]){const wx=alongX?s*1.35:t*.95,wz=alongX?t*.95:s*1.35;box(darkMetal,alongX?.6:.25,.6,alongX?.25:.6,x+wx,.3,z+wz,false);}
   solid(x,z,w/2,d/2);
 }
+// abandoned ambulance (no rand(): it is placed after the seeded city is built)
+export function ambulance(x,z,alongX){
+  const w=alongX?4.6:2.1,d=alongX?2.1:4.6,white=S({color:'#e6e6e2',roughness:.5,metalness:.2}),red=S({color:'#b3362b',roughness:.5});
+  box(white,w,1.7,d,x,1.07,z);box(red,alongX?4.62:2.12,.3,alongX?2.12:4.62,x,.75,z);
+  box(S({color:'#1d2226',roughness:.2,metalness:.6}),alongX?.1:1.8,.6,alongX?1.8:.1,x+(alongX?2.31:0),1.35,z+(alongX?0:2.31));
+  box(sirenR,alongX?.2:.6,.14,alongX?.6:.2,x+(alongX?1.6:-.0),2,z+(alongX?-.0:1.6));box(sirenB,alongX?.2:.6,.14,alongX?.6:.2,x+(alongX?1.6:0),2,z+(alongX?.0:1.6));
+  for(const s of [-1,1])for(const t of [-1,1]){const wx=alongX?s*1.5:t*.98,wz=alongX?t*.98:s*1.5;box(darkMetal,alongX?.6:.25,.6,alongX?.25:.6,x+wx,.3,z+wz,false);}
+  solid(x,z,w/2,d/2);
+}
 export function armyTruck(x,z){
   box(oliveMat,6.2,2.4,2.5,x-.6,1.55,z);box(oliveMat,1.9,1.9,2.4,x+3.2,1.3,z);box(S({color:'#1d2226',roughness:.2,metalness:.6}),.1,.7,2,x+4.16,1.7,z);
   for(const px of [-2.6,-.8,3.2])for(const s of [-1,1])box(blackMat,.9,.9,.3,x+px,.45,z+s*1.2,false);
