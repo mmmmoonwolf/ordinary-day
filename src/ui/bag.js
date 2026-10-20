@@ -15,7 +15,7 @@ function itemDesc(it){
     if(d.gun)return SLOTNAME[d.slot]+' · แม็ก '+d.mag+' นัด · ใช้กระสุน '+DEF[d.ammo].name+(d.auto?' · ยิงอัตโนมัติ':'')+(d.pierce?' · ทะลุได้ '+d.pierce+' ตัว':'')+(d.heavy?' · เดินช้าลงขณะยิง':'')+' · ในแม็กตอนนี้ '+it.mag+' นัด';
     return SLOTNAME[d.slot]+' · ระยะ '+(d.range||1.4).toFixed(1)+' ม.'+(d.cleave?' · โดนหลายตัวในวงฟัน':'');}
   if(d.kind==='ammo')return 'มี '+it.n+' นัด (สูงสุด '+d.stack+' นัดต่อช่อง)';
-  if(d.kind==='heal')return 'ฟื้น '+Math.round(d.heal*100)+'% ของ HP สูงสุด · มี '+it.n+' ชิ้น';
+  if(d.kind==='heal')return 'ฟื้น '+Math.round(d.heal*100)+'% ของ HP สูงสุด'+(d.cure?' และรักษาการติดเชื้อ':'')+' · มี '+it.n+' ชิ้น';
   if(d.kind==='revive')return 'ทำงานอัตโนมัติเมื่อ HP หมด ชุบชีวิตด้วย HP 100% (ใช้ครั้งเดียว)';
   return '';
 }
@@ -47,7 +47,7 @@ export function renderBag(){
   const btn=(label,fn,pri,dis)=>{const b=document.createElement('button');b.textContent=label;if(pri)b.className='pri';if(dis)b.disabled=true;b.onclick=()=>{fn();updateLoadout(true);renderBag();};acts.appendChild(b);};
   if(sel.where==='bag'){
     if(d.kind==='weapon')btn(inv.eq[d.slot]?'สลับกับ '+DEF[inv.eq[d.slot].id].name:'ติดตั้ง',()=>{const old=inv.eq[d.slot];inv.eq[d.slot]=it;if(old)inv.bag[sel.i]=old;else inv.bag.splice(sel.i,1);inv.active=d.slot;player.reloadT=0;sel={where:'eq',slot:d.slot};},true);
-    if(d.kind==='heal')btn('ใช้',()=>{useItemAt(sel.i);if(inv.bag[sel.i]!==it)sel=null;},true,player.hp>=player.maxHp);
+    if(d.kind==='heal')btn('ใช้',()=>{useItemAt(sel.i);if(inv.bag[sel.i]!==it)sel=null;},true,player.hp>=player.maxHp&&!(d.cure&&player.infect>0));
     btn('ทิ้ง',()=>{inv.bag.splice(sel.i,1);dropItem(it);sel=null;});
   } else {
     if(inv.active!==sel.slot)btn('ถือ',()=>{inv.active=sel.slot;player.reloadT=0;},true);

@@ -14,12 +14,15 @@ import {runEvents} from './systems/phases.js';
 import {updateSky} from './systems/weather.js';
 import {reset} from './systems/game.js';
 import {autosave,initSave} from './systems/save.js';
+import {initAudio} from './systems/audio.js';
+import {updateGoal} from './systems/goal.js';
 import {updateHUD} from './ui/hud.js';
 import {initInput} from './ui/input.js';
 
 buildCity();
 initInput();
 initSave();
+initAudio();
 
 // ---------- loop ----------
 reset();
@@ -44,6 +47,7 @@ function loop(now){
     for(const d of drops)d.m.rotation.y+=dt*.6;
     const pulse=.45+.3*Math.sin(now/280);for(const k in ringMats)ringMats[k].opacity=pulse;
     updateSky(dt,now);
+    updateGoal(dt,now);
   }
   camTarget.x+=(player.pos.x-camTarget.x)*Math.min(1,dt*5);camTarget.z+=(player.pos.z-camTarget.z)*Math.min(1,dt*5);
   camera.position.copy(camTarget).add(camOffset);camera.lookAt(camTarget);

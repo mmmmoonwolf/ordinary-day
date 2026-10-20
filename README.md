@@ -20,6 +20,15 @@
 | สลับอาวุธ | 1 2 3 | ปุ่ม หลัก รอง ประชิด |
 | รีโหลด / เก็บของ / รักษา | R / E / H | ปุ่ม R / ปุ่มเก็บ / ปุ่ม ✚ |
 | กระเป๋า | Tab | ปุ่มกระเป๋า (เกมหยุดระหว่างเปิด) |
+| เปิด/ปิดเสียง | M | ปุ่มเสียงในหน้ากระเป๋า |
+
+## เป้าหมาย
+
+รอดให้ครบ 7 คืน (คืนหนึ่งนับเมื่อถึง 06:00 ของเช้าถัดไป) แล้วตั้งแต่เช้าวันที่ 8 เฮลิคอปเตอร์กู้ภัยจะลงจอดที่สี่แยกมุมสวนสาธารณะ ทุกวันเวลา 08:00–12:00 มีลูกศรใต้นาฬิกาชี้ทางและบอกระยะ เดินเข้าไปในวงลงจอดเพื่อชนะ ถ้าไปไม่ทันจะกลับมาใหม่วันถัดไป
+
+## การติดเชื้อ
+
+ซอมบี้ที่กัดมีโอกาสทำให้ติดเชื้อ (Walker 10% · Zombie, Sprinter, Armor Walker 20% · ระเบิดของ Boomer และการทุบของ Tyrant ไม่ติดเชื้อ ค่าเหล่านี้เป็น placeholder) เชื้อลามจาก 0% ถึง 100% ใน 8 ชั่วโมงในเกม (ราว 100 วินาทีจริงที่ ×1) ระหว่างติดเชื้อ HP ไม่ฟื้นเอง ถึง 100% จะกลายเป็นซอมบี้และจบเกม Antibiotic รักษาได้ (ใช้ได้แม้ HP เต็ม และปุ่มรักษาจะเลือก Antibiotic ก่อนเมื่อติดเชื้อ) Resurrection Kit ที่ทำงานก็ล้างเชื้อด้วย
 
 ## การเซฟ
 
@@ -37,10 +46,10 @@
 index.html                     HTML + CSS ของ HUD แล้วโหลด src/main.js
 src/main.js                    จุดเริ่ม: สร้างเมือง ผูก input เริ่มเกม และวน loop
 src/core/                      util (rng, $), renderer (scene กล้อง แสง), state (G), controls (สถานะปุ่ม)
-src/config/                    ตารางค่าเกม: time, world, items, loot, zombies
+src/config/                    ตารางค่าเกม: time, world, items, loot, zombies, goal
 src/world/                     textures, materials, collision, sidewalk, props, city, item-models, occlusion
 src/entities/                  agents, movement, ai, player, animation
-src/systems/                   drops, inventory, combat, phases, weather, effects, game (reset), save
+src/systems/                   drops, inventory, combat, phases, weather, effects, game (reset), save, audio, infection, goal, records
 src/ui/                        hud, bag, input
 CLAUDE.md                      กติกาสำหรับ Claude Code และ AI ที่ช่วยพัฒนา
 docs/project-summary-v0.3.md   เอกสารสรุประบบทั้งหมด + Decision Log
@@ -57,6 +66,7 @@ tools/smoke-test.js            ทดสอบตรรกะเกมแบบ�
 
 | เวอร์ชัน | สิ่งที่เพิ่ม |
 | --- | --- |
+| v0.4 | หน้าสรุปตอนจบ + สถิติดีสุด, เสียงสังเคราะห์ทั้งเกม, ติดเชื้อเมื่อโดนกัด + Antibiotic รักษา, เป้าหมายรอด 7 คืนแล้วขึ้นเฮลิคอปเตอร์ |
 | v0.3.3 | ระบบเซฟอัตโนมัติ ปุ่มเล่นต่อบนหน้าเริ่มเกม เซฟถูกลบเมื่อตาย |
 | v0.3.2 | ใช้คำตอบ Decision Log Q01–Q12 ที่ยืนยันแล้ว: ดาเมจอาวุธ = คะแนน × 5, Armor Walker รวมไม่เกิน 6 ตัวต่อคืน, เตือน NIGHT INCOMING ตั้งแต่ 16:00 |
 | v0.3.1 | แยก `index.html` เป็น ES modules ใน `src/` โดยพฤติกรรมเกมเหมือน v0.3 ทุกอย่าง (ต้องเปิดผ่าน dev server หรือ GitHub Pages) · แก้บั๊กหน้ากระเป๋า ฉากเริ่มเกม และแถบ HP บอสค้างบนจอเมื่อเปิดนอก claude.ai |

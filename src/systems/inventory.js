@@ -4,6 +4,8 @@ import {player} from '../entities/player.js';
 import {spawnDrop,removeDrop} from './drops.js';
 import {feed,feedOnce,updateLoadout} from '../ui/hud.js';
 import {renderBag} from '../ui/bag.js';
+import {cureInfection} from './infection.js';
+import {sfx} from './audio.js';
 
 // ---------- inventory ----------
 export const inv={bag:[],cap:6,eq:{primary:null,secondary:null,melee:null},active:'melee'};
@@ -31,14 +33,17 @@ export function pickup(d,quiet){
     feed('+ '+def.name+' ×'+(it.n-left),def.kind==='revive'?'mil':'get');
     if(left>0)it.n=left;else removeDrop(d);
   }
-  updateLoadout(true);if(!$('bag').hidden)renderBag();
+  sfx.pickup();updateLoadout(true);if(!$('bag').hidden)renderBag();
 }
 const HEAL_ORDER=['bandage','antibiotic','painkiller','firstaid'];
 export function useHeal(){
   if(!player.alive)return;
+  if(player.infect>0){const i=inv.bag.findIndex(e=>DEF[e.id].cure);if(i>=0){useItemAt(i);return;}}   // infected: cure first
   if(player.hp>=player.maxHp){feedOnce('fullhp','สุขภาพเต็มแล้ว');return;}
   for(const id of HEAL_ORDER){const i=inv.bag.findIndex(e=>e.id===id);if(i>=0){useItemAt(i);return;}}
   feedOnce('noheal','ไม่มียารักษา','warn');
 }
-export function useItemAt(i){const e=inv.bag[i],def=DEF[e.id];if(def.kind!=='heal')return;const amt=Math.round(player.maxHp*def.heal);player.hp=Math.min(player.maxHp,player.hp+amt);e.n--;if(e.n<=0)inv.bag.splice(i,1);feed('ใช้ '+def.name+' +'+Math.round(def.heal*100)+'%');updateLoadout(true);}
+export function useItemAt(i){const e=inv.bag[i],def=DEF[e.id];if(def.kind!=='heal')return;const amt=Math.round(player.maxHp*def.heal);player.hp=Math.min(player.maxHp,player.hp+amt);e.n--;if(e.n<=0)inv.bag.splice(i,1);
+  const cured=def.cure&&player.infect>0;if(cured)cureInfection();
+  feed('ใช้ '+def.name+' +'+Math.round(def.heal*100)+'%'+(cured?' · ฆ่าเชื้อแล้ว':''));sfx.heal();updateLoadout(true);}
 export function dropItem(it){const a=rnd(0,6.28);spawnDrop(it,player.pos.x+Math.sin(a)*.8,player.pos.z+Math.cos(a)*.8);}

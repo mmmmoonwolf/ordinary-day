@@ -6,6 +6,7 @@ import {agents,becomeZombie,setKind,zombies,spawnEdge} from '../entities/agents.
 import {d2} from '../entities/movement.js';
 import {player} from '../entities/player.js';
 import {fillDay,fillNight} from './drops.js';
+import {sfx} from './audio.js';
 import {say,feed} from '../ui/hud.js';
 
 // ---------- story + phases ----------
@@ -27,7 +28,7 @@ export const EVENTS=[
   {t:13*60+20,fn:()=>{G.rainTarget=0;}},
 ];
 function onNight(){
-  G.phase='night';
+  G.phase='night';sfx.night();
   say('NIGHT · ซอมบี้เร็วขึ้น หูไว และตีแรงขึ้น ของระดับ Police / Military เริ่มปรากฏ','night',7);
   for(const z of zombies())if(z.kind==='walker')setKind(z,'zombie');
   G.armorNight=Math.random()<.6;G.armorNext=G.min+30;G.armorAnnounced=false;G.armorCount=0;
@@ -36,7 +37,7 @@ function onNight(){
   fillNight();feed('ของระดับ Police และ Military เกิดขึ้นทั่วเมือง','pol');
 }
 function onDay(){
-  G.phase='day';
+  G.phase='day';sfx.dawn();
   const day=Math.floor(G.min/1440)+1;
   say('รุ่งเช้า วันที่ '+day+' · ซอมบี้กลับมาเชื่องช้า ออกไปหาของได้','',6);
   const zs=zombies();
@@ -52,12 +53,12 @@ export function runEvents(){
   const tod=G.min%1440,day=Math.floor(G.min/1440)+1;
   const ph=isNightTod(tod)?'night':'day';
   if(ph!==G.phase){if(ph==='night')onNight();else onDay();}
-  if(ph==='day'&&tod>=DUSK_WARN&&G.duskDay!==day){G.duskDay=day;say('NIGHT INCOMING · อีกไม่นานจะมืด เตรียมอาวุธ กระสุน และยา','alarm',7);}
+  if(ph==='day'&&tod>=DUSK_WARN&&G.duskDay!==day){G.duskDay=day;sfx.alarm();say('NIGHT INCOMING · อีกไม่นานจะมืด เตรียมอาวุธ กระสุน และยา','alarm',7);}
   if(ph==='night'&&G.outbreak){
     if(G.min>=G.nightSpawnNext){G.nightSpawnNext+=45;const n=Math.min(4,2+Math.floor((day-1)/2));const mix=nightMix();for(let k=0;k<n;k++)spawnEdge(wpick(mix));}
     if(G.armorNight&&G.min>=G.armorNext&&!(tod>=300&&tod<DAY_START)){G.armorNext+=60;
       if(G.armorCount<6){const a=spawnEdge('armor');if(a){G.armorCount++;if(!G.armorAnnounced){G.armorAnnounced=true;say('วิทยุ: พบเจ้าหน้าที่ตำรวจติดเชื้อ สวมเกราะกันกระสุน','radio',6);}}}}   // Q05: at most 6 per night
-    if(G.tyrantPending&&G.min>=G.tyrantAt){G.tyrantPending=false;const t=spawnEdge('tyrant');if(t)say('ได้ยินเสียงคำรามจากที่ไกล… Tyrant ออกล่าแล้ว','alarm',7);}
+    if(G.tyrantPending&&G.min>=G.tyrantAt){G.tyrantPending=false;const t=spawnEdge('tyrant');if(t)sfx.roar(t.pos.x,t.pos.z);if(t)say('ได้ยินเสียงคำรามจากที่ไกล… Tyrant ออกล่าแล้ว','alarm',7);}
   }
   if(G.min>=G.nextWeather){G.nextWeather+=90;if(Math.random()<.35)G.rainTarget=G.rainTarget?0:1;}
 }
