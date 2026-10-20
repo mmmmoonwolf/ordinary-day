@@ -53,7 +53,7 @@ tools/smoke-test.js            ทดสอบตรรกะเกมแบบ�
 
 | เวอร์ชัน | สิ่งที่เพิ่ม |
 | --- | --- |
-| v0.3.1 | แยก `index.html` เป็น ES modules ใน `src/` โดยพฤติกรรมเกมเหมือน v0.3 ทุกอย่าง (ต้องเปิดผ่าน dev server หรือ GitHub Pages) |
+| v0.3.1 | แยก `index.html` เป็น ES modules ใน `src/` โดยพฤติกรรมเกมเหมือน v0.3 ทุกอย่าง (ต้องเปิดผ่าน dev server หรือ GitHub Pages) · แก้บั๊กหน้ากระเป๋า ฉากเริ่มเกม และแถบ HP บอสค้างบนจอเมื่อเปิดนอก claude.ai |
 | v0.3 | เฟส DAY / NIGHT, อาวุธ 3 ระดับ (Civilian / Police / Military), loot ตามเวลา, ยา 5 ชนิด + Resurrection Kit, ซอมบี้ 6 คลาส |
 | v0.2 | 1 วันในเกม = 5 นาทีจริง, ระบบกระเป๋า, อาวุธ 3 ช่อง, ปืนและกระสุน, loot สุ่มตามโซน |
 | v0.1 | เมือง isometric, day/night cycle, ฝน, ประชาชน, ไทม์ไลน์การระบาด |

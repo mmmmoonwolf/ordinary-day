@@ -12,6 +12,7 @@
   color-scheme:dark;
 }
 html,body{height:100%}
+[hidden]{display:none!important}  /* #bag, #overlay and #boss set display:grid, which would otherwise override the hidden attribute */
 body{background:var(--ground);color:var(--ink);font-family:var(--f-ui);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 #game{position:fixed;inset:0}
 #game canvas{display:block;width:100%;height:100%}
