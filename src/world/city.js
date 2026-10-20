@@ -9,6 +9,7 @@ import {tree,lamp,car,ambulance,armyTruck,container,bench,trash} from './props.j
 // The whole city comes from the seeded rand(), so it looks the same every run.
 // buildCity() must stay the only consumer of rand() and keep this call order.
 export const buildings=[],occluders=[],lootSpots=[];
+export const pois=[];   // landmarks for the minimap: {type:'police'|'army'|'ambulance', x, z}
 function spot(x,z,zone){lootSpots.push({x,z,zone,drop:null});}
 
 // ---------- buildings ----------
@@ -28,7 +29,7 @@ function building(cx,cz,w,d,floors){
 }
 function blockB(i,j){return {cx:(RC[i]+RC[i+1])/2,cz:(RC[j]+RC[j+1])/2};}
 export const vendorSpots=[];
-const LAYOUT={'1,2':'market','2,1':'park','0,3':'park','3,0':'lot','3,3':'lot'};
+export const LAYOUT={'1,2':'market','2,1':'park','0,3':'park','3,0':'lot','3,3':'lot'};
 
 export function buildCity(){
   // ---------- ground & roads ----------
@@ -80,7 +81,7 @@ export function buildCity(){
     } else {
       for(const [x,z,ax] of [[-5,-6,true],[2.5,-6,true],[-6.5,2.5,false],[6.5,3,false],[0,4,true]])if(rand()<.8)container(B.cx+x,B.cz+z,ax);
       container(B.cx-5,B.cz-6,true,2.78);trash(B.cx+7,B.cz-8.5);
-      if(i===3&&j===3){armyTruck(B.cx-1,B.cz+8);spot(B.cx-1,B.cz+10.2,'military');spot(B.cx+4.6,B.cz+10.2,'military');}
+      if(i===3&&j===3){armyTruck(B.cx-1,B.cz+8);pois.push({type:'army',x:B.cx-.65,z:B.cz+8});spot(B.cx-1,B.cz+10.2,'military');spot(B.cx+4.6,B.cz+10.2,'military');}
       else car(B.cx-1,B.cz+8,true);
       for(let k=0;k<6;k++)spot(B.cx+R(-9,9),B.cz+R(-9,9),'lot');
     }
@@ -90,9 +91,9 @@ export function buildCity(){
     const sz=i===4?-1:1;for(const a of [11,21])lamp(RC[j]+a,RC[i]+sz*4.4,0,-sz);if(rand()<.6)tree(RC[j]+16,RC[i]+sz*4.4,rand()<.6);
   }
   // police cars (night-only Police Grade loot beside them)
-  for(const [x,z,ax] of [[RC[1]+2.4,RC[1]+15,false],[RC[3]-15,RC[2]-2.4,true],[RC[2]-2.4,RC[3]+17,false]]){car(x,z,ax,true);spot(ax?x:x-2.2,ax?z+2.2:z,'police');}
+  for(const [x,z,ax] of [[RC[1]+2.4,RC[1]+15,false],[RC[3]-15,RC[2]-2.4,true],[RC[2]-2.4,RC[3]+17,false]]){car(x,z,ax,true);pois.push({type:'police',x,z});spot(ax?x:x-2.2,ax?z+2.2:z,'police');}
   for(let k=0;k<18;k++){const ri=Math.floor(R(0,5)),seg=Math.floor(R(0,4)),along=RC[seg]+R(9.5,22.5),side=rand()<.5?-1:1;const vx=rand()<.5;const x=vx?RC[ri]+side*2.4:along,z=vx?along:RC[ri]+side*2.4;if(freeAt(x,z,2.4))car(x,z,!vx);}
   for(let i=lootSpots.length-1;i>=0;i--)if(!freeAt(lootSpots[i].x,lootSpots[i].z,.5))lootSpots.splice(i,1);
   // abandoned ambulance west of the market with one Resurrection Kit per game (v0.4.2); added last so rand() and spot indices stay as before
-  ambulance(-29.6,20,false);spot(-29.6,23.4,'ambulance');
+  ambulance(-29.6,20,false);pois.push({type:'ambulance',x:-29.6,z:20});spot(-29.6,23.4,'ambulance');
 }

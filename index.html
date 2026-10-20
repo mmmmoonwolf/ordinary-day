@@ -53,6 +53,7 @@ body{background:var(--ground);color:var(--ink);font-family:var(--f-ui);overflow:
 .counts{display:grid;gap:1px;font-size:13px;text-shadow:0 1px 3px rgba(0,0,0,.8)}
 .counts b{font-family:var(--f-clock);font-size:19px;font-variant-numeric:tabular-nums;display:inline-block;min-width:28px}
 .counts .z b{color:var(--rot)}
+#minimap{display:block;width:150px;height:150px;margin-top:3px;border:1px solid var(--line);background:rgba(0,0,0,.3)}
 .tools{position:absolute;right:max(16px,calc(env(safe-area-inset-right,0px) + 12px));top:calc(env(safe-area-inset-top,0px) + 14px);display:flex;gap:6px}
 .tools button{height:40px;min-width:40px;padding:0 8px;border:1px solid var(--line);background:var(--panel);font-weight:700;font-size:14px;backdrop-filter:blur(4px)}
 #bSpeed{min-width:48px;font-family:var(--f-clock);font-size:18px}
@@ -144,6 +145,8 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
   .vitals{width:140px;gap:5px}
   .counts{display:flex;gap:2px 9px;font-size:11px;flex-wrap:wrap}.counts span{white-space:nowrap}
   .counts b{font-size:15px;min-width:0;margin-right:3px}
+  #minimap{width:84px;height:84px}
+  #dayline .wd{display:none}
   .tools{gap:4px}.tools button{min-width:36px;padding:0 6px;font-size:13px}
   .clock{top:calc(env(safe-area-inset-top,0px) + 72px)}
   #boss{top:calc(env(safe-area-inset-top,0px) + 196px)}
@@ -152,12 +155,17 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
   .hint{display:none}
   .loadout{width:220px}
 }
+@media (min-width:641px){
+  #msg{width:min(560px,calc(100vw - 360px))}
+  #tip{width:min(420px,calc(100vw - 400px))}   /* + padding and border, so it clears the minimap column */
+}
 @media (max-width:400px){
   .vitals{width:118px}
   .tools button{min-width:32px;padding:0 5px}
 }
 @media (max-width:370px){
   .vitals{width:106px}
+  #minimap{width:80px;height:80px}
   .tools{gap:3px}
   .counts{column-gap:6px;font-size:10px}
 }
@@ -177,6 +185,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
       <span class="z"><b id="cZ">0</b>ซอมบี้</span>
       <span><b id="cK">0</b>กำจัด</span>
     </div>
+    <canvas id="minimap" aria-label="แผนที่เมือง"></canvas>
   </div>
   <div class="clock"><div id="clock">07:30</div><div id="dayline">วันที่ 1 · วันอังคาร</div><div id="phase" class="day"><i></i><b id="phaseName">DAY</b><span id="phaseEta"></span></div><div id="lz" hidden><b id="lzArrow">↑</b><span id="lzDist"></span></div></div>
   <div id="boss" hidden><span>TYRANT</span><div class="bar"><i id="bossfill"></i></div></div>
