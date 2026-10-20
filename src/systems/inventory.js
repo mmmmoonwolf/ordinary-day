@@ -1,0 +1,44 @@
+import {$,rnd} from '../core/util.js';
+import {DEF,GRADES,SLOTNAME,gradeOf} from '../config/items.js';
+import {player} from '../entities/player.js';
+import {spawnDrop,removeDrop} from './drops.js';
+import {feed,feedOnce,updateLoadout} from '../ui/hud.js';
+import {renderBag} from '../ui/bag.js';
+
+// ---------- inventory ----------
+export const inv={bag:[],cap:6,eq:{primary:null,secondary:null,melee:null},active:'melee'};
+export function curWeapon(){if(inv.active!=='melee'&&!inv.eq[inv.active])inv.active='melee';return inv.eq[inv.active]||{id:'fist',mag:0};}
+export function countAmmo(t){let s=0;for(const e of inv.bag)if(e.id===t)s+=e.n;return s;}
+export function takeAmmo(t,n){let got=0;for(let i=inv.bag.length-1;i>=0&&got<n;i--){const e=inv.bag[i];if(e.id!==t)continue;const k=Math.min(e.n,n-got);e.n-=k;got+=k;if(e.n<=0)inv.bag.splice(i,1);}return got;}
+export function addStack(id,n){const st=DEF[id].stack;for(const e of inv.bag){if(e.id===id&&e.n<st){const k=Math.min(st-e.n,n);e.n+=k;n-=k;if(!n)return 0;}}while(n>0&&inv.bag.length<inv.cap){const k=Math.min(st,n);inv.bag.push({id,n:k});n-=k;}return n;}
+export function gradeTag(id){const g=gradeOf(id);return g?' ['+GRADES[g].name+']':'';}
+export function switchTo(slot){
+  if(slot!=='melee'&&!inv.eq[slot]){feedOnce('no'+slot,'ยังไม่มี'+SLOTNAME[slot],'warn');return;}
+  if(inv.active===slot)return;inv.active=slot;player.reloadT=0;player.swing=0;player.cool=.25;updateLoadout(true);
+}
+export function pickup(d,quiet){
+  const it=d.item,def=DEF[it.id],gc=gradeOf(it.id)||'get';
+  if(def.kind==='weapon'){
+    if(!inv.eq[def.slot]){inv.eq[def.slot]=it;removeDrop(d);feed('+ '+def.name+gradeTag(it.id)+' → '+SLOTNAME[def.slot],gc);switchTo(def.slot);}
+    else if(inv.bag.length<inv.cap){inv.bag.push(it);removeDrop(d);feed('+ '+def.name+gradeTag(it.id)+' (เข้ากระเป๋า)',gc);}
+    else{feedOnce('full','กระเป๋าเต็ม','warn');return;}
+  } else if(def.kind==='bag'){
+    if(inv.cap>=def.slots){feedOnce('hasbag','มีกระเป๋าเป้แล้ว','warn');return;}
+    inv.cap=def.slots;removeDrop(d);feed('+ กระเป๋าเป้ · ช่องเก็บของเพิ่มเป็น '+def.slots+' ช่อง');
+  } else {
+    const left=addStack(it.id,it.n);
+    if(left===it.n){feedOnce('full','กระเป๋าเต็ม','warn',quiet?5000:1500);return;}
+    feed('+ '+def.name+' ×'+(it.n-left),def.kind==='revive'?'mil':'get');
+    if(left>0)it.n=left;else removeDrop(d);
+  }
+  updateLoadout(true);if(!$('bag').hidden)renderBag();
+}
+const HEAL_ORDER=['bandage','antibiotic','painkiller','firstaid'];
+export function useHeal(){
+  if(!player.alive)return;
+  if(player.hp>=player.maxHp){feedOnce('fullhp','สุขภาพเต็มแล้ว');return;}
+  for(const id of HEAL_ORDER){const i=inv.bag.findIndex(e=>e.id===id);if(i>=0){useItemAt(i);return;}}
+  feedOnce('noheal','ไม่มียารักษา','warn');
+}
+export function useItemAt(i){const e=inv.bag[i],def=DEF[e.id];if(def.kind!=='heal')return;const amt=Math.round(player.maxHp*def.heal);player.hp=Math.min(player.maxHp,player.hp+amt);e.n--;if(e.n<=0)inv.bag.splice(i,1);feed('ใช้ '+def.name+' +'+Math.round(def.heal*100)+'%');updateLoadout(true);}
+export function dropItem(it){const a=rnd(0,6.28);spawnDrop(it,player.pos.x+Math.sin(a)*.8,player.pos.z+Math.cos(a)*.8);}

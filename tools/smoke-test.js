@@ -3,14 +3,6 @@
 // then spawns every zombie class next to the player and fires every weapon type.
 // It catches runtime errors in game logic only; it does not check rendering.
 // Usage: node tools/smoke-test.js
-const fs = require('fs');
-const path = require('path');
-
-const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
-let src = scripts[scripts.length - 1];
-// expose internals for the combat test
-src = src.replace(/\}\)\(\);\s*$/, 'global.__T={inv,DEF,get player(){return player},makeItem,G,agents,becomeZombie,makeAgent,drops,renderBag,openBag,closeBag};})();');
 
 // stub that accepts any property access, call or construction
 function any() {
@@ -55,7 +47,15 @@ global.requestAnimationFrame = f => { raf = f; };
 global.addEventListener = (t, fn) => { (handlers[t] = handlers[t] || []).push(fn); };
 global.window = global;
 
-eval(src);
+// the game modules read the stubs above, so they are imported only now
+await import('../src/main.js');
+const { G } = await import('../src/core/state.js');
+const { agents, becomeZombie, makeAgent } = await import('../src/entities/agents.js');
+const P = await import('../src/entities/player.js');
+const { makeItem } = await import('../src/systems/drops.js');
+const { inv } = await import('../src/systems/inventory.js');
+const { renderBag, openBag, closeBag } = await import('../src/ui/bag.js');
+const T = { inv, get player() { return P.player; }, makeItem, G, agents, becomeZombie, makeAgent, renderBag, openBag, closeBag };
 
 const errs = [];
 let now = 1000;
@@ -75,7 +75,7 @@ for (let s = 0; s < 640; s++) {
 
 // 2) combat test: every weapon type vs every zombie class
 els.bAgain.fire('click');
-const T = global.__T, p = T.player;
+const p = T.player;
 T.inv.eq.primary = T.makeItem('lmg_m'); T.inv.eq.primary.mag = 100;
 T.inv.eq.secondary = T.makeItem('pistol_p'); T.inv.eq.melee = T.makeItem('axe_m'); T.inv.cap = 14;
 T.inv.bag.push({ id: 'a556', n: 90 }, { id: 'a9', n: 60 }, { id: 'resurrect', n: 1 }, { id: 'firstaid', n: 2 }, T.makeItem('sniper_m'), { id: 'a762', n: 20 }, T.makeItem('shotgun_m'), { id: 'a12', n: 24 });

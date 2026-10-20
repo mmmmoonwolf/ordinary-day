@@ -4,8 +4,8 @@
 
 ## บริบท
 
-- เกม isometric 3D zombie survival บนเว็บ ใช้ Three.js r128 ไม่มีขั้นตอน build
-- ตอนนี้ทั้งเกมอยู่ใน `index.html` ไฟล์เดียว (v0.3)
+- เกม isometric 3D zombie survival บนเว็บ ใช้ Three.js r128 (global `THREE` จาก CDN) ไม่มีขั้นตอน build
+- โค้ดเกมเป็น ES modules ใน `src/` ส่วน `index.html` มีแค่ HTML + CSS (v0.3.1) ต้องเปิดผ่าน dev server หรือ GitHub Pages เพราะ module โหลดจาก `file://` ไม่ได้
 - ระบบทั้งหมดและตัวเลขทุกค่าอยู่ใน `docs/project-summary-v0.3.md`
 - สเปกจากทีมอยู่ใน `docs/design-draft-01.md`
 - UI เป็นภาษาไทย ชื่ออาวุธ ชื่อคลาสซอมบี้ และชื่อยาเป็นภาษาอังกฤษตามสเปก
@@ -20,46 +20,48 @@
 6. **ความเร็วเวลา ×2 / ×4** ต้องไม่ทำให้อัตราเกิดของหรือซอมบี้ผิดนิยาม ทุกอย่างผูกกับนาทีในเกม (`G.min`) ไม่ผูกกับเฟรม
 7. **ระบบเดิมที่ไม่เกี่ยวกับงาน** (เมือง ฝน นาฬิกา กระเป๋า รีโหลด) ต้องทำงานเหมือนเดิม
 
-## แผนที่โค้ดใน index.html
+## แผนที่โค้ดใน src/
 
-โค้ดเรียงเป็นหมวด แต่ละหมวดขึ้นต้นด้วยคอมเมนต์ `// ---------- ชื่อหมวด ----------`
+แต่ละไฟล์ยังแบ่งเป็นหมวดด้วยคอมเมนต์ `// ---------- ชื่อหมวด ----------` เหมือนตอนเป็นไฟล์เดียว
 
-| หมวด | มีอะไร |
+| ไฟล์ | มีอะไร |
 | --- | --- |
-| time | `DAY_REAL_SECONDS = 300`, `RATE`, `SPEEDS`, `NIGHT_START`, `DAY_START`, `DUSK_WARN` |
-| world constants | `RC` (เส้นกลางถนน), `OFF` (ระยะทางเท้า), `groundY()` |
-| textures / materials | texture วาดด้วย canvas, วัสดุที่ใช้ร่วมกัน |
-| buildings / props | สร้างเมืองจาก seed คงที่ (`mulberry32(2626)`), `solids` (กล่องชน), `lootSpots` |
-| item definitions | `GRADES`, `DEF` (อาวุธ กระสุน ยา), `POOLS`, `GRADE_W`, `MED_W`, `CAT_W`, `rollLoot()` |
-| zombie classes | `ZC` (HP ความเร็ว ระยะมอง ดาเมจ), `styleZombie()`, `becomeZombie()`, `setKind()` |
-| story + phases | `EVENTS`, `onNight()`, `onDay()`, `runEvents()` |
-| AI | `updateHuman()`, `updateZombie()`, `explode()`, `slam()`, `hurtZombie()`, `makeNoise()` |
-| inventory | `inv`, `pickup()`, `useHeal()`, `addStack()`, `takeAmmo()` |
-| combat | `fireGun()`, `meleeHit()`, `aimAssist()`, `updatePlayer()`, `hurtPlayer()` |
-| animation / sky / HUD / bag UI / input / loop | ส่วนแสดงผลและการควบคุม |
+| `main.js` | จุดเริ่ม: `buildCity()`, `initInput()`, `reset()` แล้ววน `loop()` |
+| `core/util.js` | `isTouch`, `$`, rng (`mulberry32`, `rand`/`R`/`pickS` แบบ seed, `rnd`/`pick`/`wpick` แบบสุ่มจริง), `clamp` |
+| `core/renderer.js` | `renderer`, `scene`, `camera`, `camTarget`, แสง (`sun` `hemi` `flash` `muzzle` `boomLight`), `resize()`, `zoom()` |
+| `core/state.js` | `G` (เวลา เฟส ฝน kills ฯลฯ), `freshG()` |
+| `core/controls.js` | สถานะ input ที่หลายไฟล์ใช้ร่วม: `keys`, `ctl.fireHeld` / `ctl.fireQ`, `mouse`, `joy` |
+| `config/time.js` | `DAY_REAL_SECONDS = 300`, `RATE`, `SPEEDS`, `NIGHT_START`, `DAY_START`, `DUSK_WARN`, `isNightTod()` |
+| `config/world.js` | `RC` (เส้นกลางถนน), `OFF` (ระยะทางเท้า), `LIM`, `groundY()` |
+| `config/items.js` | `GRADES`, `DEF` (อาวุธ กระสุน ยา), `SLOTNAME`, `gradeOf()`, `itemColor()` |
+| `config/loot.js` | `POOLS`, `GRADE_W`, `MED_W`, `CAT_W` |
+| `config/zombies.js` | `ZC` (HP ความเร็ว ระยะมอง ดาเมจ), `isSpecial()` |
+| `world/textures.js` · `materials.js` | texture วาดด้วย canvas, วัสดุที่ใช้ร่วมกัน, `box()`, `part()` |
+| `world/collision.js` · `sidewalk.js` | `solids` (กล่องชน), `collide()`, `rayWall()` · กราฟทางเท้าของ NPC |
+| `world/props.js` · `city.js` | ต้นไม้ เสาไฟ รถ ตู้คอนเทนเนอร์ · `buildCity()`, `buildings`, `lootSpots`, `vendorSpots` |
+| `world/item-models.js` · `occlusion.js` | โมเดลอาวุธและไอเท็ม · ทำตึกที่บังผู้เล่นให้โปร่งใส |
+| `entities/agents.js` | ร่างตัวละคร, `agents`, `makeAgent()`, `styleZombie()`, `becomeZombie()`, `setKind()`, `spawnEdge()` |
+| `entities/movement.js` · `ai.js` | `moveAgent()`, `followNodes()` · `updateHuman()`, `updateZombie()`, `hurtZombie()`, `makeNoise()` |
+| `entities/player.js` · `animation.js` | `player`, `makePlayer()`, `updatePlayer()`, `syncHeld()` · `animate()`, `separate()` |
+| `systems/drops.js` | `makeItem()`, `rollLoot()`, `drops`, `spawnDrop()`, `fillDay()`, `fillNight()`, `dropGuaranteed()` |
+| `systems/inventory.js` · `combat.js` | `inv`, `pickup()`, `useHeal()`, `addStack()`, `takeAmmo()` · `fireGun()`, `meleeHit()`, `aimAssist()`, `hurtPlayer()` |
+| `systems/phases.js` · `weather.js` | `EVENTS`, `runEvents()` (DAY/NIGHT, spawn กลางคืน) · `updateSky()` ฝน แสง ไฟถนน |
+| `systems/effects.js` · `game.js` | เลือด วงแหวน tracer ระเบิด · `reset()` เริ่มเกมใหม่ |
+| `ui/hud.js` · `bag.js` · `input.js` | `say()`, `feed()`, `updateHUD()`, `updateLoadout()`, `gameOver()` · หน้ากระเป๋า · คีย์บอร์ด เมาส์ จอยสติ๊ก ปุ่มบนจอ |
 
-ค่าตัวเลขเกือบทั้งหมดอยู่ในตาราง `DEF`, `ZC`, `POOLS` และ `*_W` แก้ที่ตารางก่อนแก้ตรรกะ
+ค่าตัวเลขเกือบทั้งหมดอยู่ในตาราง `DEF`, `ZC`, `POOLS` และ `*_W` ใน `src/config/` แก้ที่ตารางก่อนแก้ตรรกะ
 
-## งานแรกที่แนะนำ
+**ข้อควรระวังเวลาแก้โมดูล**
 
-แยก `index.html` เป็นโมดูล ES (`<script type="module">`) โดย **ไม่เปลี่ยนพฤติกรรมเกม**
-
-```
-index.html            HTML + CSS + โหลด main.js
-src/config/           items.js, zombies.js, loot.js, time.js
-src/world/            textures.js, city.js, props.js
-src/entities/         agents.js, ai.js, player.js
-src/systems/          combat.js, inventory.js, phases.js, weather.js
-src/ui/               hud.js, bag.js, input.js
-src/main.js           สร้างทุกอย่างและวน loop
-```
-
-ยังใช้ Three.js r128 จาก CDN ได้ ไม่ต้องเพิ่ม build tool จนกว่าจะจำเป็น หลังแยกเสร็จ ให้รัน smoke test และเปิดเกมทั้งแบบจอคอมและจอมือถือ (DevTools device mode) ก่อน commit
+- `rand()` (seed 2626) ต้องถูกเรียกเฉพาะใน `buildCity()` ตามลำดับเดิม ไม่อย่างนั้นผังเมืองจะเปลี่ยน
+- โค้ดระดับบนสุดของโมดูล (นอกฟังก์ชัน) ใช้ได้เฉพาะของจากโมดูลชั้นล่าง (`core`, `config`, `world`) เพราะโมดูลชั้นบน import วนกันเอง ตอนโหลดจะยังไม่พร้อม
+- ตัวแปรที่หลายไฟล์ต้องเขียนให้เก็บใน object (`G`, `inv`, `ctl`) หรือมี setter (`setPlayer()`) เพราะ import ที่เป็น `let` เขียนทับจากไฟล์อื่นไม่ได้
+- ยังใช้ Three.js r128 จาก CDN ไม่ต้องเพิ่ม build tool จนกว่าจะจำเป็น
 
 ## การทดสอบ
 
-- `node tools/smoke-test.js` จำลองเกม 2 วันเต็มแบบไม่มีหน้าจอ (THREE ถูกแทนด้วย stub) แล้วรายงาน error ใช้จับบั๊กตรรกะเท่านั้น ไม่ได้ตรวจภาพ
-- หลังแยกโมดูลแล้ว ต้องปรับ smoke test ให้โหลดไฟล์ใหม่
+- `node tools/smoke-test.js` (หรือ `npm test`) จำลองเกม 2 วันเต็มแบบไม่มีหน้าจอ (THREE ถูกแทนด้วย stub) โดย import โมดูลใน `src/` แล้วรายงาน error ใช้จับบั๊กตรรกะเท่านั้น ไม่ได้ตรวจภาพ
+- ต้องเปิดผ่าน dev server (`npx serve .`) แล้วทดสอบทั้งจอคอมและจอมือถือ (DevTools device mode) ก่อน commit
 - ทดสอบด้วยตาทุกครั้ง: เริ่มเกม 07:30, การระบาด 09:30, เปลี่ยนเป็นกลางคืน 18:30, รุ่งเช้า 06:00, ยิงปืนทุกแบบ, เปิดกระเป๋า, ตายแล้วเล่นใหม่
 
 ## การสรุปงาน
