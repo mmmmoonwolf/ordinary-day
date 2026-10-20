@@ -11,6 +11,7 @@ import {EVENTS} from './phases.js';
 import {updateLoadout} from '../ui/hud.js';
 import {clearTip} from '../ui/tips.js';
 import {restoreObstacles} from './obstacles.js';
+import {restoreDoors} from './doors.js';
 
 // ---------- new game ----------
 export function reset(){
@@ -18,7 +19,7 @@ export function reset(){
   for(const m of blood){scene.remove(m);m.geometry.dispose();}blood.length=0;
   while(drops.length)removeDrop(drops[0]);
   restoreObstacles();
-  Object.assign(G,freshG());
+  Object.assign(G,freshG());restoreDoors();
   Object.assign(inv,{bag:[],cap:6,eq:{primary:null,secondary:null,melee:null},active:'melee'});
   for(const e of EVENTS)e.done=false;
   setPlayer(makePlayer());spawnPopulation();camTarget.set(player.pos.x,0,player.pos.z);

@@ -66,6 +66,7 @@ export const sfx={
   shriek(x,z){play(.6,x,z,45,(t,d,g)=>{tone(t,.5,{wave:'sawtooth',f0:700,f1:1500,peak:.16*g,attack:.03,dest:d});noise(t,.45,{type:'bandpass',f0:2200,f1:3200,q:4,peak:.2*g,attack:.03,dest:d});});},
   pickup(){play(.15,undefined,0,1,(t,d)=>{tone(t,.06,{f0:660,peak:.14,dest:d});tone(t+.06,.08,{f0:990,peak:.12,dest:d});});},
   crack(){play(.35,undefined,0,1,(t,d)=>{noise(t,.25,{type:'highpass',f0:1800,peak:.5,dest:d});tone(t,.2,{wave:'square',f0:220,f1:60,peak:.2,dest:d});});},
+  door(x,z){play(.3,x,z,25,(t,d,g)=>{tone(t,.12,{wave:'triangle',f0:190,f1:95,peak:.35*g,dest:d});noise(t,.08,{f0:900,peak:.2*g,dest:d});});},
   eat(){play(.4,undefined,0,1,(t,d)=>{for(const k of [0,.12,.24])noise(t+k,.06,{type:'bandpass',f0:1400,q:2,peak:.18,dest:d});});},
   heal(){play(.5,undefined,0,1,(t,d)=>{tone(t,.15,{f0:520,peak:.16,dest:d});tone(t+.12,.3,{f0:780,peak:.14,dest:d});});},
   infect(){play(.9,undefined,0,1,(t,d)=>{for(const k of [0,.28,.6])tone(t+k,.18,{f0:65,f1:45,peak:.6,dest:d});});},

@@ -24,8 +24,8 @@ function building(cx,cz,w,d,floors){
   const det=S({color:pickS(['#8d8f8c','#a7a59d','#6f7376'])});mats.push(det);
   const nd=1+Math.floor(rand()*3);for(let i=0;i<nd;i++){const s=R(.9,2.4);parts.push(box(det,s,R(.6,1.6),s*R(.6,1.2),cx+R(-w/2+1.5,w/2-1.5),top+.5,cz+R(-d/2+1.5,d/2-1.5)));}
   if(rand()<.35)parts.push(box(para,R(2,3),2.2,R(2,3),cx+R(-w/4,w/4),top+1.1,cz+R(-d/4,d/4)));
-  const b={mats,faded:false};mesh.userData.b=b;occluders.push(mesh);for(const p of parts)p.userData.b=b;occluders.push(...parts);
-  buildings.push(b);wallMats.push(wall);solid(cx,cz,w/2,d/2);
+  const b={mats,faded:false,cx,cz,w,d,h,base:v.base,meshes:[mesh,...parts]};mesh.userData.b=b;occluders.push(mesh);for(const p of parts)p.userData.b=b;occluders.push(...parts);
+  buildings.push(b);wallMats.push(wall);b.box=solid(cx,cz,w/2,d/2);
 }
 function blockB(i,j){return {cx:(RC[i]+RC[i+1])/2,cz:(RC[j]+RC[j+1])/2};}
 export const vendorSpots=[];
