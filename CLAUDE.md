@@ -7,7 +7,7 @@
 - เกม isometric 3D zombie survival บนเว็บ ใช้ Three.js r128 (global `THREE` จาก CDN) ไม่มีขั้นตอน build
 - โค้ดเกมเป็น ES modules ใน `src/` ส่วน `index.html` มีแค่ HTML + CSS (v0.3.1) ต้องเปิดผ่าน dev server หรือ GitHub Pages เพราะ module โหลดจาก `file://` ไม่ได้
 - ระบบทั้งหมดและตัวเลขทุกค่าอยู่ใน `docs/project-summary-v0.3.md`
-- สเปกจากทีมอยู่ใน `docs/design-draft-01.md`
+- สเปกจากทีมอยู่ใน `docs/design-draft-01.md` คำถาม Q01–Q12 ของสเปกผู้สร้างยืนยันแล้ว (ดูตาราง Decision Log ใน project summary) ถือเป็นข้อกำหนดเหมือน `[CONFIRMED — USER]`
 - UI เป็นภาษาไทย ชื่ออาวุธ ชื่อคลาสซอมบี้ และชื่อยาเป็นภาษาอังกฤษตามสเปก
 
 ## กติกาที่ห้ามละเมิด

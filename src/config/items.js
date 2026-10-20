@@ -1,10 +1,10 @@
 // ---------- item definitions (data-driven) ----------
 // Ratings 1–10 come from the design draft; real values below are PLACEHOLDERS:
-// damage = rating × 10, seconds per shot = 1.6 / fire-rate rating
+// damage = rating × 5 (Q07), seconds per shot = 1.6 / fire-rate rating
 export const GRADES={civ:{name:'Civilian',color:'#78D99B'},pol:{name:'Police',color:'#66B0FF'},mil:{name:'Military',color:'#F0C46B'}};
 export const DEF={fist:{name:'มือเปล่า',kind:'weapon',slot:'melee',dmg:10,dmgR:1,range:1.45,cd:.42,kb:.4,arc:.5,verb:'ต่อย',model:'fist'}};
-function gun(id,name,grade,slot,dmgR,rateR,o){DEF[id]=Object.assign({name,grade,kind:'weapon',slot,gun:true,dmgR,rateR,dmg:dmgR*10,rate:1.6/rateR,verb:'ยิง'},o);}
-function melee(id,name,grade,dmgR,o){DEF[id]=Object.assign({name,grade,kind:'weapon',slot:'melee',dmgR,dmg:dmgR*10,verb:'ฟาด'},o);}
+function gun(id,name,grade,slot,dmgR,rateR,o){DEF[id]=Object.assign({name,grade,kind:'weapon',slot,gun:true,dmgR,rateR,dmg:dmgR*5,rate:1.6/rateR,verb:'ยิง'},o);}
+function melee(id,name,grade,dmgR,o){DEF[id]=Object.assign({name,grade,kind:'weapon',slot:'melee',dmgR,dmg:dmgR*5,verb:'ฟาด'},o);}
 const PISTOL={ammo:'a9',reload:1.2,range:22,spread:.035,noise:22,model:'pistol'};
 const PUMP={ammo:'a12',pellets:7,falloff:true,reload:2.6,range:13,spread:.28,noise:28,model:'shotgun'};
 const SMG={ammo:'a9',auto:true,mag:30,reload:1.6,range:18,spread:.09,noise:20,model:'smg'};

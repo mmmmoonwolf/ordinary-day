@@ -30,7 +30,7 @@ function onNight(){
   G.phase='night';
   say('NIGHT · ซอมบี้เร็วขึ้น หูไว และตีแรงขึ้น ของระดับ Police / Military เริ่มปรากฏ','night',7);
   for(const z of zombies())if(z.kind==='walker')setKind(z,'zombie');
-  G.armorNight=Math.random()<.6;G.armorNext=G.min+30;G.armorAnnounced=false;
+  G.armorNight=Math.random()<.6;G.armorNext=G.min+30;G.armorAnnounced=false;G.armorCount=0;
   G.tyrantPending=Math.random()<.4;G.tyrantAt=G.min-(G.min%1440)+1440;
   G.nightSpawnNext=G.min+15;
   fillNight();feed('ของระดับ Police และ Military เกิดขึ้นทั่วเมือง','pol');
@@ -56,7 +56,7 @@ export function runEvents(){
   if(ph==='night'&&G.outbreak){
     if(G.min>=G.nightSpawnNext){G.nightSpawnNext+=45;const n=Math.min(4,2+Math.floor((day-1)/2));const mix=nightMix();for(let k=0;k<n;k++)spawnEdge(wpick(mix));}
     if(G.armorNight&&G.min>=G.armorNext&&!(tod>=300&&tod<DAY_START)){G.armorNext+=60;
-      if(zombies().filter(z=>z.kind==='armor').length<6){const a=spawnEdge('armor');if(a&&!G.armorAnnounced){G.armorAnnounced=true;say('วิทยุ: พบเจ้าหน้าที่ตำรวจติดเชื้อ สวมเกราะกันกระสุน','radio',6);}}}
+      if(G.armorCount<6){const a=spawnEdge('armor');if(a){G.armorCount++;if(!G.armorAnnounced){G.armorAnnounced=true;say('วิทยุ: พบเจ้าหน้าที่ตำรวจติดเชื้อ สวมเกราะกันกระสุน','radio',6);}}}}   // Q05: at most 6 per night
     if(G.tyrantPending&&G.min>=G.tyrantAt){G.tyrantPending=false;const t=spawnEdge('tyrant');if(t)say('ได้ยินเสียงคำรามจากที่ไกล… Tyrant ออกล่าแล้ว','alarm',7);}
   }
   if(G.min>=G.nextWeather){G.nextWeather+=90;if(Math.random()<.35)G.rainTarget=G.rainTarget?0:1;}
