@@ -29,8 +29,9 @@ function makeBody(look){
 }
 export const agents=[];
 export function makeAgent(x,z,look){
-  const b=makeBody(look||{shirt:pick(SHIRTS),pants:pick(PANTS),skin:pick(SKINS),hair:pick(HAIR)});
-  return {b,pos:{x,z},y:groundY(x,z),face:Math.random()*6.28,moving:0,phase:Math.random()*6,state:'human',kind:null,rad:.34,node:null,prev:null,
+  look=look||{shirt:pick(SHIRTS),pants:pick(PANTS),skin:pick(SKINS),hair:pick(HAIR)};
+  const b=makeBody(look);
+  return {b,look,pos:{x,z},y:groundY(x,z),face:Math.random()*6.28,moving:0,phase:Math.random()*6,state:'human',kind:null,rad:.34,node:null,prev:null,
     jx:rnd(-.35,.35),jz:rnd(-.35,.35),walk:rnd(1.1,1.6),panic:0,tx:0,tz:0,wait:0,vendor:false,hp:100,feed:0,atk:0,spd:rnd(.9,1.1),
     stuckT:0,lost:0,turnT:0,deadT:0,hitT:0,heard:null,fuse:0,wind:0,retreat:false};
 }

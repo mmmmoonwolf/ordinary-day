@@ -7,11 +7,18 @@ import {player} from '../entities/player.js';
 import {switchTo,pickup,useHeal} from '../systems/inventory.js';
 import {startReload} from '../systems/combat.js';
 import {reset} from '../systems/game.js';
-import {chipEls} from './hud.js';
+import {readSave,loadGame,clearSave} from '../systems/save.js';
+import {chipEls,hhmm,say} from './hud.js';
 import {openBag,closeBag} from './bag.js';
 
 // ---------- input ----------
 let rightId=null;
+// start screen: offer "continue" when an autosave exists; starting a new day overwrites it
+function showContinue(){
+  const s=readSave(),has=!!s;
+  $('bContinue').hidden=!has;$('bStart').classList.toggle('alt',has);$('saveNote').hidden=!has;
+  if(has)$('contInfo').textContent='วันที่ '+(Math.floor(s.G.min/1440)+1)+' · '+hhmm(s.G.min);
+}
 export function initInput(){
   addEventListener('keydown',e=>{
     if(e.code==='Tab'||e.code==='KeyI'){e.preventDefault();$('bag').hidden?openBag():closeBag();return;}
@@ -52,7 +59,9 @@ export function initInput(){
   $('bHeal').addEventListener('click',useHeal);
   $('bPick').addEventListener('click',()=>{if(player.near)pickup(player.near);});
   for(const c of chipEls)c.addEventListener('click',()=>switchTo(c.dataset.slot));
-  $('bStart').addEventListener('click',()=>{$('overlay').hidden=true;G.running=true;});
+  $('bStart').addEventListener('click',()=>{clearSave();$('overlay').hidden=true;G.running=true;});
+  $('bContinue').addEventListener('click',()=>{if(!loadGame()){showContinue();return;}$('overlay').hidden=true;G.running=true;say('เล่นต่อจากเซฟ · '+$('contInfo').textContent,'',4);});
+  showContinue();
   $('bAgain').addEventListener('click',()=>{reset();$('overlay').hidden=true;G.running=true;});
   if(isTouch){$('atkKey').textContent='กดค้าง';}
   $('keys').innerHTML=isTouch

@@ -21,6 +21,10 @@
 | รีโหลด / เก็บของ / รักษา | R / E / H | ปุ่ม R / ปุ่มเก็บ / ปุ่ม ✚ |
 | กระเป๋า | Tab | ปุ่มกระเป๋า (เกมหยุดระหว่างเปิด) |
 
+## การเซฟ
+
+เกมบันทึกอัตโนมัติทุก 15 วินาทีระหว่างเล่น และทุกครั้งที่ปิดหรือพับหน้าเว็บ เปิดเกมครั้งถัดไปจะมีปุ่ม **เล่นต่อ** บอกวันที่และเวลาในเกมที่เซฟไว้ เซฟเก็บในเบราว์เซอร์เครื่องนั้น (localStorage) มีช่องเดียว กด **เริ่มวันใหม่** จะลบเซฟเดิม และเซฟจะถูกลบเมื่อตัวละครตาย
+
 ## เทคโนโลยี
 
 - Three.js r128 (โหลดจาก cdnjs) JavaScript ล้วน ไม่มีขั้นตอน build
@@ -36,7 +40,7 @@ src/core/                      util (rng, $), renderer (scene กล้อง �
 src/config/                    ตารางค่าเกม: time, world, items, loot, zombies
 src/world/                     textures, materials, collision, sidewalk, props, city, item-models, occlusion
 src/entities/                  agents, movement, ai, player, animation
-src/systems/                   drops, inventory, combat, phases, weather, effects, game (reset)
+src/systems/                   drops, inventory, combat, phases, weather, effects, game (reset), save
 src/ui/                        hud, bag, input
 CLAUDE.md                      กติกาสำหรับ Claude Code และ AI ที่ช่วยพัฒนา
 docs/project-summary-v0.3.md   เอกสารสรุประบบทั้งหมด + Decision Log
@@ -53,6 +57,7 @@ tools/smoke-test.js            ทดสอบตรรกะเกมแบบ�
 
 | เวอร์ชัน | สิ่งที่เพิ่ม |
 | --- | --- |
+| v0.3.3 | ระบบเซฟอัตโนมัติ ปุ่มเล่นต่อบนหน้าเริ่มเกม เซฟถูกลบเมื่อตาย |
 | v0.3.2 | ใช้คำตอบ Decision Log Q01–Q12 ที่ยืนยันแล้ว: ดาเมจอาวุธ = คะแนน × 5, Armor Walker รวมไม่เกิน 6 ตัวต่อคืน, เตือน NIGHT INCOMING ตั้งแต่ 16:00 |
 | v0.3.1 | แยก `index.html` เป็น ES modules ใน `src/` โดยพฤติกรรมเกมเหมือน v0.3 ทุกอย่าง (ต้องเปิดผ่าน dev server หรือ GitHub Pages) · แก้บั๊กหน้ากระเป๋า ฉากเริ่มเกม และแถบ HP บอสค้างบนจอเมื่อเปิดนอก claude.ai |
 | v0.3 | เฟส DAY / NIGHT, อาวุธ 3 ระดับ (Civilian / Police / Military), loot ตามเวลา, ยา 5 ชนิด + Resurrection Kit, ซอมบี้ 6 คลาส |

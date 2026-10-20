@@ -17,7 +17,7 @@ const once={};export function feedOnce(key,text,cls,gap){const t=performance.now
 // ---------- HUD ----------
 const DAYS=['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
 const pad=n=>String(n).padStart(2,'0');
-function hhmm(m){const t=Math.floor(m)%1440;return pad(Math.floor(t/60))+':'+pad(t%60);}
+export function hhmm(m){const t=Math.floor(m)%1440;return pad(Math.floor(t/60))+':'+pad(t%60);}
 const txtCache=new Map();function setText(id,v){if(txtCache.get(id)===v)return;txtCache.set(id,v);$(id).textContent=v;}
 export const chipEls=[...document.querySelectorAll('.chips button[data-slot]')];
 let loadKey='';
