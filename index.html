@@ -1,3 +1,7 @@
+<!doctype html>
+<html lang="th">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ordinary Day</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Chakra+Petch:wght@400;500;700&display=swap">
@@ -100,6 +104,10 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 .go span{font-weight:500;font-variant-numeric:tabular-nums}
 .starts{display:flex;gap:10px;flex-wrap:wrap}
 .savenote{font-size:12px;color:var(--ink-dim);margin:12px 0 0;max-width:40ch}
+#pause{position:fixed;inset:0;z-index:6;display:grid;place-items:center;background:rgba(8,9,10,.62);padding-block:calc(env(safe-area-inset-top,0px) + 16px) calc(env(safe-area-inset-bottom,0px) + 16px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.sheet.pausesheet{max-width:360px}
+.pacts{display:grid;gap:10px}
+#bPause{font-size:12px;letter-spacing:-.1em}
 #bag{position:fixed;inset:0;z-index:6;display:grid;place-items:center;background:rgba(8,9,10,.62);padding-block:calc(env(safe-area-inset-top,0px) + 16px) calc(env(safe-area-inset-bottom,0px) + 16px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .sheet{width:100%;max-width:540px;max-height:100%;overflow:auto;background:var(--sheet);border:1px solid var(--line);padding:16px 16px 18px;display:grid;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
 .sheet header{display:flex;align-items:baseline;gap:10px}
@@ -131,7 +139,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 .acts button:disabled{opacity:.4;cursor:default}
 @media (max-width:640px){
   .vitals{width:140px;gap:5px}
-  .counts{display:flex;gap:9px;font-size:11px}
+  .counts{display:flex;gap:2px 9px;font-size:11px;flex-wrap:wrap}.counts span{white-space:nowrap}
   .counts b{font-size:15px;min-width:0;margin-right:3px}
   .tools{gap:4px}.tools button{min-width:36px;padding:0 6px;font-size:13px}
   .clock{top:calc(env(safe-area-inset-top,0px) + 72px)}
@@ -139,6 +147,15 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
   #msg{top:calc(env(safe-area-inset-top,0px) + 222px)}
   .hint{display:none}
   .loadout{width:220px}
+}
+@media (max-width:400px){
+  .vitals{width:118px}
+  .tools button{min-width:32px;padding:0 5px}
+}
+@media (max-width:370px){
+  .vitals{width:106px}
+  .tools{gap:3px}
+  .counts{column-gap:6px;font-size:10px}
 }
 @media (prefers-reduced-motion:reduce){#msg,#hpfill{transition:none}#feed div{animation-duration:3s}#phase.dusk i{animation:none}}
 </style>
@@ -161,6 +178,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
   <div id="boss" hidden><span>TYRANT</span><div class="bar"><i id="bossfill"></i></div></div>
   <div id="msg"></div>
   <div class="tools">
+    <button id="bPause" title="หยุดเกม (P หรือ Esc)" aria-label="หยุดเกม">❚❚</button>
     <button id="bBag" title="กระเป๋า (Tab)">กระเป๋า</button>
     <button id="bSpeed" title="ความเร็วเวลา">×1</button>
     <button id="bZin" title="ซูมเข้า">+</button>
@@ -182,6 +200,19 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
   <div class="hint" id="hint">WASD เดิน · Shift วิ่ง · เมาส์เล็ง คลิกโจมตี · 1 2 3 สลับอาวุธ · R รีโหลด · E เก็บของ · Tab กระเป๋า · H รักษา</div>
 </div>
 <div id="joy" hidden><div id="knob"></div></div>
+
+<div id="pause" hidden>
+  <div class="sheet pausesheet" role="dialog" aria-label="หยุดเกม">
+    <header><h2>หยุดเกม</h2><span id="pauseInfo"></span></header>
+    <div class="pacts">
+      <button class="go" id="bResume">เล่นต่อ</button>
+      <button class="go alt" id="bSaveNow">เซฟเกม</button>
+      <button class="go alt" id="bSound2">เสียง: เปิด</button>
+      <button class="go alt" id="bToTitle">เซฟแล้วกลับหน้าแรก</button>
+    </div>
+    <p class="savenote" id="saveMsg"></p>
+  </div>
+</div>
 
 <div id="bag" hidden>
   <div class="sheet" role="dialog" aria-label="กระเป๋า">
