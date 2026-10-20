@@ -4,7 +4,8 @@ import {G} from '../core/state.js';
 import {keys,ctl,mouse,joy} from '../core/controls.js';
 import {SPEEDS} from '../config/time.js';
 import {player} from '../entities/player.js';
-import {switchTo,pickup,useHeal} from '../systems/inventory.js';
+import {switchTo,pickup,useHeal,eatBest} from '../systems/inventory.js';
+import {DIFFS} from '../config/difficulty.js';
 import {startReload} from '../systems/combat.js';
 import {reset} from '../systems/game.js';
 import {readSave,loadGame,clearSave} from '../systems/save.js';
@@ -31,7 +32,7 @@ export function initInput(){
     keys[e.code]=true;
     if(e.code==='Space'){e.preventDefault();if(!e.repeat){ctl.fireHeld=true;ctl.fireQ=.2;}}
     if(e.code==='Digit1')switchTo('primary');if(e.code==='Digit2')switchTo('secondary');if(e.code==='Digit3')switchTo('melee');
-    if(e.code==='KeyR')startReload();if(e.code==='KeyH')useHeal();
+    if(e.code==='KeyR')startReload();if(e.code==='KeyH')useHeal();if(e.code==='KeyG')eatBest();
     if((e.code==='KeyE'||e.code==='KeyF')&&player.near)pickup(player.near);
   });
   addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Space')ctl.fireHeld=false;});
@@ -61,6 +62,12 @@ export function initInput(){
   for(const ev of ['pointerup','pointercancel','lostpointercapture'])atk.addEventListener(ev,()=>{ctl.fireHeld=false;});
   $('bReload').addEventListener('click',startReload);
   $('bHeal').addEventListener('click',useHeal);
+  $('bEat').addEventListener('click',eatBest);
+  // difficulty for new games, remembered in this browser; a continued save keeps its own
+  let pref='normal';try{pref=localStorage.getItem('ordinary-day.diff')||'normal';}catch(_){}
+  const pickDiff=k=>{if(!DIFFS[k])k='normal';G.diff=k;for(const b of document.querySelectorAll('.diffs button')){b.classList.toggle('on',b.dataset.diff===k);b.setAttribute('aria-checked',b.dataset.diff===k);}$('diffNote').textContent=DIFFS[k].desc;try{localStorage.setItem('ordinary-day.diff',k);}catch(_){}};
+  for(const b of document.querySelectorAll('.diffs button'))b.addEventListener('click',()=>pickDiff(b.dataset.diff));
+  pickDiff(pref);
   $('bPick').addEventListener('click',()=>{if(player.near)pickup(player.near);});
   for(const c of chipEls)c.addEventListener('click',()=>switchTo(c.dataset.slot));
   $('bStart').addEventListener('click',()=>{clearSave();reset();$('overlay').hidden=true;G.running=true;});

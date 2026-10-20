@@ -29,6 +29,8 @@ export function itemModel(id){
   else if(id==='painkiller'){g.add(part(cm('#8a64d6'),.28,.16,.18,0,.08,0));g.add(part(whiteMat,.2,.02,.12,0,.17,0));}
   else if(id==='firstaid'){g.add(part(cm('#d8602c'),.44,.26,.32,0,.13,0));g.add(part(whiteMat,.3,.02,.08,0,.27,0));g.add(part(whiteMat,.08,.02,.24,0,.27,0));}
   else if(id==='resurrect'){g.add(part(S({color:'#c9a24a',emissive:'#f0c46b',emissiveIntensity:.6,metalness:.5,roughness:.3}),.4,.28,.3,0,.14,0));g.add(part(whiteMat,.06,.02,.22,0,.29,0));g.add(part(whiteMat,.22,.02,.06,0,.29,0));}
+  else if(id==='canned'){g.add(part(cm('#b8b8b0'),.2,.24,.2,0,.12,0));g.add(part(cm('#c9473a'),.21,.1,.21,0,.12,0));g.add(part(cm('#b8b8b0'),.2,.2,.2,.24,.1,.1));}
+  else if(id==='water'){g.add(part(cm('#9fd0ec'),.14,.42,.14,0,.21,0));g.add(part(cm('#2f6fb5'),.08,.07,.08,0,.45,0));g.add(part(cm('#9fd0ec'),.14,.42,.14,.2,.21,.12));}
   else if(id==='backpack'){g.add(part(cm('#4f5a3a'),.46,.56,.3,0,.28,0));g.add(part(woodMat,.36,.24,.1,0,.2,.19));}
   return g;
 }

@@ -10,6 +10,7 @@ import {inv} from './inventory.js';
 import {EVENTS} from './phases.js';
 import {reset} from './game.js';
 import {feed,updateLoadout} from '../ui/hud.js';
+import {applyBroken} from './obstacles.js';
 
 // ---------- save ----------
 // One autosave slot in localStorage, kept per browser. It is deleted when the player dies (survival rules).
@@ -23,7 +24,7 @@ const validItem=it=>it&&DEF[it.id];
 function snapshot(){
   const g=Object.assign({},G,{alertA:null,alertT:0,running:false,paused:false,over:false,lastMinShown:-1});
   return {v:SAVE_VERSION,savedAt:Date.now(),G:g,
-    player:{x:player.pos.x,z:player.pos.z,face:player.face,hp:player.hp,down:player.down,inv:player.inv,infect:player.infect,infWarn:player.infWarn,sinceHit:performance.now()/1000-player.lastHit},
+    player:{x:player.pos.x,z:player.pos.z,face:player.face,hp:player.hp,down:player.down,inv:player.inv,infect:player.infect,infWarn:player.infWarn,food:player.food,water:player.water,sinceHit:performance.now()/1000-player.lastHit},
     inv:{bag:inv.bag,cap:inv.cap,eq:inv.eq,active:inv.active},
     agents:agents.filter(a=>a.state!=='dead'&&!a.gone).map(a=>{const o={x:a.pos.x,z:a.pos.z,look:a.look};for(const k of AGENT_KEYS)o[k]=a[k];return o;}),
     drops:drops.map(d=>({item:d.item,x:d.x,z:d.z,spot:d.spot?lootSpots.indexOf(d.spot):-1}))};
@@ -41,11 +42,12 @@ export function loadGame(){
   reset();
   for(const a of agents)removeAgent(a);agents.length=0;
   while(drops.length)removeDrop(drops[0]);
-  Object.assign(G,s.G,{speedIdx:G.speedIdx});
+  Object.assign(G,s.G,{speedIdx:G.speedIdx,diff:s.G.diff||'normal'});
   for(const e of EVENTS)e.done=G.min>=e.t;
+  G.broken=G.broken||[];applyBroken(G.broken);
   Object.assign(inv,{bag:s.inv.bag.filter(validItem),cap:s.inv.cap,eq:{},active:s.inv.active});
   for(const k of ['primary','secondary','melee'])inv.eq[k]=validItem(s.inv.eq[k])?s.inv.eq[k]:null;
-  const p=s.player;Object.assign(player.pos,{x:p.x,z:p.z});Object.assign(player,{face:p.face,hp:p.hp,down:p.down,inv:p.inv,infect:p.infect||0,infWarn:p.infWarn||0,lastHit:performance.now()/1000-p.sinceHit});
+  const p=s.player;Object.assign(player.pos,{x:p.x,z:p.z});Object.assign(player,{face:p.face,hp:p.hp,down:p.down,inv:p.inv,infect:p.infect||0,infWarn:p.infWarn||0,food:p.food??100,water:p.water??100,lastHit:performance.now()/1000-p.sinceHit});
   camTarget.set(p.x,0,p.z);
   for(const o of s.agents){
     if(o.state==='zombie'&&!ZC[o.kind])continue;

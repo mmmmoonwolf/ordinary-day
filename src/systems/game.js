@@ -10,12 +10,14 @@ import {inv} from './inventory.js';
 import {EVENTS} from './phases.js';
 import {updateLoadout} from '../ui/hud.js';
 import {clearTip} from '../ui/tips.js';
+import {restoreObstacles} from './obstacles.js';
 
 // ---------- new game ----------
 export function reset(){
   for(const a of agents)removeAgent(a);agents.length=0;if(player)removeAgent(player);
   for(const m of blood){scene.remove(m);m.geometry.dispose();}blood.length=0;
   while(drops.length)removeDrop(drops[0]);
+  restoreObstacles();
   Object.assign(G,freshG());
   Object.assign(inv,{bag:[],cap:6,eq:{primary:null,secondary:null,melee:null},active:'melee'});
   for(const e of EVENTS)e.done=false;

@@ -48,11 +48,13 @@ function draw(now){
   g.save();g.translate(u,v);g.rotate(ang);g.beginPath();g.moveTo(0,-4.2*s);g.lineTo(3*s,3.2*s);g.lineTo(0,1.6*s);g.lineTo(-3*s,3.2*s);g.closePath();
   g.fillStyle=player.alive?'#e2a64a':'#8a8a86';g.fill();g.lineWidth=dpr;g.strokeStyle='#16130d';g.stroke();g.restore();
 }
+export function markMapDirty(){base=null;}   // a building block changed (an obstacle was smashed or restored)
 export function updateMinimap(dt,now){
   if(!cv){cv=$('minimap');if(!cv||!cv.getContext)return;g=cv.getContext('2d');}
   acc+=dt;if(acc<.1&&base)return;acc=0;
   const css=Math.round(cv.getBoundingClientRect().width||0);if(css<20||!player)return;
   dpr=Math.min(2,devicePixelRatio||1);
-  if(Math.round(css*dpr)!==px){px=Math.round(css*dpr);cv.width=cv.height=px;buildBase();}   // size changes with the screen
+  if(Math.round(css*dpr)!==px){px=Math.round(css*dpr);cv.width=cv.height=px;base=null;}
+  if(!base)buildBase();   // size changes with the screen
   draw(now);
 }

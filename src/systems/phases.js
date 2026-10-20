@@ -7,6 +7,7 @@ import {d2} from '../entities/movement.js';
 import {player} from '../entities/player.js';
 import {fillDay,fillNight} from './drops.js';
 import {sfx} from './audio.js';
+import {diffOf} from '../config/difficulty.js';
 import {say,feed} from '../ui/hud.js';
 
 // ---------- story + phases ----------
@@ -55,7 +56,7 @@ export function runEvents(){
   if(ph!==G.phase){if(ph==='night')onNight();else onDay();}
   if(ph==='day'&&tod>=DUSK_WARN&&G.duskDay!==day){G.duskDay=day;sfx.alarm();say('NIGHT INCOMING · อีกไม่นานจะมืด เตรียมอาวุธ กระสุน และยา','alarm',7);}
   if(ph==='night'&&G.outbreak){
-    if(G.min>=G.nightSpawnNext){G.nightSpawnNext+=45;const n=Math.min(4,2+Math.floor((day-1)/2));const mix=nightMix();for(let k=0;k<n;k++)spawnEdge(wpick(mix));}
+    if(G.min>=G.nightSpawnNext){G.nightSpawnNext+=45;const n=Math.max(1,Math.min(4,2+Math.floor((day-1)/2))+diffOf(G).spawn);const mix=nightMix();for(let k=0;k<n;k++)spawnEdge(wpick(mix));}
     if(G.armorNight&&G.min>=G.armorNext&&!(tod>=300&&tod<DAY_START)){G.armorNext+=60;
       if(G.armorCount<6){const a=spawnEdge('armor');if(a){G.armorCount++;if(!G.armorAnnounced){G.armorAnnounced=true;say('วิทยุ: พบเจ้าหน้าที่ตำรวจติดเชื้อ สวมเกราะกันกระสุน','radio',6);}}}}   // Q05: at most 6 per night
     if(G.tyrantPending&&G.min>=G.tyrantAt){G.tyrantPending=false;const t=spawnEdge('tyrant');if(t)sfx.roar(t.pos.x,t.pos.z);if(t)say('ได้ยินเสียงคำรามจากที่ไกล… Tyrant ออกล่าแล้ว','alarm',7);}

@@ -3,9 +3,12 @@ import {scene} from '../core/renderer.js';
 import {groundY} from '../config/world.js';
 import {S,box,scaleUV,unitBox,trunkMat,whiteMat,leafMats,darkMetal,lampHeadMat,glowMat,woodMat,oliveMat,blackMat} from './materials.js';
 import {CORR} from './textures.js';
-import {solid} from './collision.js';
+import {solid,solids} from './collision.js';
 
 // ---------- props ----------
+// cars, trash piles and benches a Tyrant can flatten (systems/obstacles.js); registering them never calls rand()
+export const breakables=[];
+function breakable(kind,n0,x,z){breakables.push({kind,x,z,meshes:scene.children.slice(n0),box:solids[solids.length-1],broken:false});}
 const trunkGeo=new THREE.CylinderGeometry(.11,.17,2.6,6);trunkGeo.translate(0,1.3,0);
 const paintGeo=new THREE.CylinderGeometry(.18,.19,.85,8);paintGeo.translate(0,.42,0);
 const branchGeo=new THREE.CylinderGeometry(.025,.06,1.5,4);branchGeo.translate(0,.75,0);
@@ -30,12 +33,13 @@ const carCols=['#6c7a84','#8a3a30','#c8c2b4','#2f3a46','#5a6448','#9a8a62','#3b3
 const policeBlue=S({color:'#1f3a6e',roughness:.5,metalness:.35}),policeWhite=S({color:'#dfe2e6',roughness:.5,metalness:.35});
 export const sirenR=S({color:'#ff3b2a',emissive:'#ff3b2a',emissiveIntensity:0}),sirenB=S({color:'#3b7bff',emissive:'#3b7bff',emissiveIntensity:0});
 export function car(x,z,alongX,police){
+  const n0=scene.children.length;
   const m=police?policeWhite:S({color:pickS(carCols),roughness:.5,metalness:.35});const w=alongX?4.2:1.9,d=alongX?1.9:4.2;
   box(m,w,1.0,d,x,0.62,z);
   if(police){box(policeBlue,alongX?4.22:1.92,.28,alongX?1.92:4.22,x,.62,z);box(sirenR,alongX?.18:.5,.14,alongX?.5:.18,x+(alongX?-.1:-.0),1.86,z+(alongX?-.28:-.1));box(sirenB,alongX?.18:.5,.14,alongX?.5:.18,x+(alongX?.1:0),1.86,z+(alongX?.28:.1));}
   box(S({color:'#1d2226',roughness:.2,metalness:.6}),alongX?2.2:1.7,.7,alongX?1.7:2.2,x+(alongX?-.2:0),1.45,z+(alongX?0:-.2));
   for(const s of [-1,1])for(const t of [-1,1]){const wx=alongX?s*1.35:t*.95,wz=alongX?t*.95:s*1.35;box(darkMetal,alongX?.6:.25,.6,alongX?.25:.6,x+wx,.3,z+wz,false);}
-  solid(x,z,w/2,d/2);
+  solid(x,z,w/2,d/2);breakable('car',n0,x,z);
 }
 // abandoned ambulance (no rand(): it is placed after the seeded city is built)
 export function ambulance(x,z,alongX){
@@ -58,5 +62,5 @@ export function container(x,z,alongX,y){
   const m=new THREE.Mesh(geo,S({map:CORR,color:pickS(containerCols),roughness:.75,metalness:.25}));
   m.position.set(x,(y||0.18)+h/2,z);m.castShadow=m.receiveShadow=true;scene.add(m);if(!y)solid(x,z,w/2,d/2);
 }
-export function bench(x,z,alongX){box(woodMat,alongX?1.8:.5,.08,alongX?.5:1.8,x,.62,z);box(darkMetal,alongX?1.8:.08,.5,alongX?.08:1.8,x+(alongX?0:-.22),.9,z+(alongX?-.22:0));box(darkMetal,alongX?1.5:.4,.4,alongX?.4:1.5,x,.38,z,false);solid(x,z,alongX?.9:.3,alongX?.3:.9);}
-export function trash(x,z){const n=2+Math.floor(rand()*4);for(let i=0;i<n;i++)box(S({color:pickS(['#1f2224','#2c3530','#3a3226'])}),R(.4,.7),R(.35,.55),R(.4,.7),x+R(-.8,.8),.4,z+R(-.8,.8));solid(x,z,.9,.9);}
+export function bench(x,z,alongX){const n0=scene.children.length;box(woodMat,alongX?1.8:.5,.08,alongX?.5:1.8,x,.62,z);box(darkMetal,alongX?1.8:.08,.5,alongX?.08:1.8,x+(alongX?0:-.22),.9,z+(alongX?-.22:0));box(darkMetal,alongX?1.5:.4,.4,alongX?.4:1.5,x,.38,z,false);solid(x,z,alongX?.9:.3,alongX?.3:.9);breakable('bench',n0,x,z);}
+export function trash(x,z){const n0=scene.children.length,n=2+Math.floor(rand()*4);for(let i=0;i<n;i++)box(S({color:pickS(['#1f2224','#2c3530','#3a3226'])}),R(.4,.7),R(.35,.55),R(.4,.7),x+R(-.8,.8),.4,z+R(-.8,.8));solid(x,z,.9,.9);breakable('trash',n0,x,z);}

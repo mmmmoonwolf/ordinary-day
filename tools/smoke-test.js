@@ -195,5 +195,55 @@ if (tip2 === tip1) afail('tip queue did not advance after 9 s');
 const seenTips = JSON.parse(store.get('ordinary-day.tips') || '{}').seen || {};
 console.log('ambulance kit + tips:', amb[0].x, amb[0].z, '| tips seen', Object.keys(seenTips).join(','), '| now:', tip2.slice(0, 40));
 
+// 8) v0.5: melee durability, hunger/thirst, Armor Walker back, Tyrant smashing, difficulty
+const vfail = m => errs.push('v0.5 test: ' + m);
+const { DEF: D5, durPct } = await import('../src/config/items.js');
+const { meleeHit } = await import('../src/systems/combat.js');
+const { hurtZombie } = await import('../src/entities/ai.js');
+const { eatBest } = await import('../src/systems/inventory.js');
+const { breakables } = await import('../src/world/props.js');
+const { solids } = await import('../src/world/collision.js');
+const { smashNear } = await import('../src/systems/obstacles.js');
+els.bAgain.fire('click'); T.G.running = true; T.player.inv = 1e9;
+// durability
+const pipe = T.makeItem('pipe_c');
+if (!(pipe.dur >= 36 && pipe.dur <= 90)) vfail('found pipe durability out of range: ' + pipe.dur);
+if (durPct({ id: 'knife_c' }) !== 1) vfail('pre-v0.5 knife without dur should count as new');
+T.inv.eq.melee = { id: 'knife_c', mag: 0, dur: 1 }; T.inv.active = 'melee'; T.player.face = 0;
+const victim = T.makeAgent(T.player.pos.x, T.player.pos.z + 1); T.becomeZombie(victim, 'zombie'); T.agents.push(victim);
+meleeHit(D5.knife_c);
+if (T.inv.eq.melee !== null) vfail('knife at 1 durability did not break after a hit');
+// hunger and thirst
+T.player.food = 50; T.player.water = 50; step(600);
+const f1 = T.player.food, w1 = T.player.water;
+if (!(f1 < 50 && w1 < 50 && 50 - w1 > 50 - f1)) vfail('needs did not drain (water faster): food ' + f1.toFixed(2) + ' water ' + w1.toFixed(2));
+T.inv.bag.push({ id: 'water', n: 1 }, { id: 'canned', n: 1 }); T.player.water = 10; eatBest();
+if (T.player.water < 59 || T.inv.bag.some(e => e.id === 'water')) vfail('G did not drink the water first when thirstier');
+T.player.hp = 60; T.player.food = 0; T.player.water = 80; const hp0 = T.player.hp; step(120);
+if (!(T.player.hp < hp0)) vfail('empty food bar did not drain HP');
+T.player.inv = 0; T.inv.bag = T.inv.bag.filter(e => e.id !== 'resurrect'); T.player.food = 0; T.player.water = 0; T.player.hp = 0.5; step(30);
+if (T.player.alive || T.G.endCause !== 'starved') vfail('starving did not end the game as starved (cause ' + T.G.endCause + ')');
+// Armor Walker: front armored, back full damage
+els.bAgain.fire('click'); T.G.running = true; T.player.inv = 1e9;
+const arm = T.makeAgent(T.player.pos.x + 6, T.player.pos.z); T.becomeZombie(arm, 'armor'); arm.face = 0; T.agents.push(arm);
+const front = hurtZombie(arm, 20, 0, -1, 0, true), hpA = arm.hp, back = hurtZombie(arm, 20, 0, 1, 0, true);
+if (!front || back || hpA !== 140 || arm.hp !== 120) vfail('armor front/back: front ' + front + ' back ' + back + ' hp ' + hpA + ' -> ' + arm.hp);
+// Tyrant smashing, reset restores, save/load keeps it broken
+const carB = breakables.find(b => b.kind === 'car'), bi = breakables.indexOf(carB);
+if (!carB || !smashNear(carB.x, carB.z, 3) || solids.includes(carB.box) || !T.G.broken.includes(bi)) vfail('smashNear did not break the car');
+S.saveGame(); els.bAgain.fire('click');
+if (carB.broken || !solids.includes(carB.box)) vfail('new game did not restore the smashed car');
+S.loadGame();
+if (!carB.broken || solids.includes(carB.box)) vfail('loading the save did not re-break the car');
+// difficulty: only the damage the player takes changes here
+const hit = diff => { els.bAgain.fire('click'); T.G.diff = diff; T.G.running = true; T.player.inv = 0; T.player.hp = 100; hurtPlayer(10); return 100 - T.player.hp; };
+const dE = hit('easy'), dN = hit('normal'), dH = hit('hard');
+if (Math.abs(dE - 6) > 1e-6 || Math.abs(dN - 10) > 1e-6 || Math.abs(dH - 14) > 1e-6) vfail('difficulty damage scale: ' + [dE, dN, dH].join('/'));
+T.G.diff = 'hard'; T.G.endCause = 'hurt'; T.G.over = false; gameOver();
+const bestAll = JSON.parse(store.get('ordinary-day.best') || '{}');
+if (!bestAll.hard || !els.oEyebrow.textContent.includes('ยาก')) vfail('records not kept per difficulty: ' + store.get('ordinary-day.best'));
+T.G.diff = 'normal';
+console.log('v0.5: durability, needs (food', (50 - f1).toFixed(2), 'water', (50 - w1).toFixed(2), 'in 10 s), armor back, tyrant smash + save, difficulty', [dE, dN, dH].join('/'));
+
 console.log(errs.length ? `FAILED: ${errs.length} runtime errors\n` + errs.slice(0, 3).join('\n---\n') : 'PASSED: no runtime errors');
 process.exit(errs.length ? 1 : 0);
