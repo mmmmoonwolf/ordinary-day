@@ -32,7 +32,7 @@ function el(id) {
     get firstChild() { return this.children[0]; },
     addEventListener(t, fn) { (h[t] = h[t] || []).push(fn); },
     fire(t, ev) { (h[t] || []).forEach(f => f(Object.assign({ preventDefault() {}, pointerType: 'touch', pointerId: 1, clientX: 300, clientY: 300, button: 0, target: e }, ev || {}))); },
-    focus() {}, setPointerCapture() {}, querySelector() { return el('q'); }, getBoundingClientRect() { return { top: 0, bottom: 0, left: 0, right: 0 }; },
+    focus() {}, setPointerCapture() {}, querySelector() { return el('q'); }, getBoundingClientRect() { return { top: 0, bottom: 0, left: 0, right: 0, width: 150 }; }, getContext() { return any(); },
   };
   return e;
 }
@@ -141,13 +141,13 @@ els.bAgain.fire('click'); T.G.running = true;
 T.G.min = 7 * 1440 + 6 * 60 + 5; step(20);
 if (!els.msg.textContent.includes('เฮลิคอปเตอร์')) bad('no rescue announcement at dawn of day 8: ' + els.msg.textContent);
 if (els.lz.hidden) bad('rescue arrow hidden on day 8 morning');
-if (!els.dayline.textContent.includes('รอด 7/7 คืน')) bad('dayline progress: ' + els.dayline.textContent);
+if (!els.dayline.innerHTML.includes('รอด 7/7 คืน')) bad('dayline progress: ' + els.dayline.innerHTML);
 T.G.min = 7 * 1440 + 8 * 60 + 30; step(20);
 if (T.G.over) bad('won without reaching the LZ');
 T.player.pos.x = LZ.x + 1; T.player.pos.z = LZ.z; step(20);
 if (!T.G.over || T.G.endCause !== 'won' || els.oTitle.textContent !== 'คุณรอดแล้ว') bad('reaching the helicopter did not win (over ' + T.G.over + ', cause ' + T.G.endCause + ')');
 if (store.has('ordinary-day.save')) bad('save kept after winning');
-console.log('goal:', els.dayline.textContent, '|', els.oEyebrow.textContent, els.oTitle.textContent, '|', els.sNights.textContent, 'nights | best', store.get('ordinary-day.best'));
+console.log('goal:', els.dayline.innerHTML.replace(/<[^>]+>/g, ''), '|', els.oEyebrow.textContent, els.oTitle.textContent, '|', els.sNights.textContent, 'nights | best', store.get('ordinary-day.best'));
 
 // 6) pause menu: P / Esc / background tab pause the game, manual save, back to the title, new day resets
 const pfail = m => errs.push('pause test: ' + m);

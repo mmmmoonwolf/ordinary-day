@@ -20,6 +20,7 @@ import {updateHUD} from './ui/hud.js';
 import {initInput} from './ui/input.js';
 import {initPause} from './ui/pause.js';
 import {updateTips} from './ui/tips.js';
+import {updateMinimap} from './ui/minimap.js';
 
 buildCity();
 initInput();
@@ -53,6 +54,7 @@ function loop(now){
     updateGoal(dt,now);
     updateTips(dt);
   }
+  updateMinimap(dt,now);
   camTarget.x+=(player.pos.x-camTarget.x)*Math.min(1,dt*5);camTarget.z+=(player.pos.z-camTarget.z)*Math.min(1,dt*5);
   camera.position.copy(camTarget).add(camOffset);camera.lookAt(camTarget);
   ring.position.set(player.pos.x,player.y+.03,player.pos.z);ring.visible=player.alive;

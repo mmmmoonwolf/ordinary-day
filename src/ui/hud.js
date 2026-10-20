@@ -46,7 +46,7 @@ export function updateLoadout(force){
 function fmtReal(s){s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+pad(s%60);}
 export function updateHUD(dt){
   const m=Math.floor(G.min),tod=m%1440,day=Math.floor(m/1440)+1;
-  if(m!==G.lastMinShown){G.lastMinShown=m;$('clock').textContent=hhmm(m);$('dayline').textContent='วันที่ '+day+' · '+DAYS[(2+day-1)%7]+' · รอด '+Math.min(nightsSurvived(m),GOAL_NIGHTS)+'/'+GOAL_NIGHTS+' คืน';}
+  if(m!==G.lastMinShown){G.lastMinShown=m;$('clock').textContent=hhmm(m);$('dayline').innerHTML='วันที่ '+day+'<span class="wd"> · '+DAYS[(2+day-1)%7]+'</span> · รอด '+Math.min(nightsSurvived(m),GOAL_NIGHTS)+'/'+GOAL_NIGHTS+' คืน';}
   const night=isNightTod(tod),left=night?(tod>=NIGHT_START?1440-tod+DAY_START:DAY_START-tod):NIGHT_START-tod;
   const real=left/(RATE*SPEEDS[G.speedIdx]);
   const ph=night?'night':(tod>=DUSK_WARN?'dusk':'day');
