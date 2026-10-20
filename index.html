@@ -29,6 +29,8 @@ body{background:var(--ground);color:var(--ink);font-family:var(--f-ui);overflow:
 #phase.dusk{border-color:#ff8f7c}#phase.dusk i{background:#ff8f7c;animation:blink 1s infinite}
 #phase.night{border-color:var(--night)}#phase.night i{background:var(--night)}
 @keyframes blink{50%{opacity:.25}}
+#lz{display:inline-flex;align-items:center;gap:7px;height:24px;padding:0 10px;border:1px solid var(--amber);background:var(--panel);font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--amber);white-space:nowrap;font-variant-numeric:tabular-nums}
+#lzArrow{display:inline-block;font-size:15px;line-height:1}
 #boss{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 150px);transform:translateX(-50%);width:min(300px,70vw);display:grid;gap:4px;font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--g-mil);text-shadow:0 1px 3px rgba(0,0,0,.8)}
 #boss .bar{height:7px}#bossfill{display:block;height:100%;background:var(--g-mil)}
 #msg{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 178px);transform:translate(-50%,8px);width:min(560px,calc(100vw - 40px));text-align:center;font-weight:700;font-size:clamp(16px,2.4vw,22px);line-height:1.35;text-wrap:balance;text-shadow:0 2px 8px rgba(0,0,0,.8);opacity:0;transition:opacity .5s,transform .5s}
@@ -40,6 +42,7 @@ body{background:var(--ground);color:var(--ink);font-family:var(--f-ui);overflow:
 .hp-label{display:flex;justify-content:space-between;font-size:11px;letter-spacing:.12em;color:var(--ink-dim);text-shadow:0 1px 3px rgba(0,0,0,.7)}
 .bar{height:6px;background:rgba(0,0,0,.5);border:1px solid var(--line)}
 #hpfill{display:block;height:100%;width:100%;background:var(--blood);transition:width .2s}
+#infRow{display:grid;gap:4px}#infRow .hp-label{color:var(--rot)}#inffill{display:block;height:100%;width:0;background:var(--rot)}
 .counts{display:grid;gap:1px;font-size:13px;text-shadow:0 1px 3px rgba(0,0,0,.8)}
 .counts b{font-family:var(--f-clock);font-size:19px;font-variant-numeric:tabular-nums;display:inline-block;min-width:28px}
 .counts .z b{color:var(--rot)}
@@ -88,6 +91,10 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 .stats{display:flex;gap:28px;margin:18px 0 24px;flex-wrap:wrap}
 .stats div{display:grid;gap:2px;font-size:12px;letter-spacing:.1em;color:var(--ink-dim)}
 .stats b{font-family:var(--f-clock);font-size:40px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.kills{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--ink-dim);margin:-6px 0 14px}
+.kills b{font-family:var(--f-clock);font-size:18px;color:var(--ink);font-variant-numeric:tabular-nums;margin-left:3px}
+.best{font-size:13px;color:var(--ink-dim);margin:0 0 22px}.best .new{color:var(--amber);font-weight:700}
+#oCause{margin-bottom:6px}
 .go{font:700 17px var(--f-ui);color:#16130d;background:var(--ink);border:0;padding:14px 28px;cursor:pointer;letter-spacing:.03em}
 .go.alt{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
 .go span{font-weight:500;font-variant-numeric:tabular-nums}
@@ -99,7 +106,8 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 .sheet h2{margin:0;font-size:22px}
 .sheet header span{font-family:var(--f-clock);font-size:20px;color:var(--ink-dim);font-variant-numeric:tabular-nums}
 .sheet header span.full{color:#ff8f7c}
-.sheet header button{margin-left:auto;height:36px;padding:0 14px;border:1px solid var(--line);background:transparent;color:var(--ink);font:700 14px var(--f-ui);cursor:pointer}
+.sheet header button.snd{margin-left:auto;font-weight:500;color:var(--ink-dim)}
+.sheet header button{height:36px;padding:0 14px;border:1px solid var(--line);background:transparent;color:var(--ink);font:700 14px var(--f-ui);cursor:pointer}
 .label{font-size:11px;letter-spacing:.14em;color:var(--ink-dim)}
 .eq{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:6px}
@@ -142,13 +150,14 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
   <div class="vitals">
     <div class="hp-label"><span>สุขภาพ</span><span id="hpnum">100</span></div>
     <div class="bar"><i id="hpfill"></i></div>
+    <div id="infRow" hidden><div class="hp-label"><span>ติดเชื้อ</span><span id="infnum">0%</span></div><div class="bar"><i id="inffill"></i></div></div>
     <div class="counts">
       <span><b id="cH">0</b>ประชาชน</span>
       <span class="z"><b id="cZ">0</b>ซอมบี้</span>
       <span><b id="cK">0</b>กำจัด</span>
     </div>
   </div>
-  <div class="clock"><div id="clock">07:30</div><div id="dayline">วันที่ 1 · วันอังคาร</div><div id="phase" class="day"><i></i><b id="phaseName">DAY</b><span id="phaseEta"></span></div></div>
+  <div class="clock"><div id="clock">07:30</div><div id="dayline">วันที่ 1 · วันอังคาร</div><div id="phase" class="day"><i></i><b id="phaseName">DAY</b><span id="phaseEta"></span></div><div id="lz" hidden><b id="lzArrow">↑</b><span id="lzDist"></span></div></div>
   <div id="boss" hidden><span>TYRANT</span><div class="bar"><i id="bossfill"></i></div></div>
   <div id="msg"></div>
   <div class="tools">
@@ -176,7 +185,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 
 <div id="bag" hidden>
   <div class="sheet" role="dialog" aria-label="กระเป๋า">
-    <header><h2>กระเป๋า</h2><span id="bagCap">0/6</span><button id="bagClose">ปิด</button></header>
+    <header><h2>กระเป๋า</h2><span id="bagCap">0/6</span><button class="snd" id="bSound" title="เปิดหรือปิดเสียง (M)">เสียง: เปิด</button><button id="bagClose">ปิด</button></header>
     <div class="label">อาวุธที่ติดตัว</div>
     <div class="eq" id="bagEq"></div>
     <div class="label" id="bagLabel">ช่องเก็บของ</div>
@@ -187,9 +196,9 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 
 <div id="overlay">
   <div class="panel" id="pStart">
-    <div class="eyebrow">ORDINARY DAY · PROTOTYPE 0.3</div>
+    <div class="eyebrow">ORDINARY DAY · PROTOTYPE 0.4</div>
     <h1>วันธรรมดา</h1>
-    <p class="lede">กลางวันซอมบี้ยังเชื่องช้า ใช้เวลานี้เก็บอาวุธและยา พอ 18:30 กลางคืนจะมาพร้อมซอมบี้ที่เร็ว หูไว และของระดับ Police กับ Military ให้เสี่ยงออกไปหา</p>
+    <p class="lede">รอดให้ครบ 7 คืน แล้วไปขึ้นเฮลิคอปเตอร์กู้ภัย กลางวันซอมบี้ยังเชื่องช้า ใช้เวลานี้เก็บอาวุธและยา พอ 18:30 กลางคืนจะมาพร้อมซอมบี้ที่เร็ว หูไว และของระดับ Police กับ Military ให้เสี่ยงออกไปหา ถ้าถูกกัดอาจติดเชื้อ ต้องใช้ Antibiotic</p>
     <div class="keys" id="keys"></div>
     <div class="starts">
       <button class="go" id="bContinue" hidden>เล่นต่อ <span id="contInfo"></span></button>
@@ -198,13 +207,17 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
     <p class="savenote" id="saveNote" hidden>เกมบันทึกอัตโนมัติ เริ่มวันใหม่จะลบเซฟเดิม และเซฟจะหายเมื่อตัวละครตาย</p>
   </div>
   <div class="panel" id="pOver" hidden>
-    <div class="eyebrow">GAME OVER</div>
-    <h1>คุณไม่รอด</h1>
+    <div class="eyebrow" id="oEyebrow">GAME OVER</div>
+    <h1 id="oTitle">คุณไม่รอด</h1>
+    <p class="lede" id="oCause"></p>
     <div class="stats">
+      <div><b id="sNights">0</b>คืนที่รอด</div>
       <div><b id="sTime">00:00</b>รอดถึงเวลา</div>
       <div><b id="sDay">1</b>วันที่</div>
       <div><b id="sKill">0</b>ซอมบี้ที่กำจัด</div>
     </div>
+    <div class="kills" id="sKillsBy"></div>
+    <p class="best" id="sBest"></p>
     <button class="go" id="bAgain">เล่นอีกครั้ง</button>
   </div>
 </div>

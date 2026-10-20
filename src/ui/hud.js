@@ -7,10 +7,14 @@ import {d2} from '../entities/movement.js';
 import {player} from '../entities/player.js';
 import {inv,curWeapon,countAmmo,gradeTag} from '../systems/inventory.js';
 import {closeBag} from './bag.js';
+import {ZC} from '../config/zombies.js';
+import {GOAL_NIGHTS,nightsSurvived} from '../config/goal.js';
+import {recordRun} from '../systems/records.js';
+import {sfx} from '../systems/audio.js';
 
 // ---------- messages ----------
 let msgTimer=0;
-export function say(text,cls,dur){const m=$('msg');m.textContent=text;m.className='show '+(cls||'');msgTimer=dur||6;}
+export function say(text,cls,dur){if(cls==='radio')sfx.radio();const m=$('msg');m.textContent=text;m.className='show '+(cls||'');msgTimer=dur||6;}
 export function feed(text,cls){const f=$('feed');const el=document.createElement('div');el.textContent=text;el.className=cls||'get';f.appendChild(el);while(f.children.length>4)f.removeChild(f.firstChild);setTimeout(()=>el.remove(),3000);}
 const once={};export function feedOnce(key,text,cls,gap){const t=performance.now();if(once[key]&&t-once[key]<(gap||2500))return;once[key]=t;feed(text,cls);}
 
@@ -41,7 +45,7 @@ export function updateLoadout(force){
 function fmtReal(s){s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+pad(s%60);}
 export function updateHUD(dt){
   const m=Math.floor(G.min),tod=m%1440,day=Math.floor(m/1440)+1;
-  if(m!==G.lastMinShown){G.lastMinShown=m;$('clock').textContent=hhmm(m);$('dayline').textContent='วันที่ '+day+' · '+DAYS[(2+day-1)%7];}
+  if(m!==G.lastMinShown){G.lastMinShown=m;$('clock').textContent=hhmm(m);$('dayline').textContent='วันที่ '+day+' · '+DAYS[(2+day-1)%7]+' · รอด '+Math.min(nightsSurvived(m),GOAL_NIGHTS)+'/'+GOAL_NIGHTS+' คืน';}
   const night=isNightTod(tod),left=night?(tod>=NIGHT_START?1440-tod+DAY_START:DAY_START-tod):NIGHT_START-tod;
   const real=left/(RATE*SPEEDS[G.speedIdx]);
   const ph=night?'night':(tod>=DUSK_WARN?'dusk':'day');
@@ -52,12 +56,25 @@ export function updateHUD(dt){
   setText('cH',String(h));setText('cZ',String(z));setText('cK',String(G.kills));
   const bossOn=!!ty&&Math.sqrt(d2(ty,player))<34;if($('boss').hidden===bossOn)$('boss').hidden=!bossOn;if(ty)$('bossfill').style.width=Math.max(0,ty.hp/ty.maxHp*100)+'%';
   const hp=Math.ceil(player.hp);setText('hpnum',String(hp));$('hpfill').style.width=hp+'%';
+  const inf=player.infect>0;if($('infRow').hidden===inf)$('infRow').hidden=!inf;
+  if(inf){const pc=Math.floor(player.infect*100);setText('infnum',pc+'%');$('inffill').style.width=pc+'%';}
   const hu=$('hurt');const o=parseFloat(hu.style.opacity||0);if(o>0)hu.style.opacity=Math.max(0,o-dt*1.6).toFixed(3);
   if(msgTimer>0){msgTimer-=dt;if(msgTimer<=0)$('msg').classList.remove('show');}
   updateLoadout();
 }
+const ENDINGS={
+  hurt:{eyebrow:'GAME OVER',title:'คุณไม่รอด',text:'บาดเจ็บหนักจนไปต่อไม่ไหว'},
+  infected:{eyebrow:'GAME OVER',title:'คุณกลายเป็นซอมบี้',text:'เชื้อลามถึง 100% ก่อนได้ใช้ Antibiotic'},
+  won:{eyebrow:'RESCUED',title:'คุณรอดแล้ว',text:'เฮลิคอปเตอร์กู้ภัยพาคุณออกจากเมืองได้สำเร็จ'},
+};
 export function gameOver(){
+  if(G.over)return;
   G.over=true;G.running=false;closeBag();
-  $('sTime').textContent=hhmm(G.min);$('sDay').textContent=Math.floor(G.min/1440)+1;$('sKill').textContent=G.kills;
+  const end=ENDINGS[G.endCause]||ENDINGS.hurt,nights=nightsSurvived(G.min);
+  $('oEyebrow').textContent=end.eyebrow;$('oTitle').textContent=end.title;$('oCause').textContent=end.text;
+  $('sNights').textContent=nights;$('sTime').textContent=hhmm(G.min);$('sDay').textContent=Math.floor(G.min/1440)+1;$('sKill').textContent=G.kills;
+  $('sKillsBy').innerHTML=Object.keys(ZC).map(k=>'<span>'+ZC[k].name+'<b>'+(G.killsBy[k]||0)+'</b></span>').join('');
+  const {best,isNew}=recordRun({nights,kills:G.kills,won:G.endCause==='won'});
+  $('sBest').innerHTML=(isNew?'<span class="new">สถิติใหม่! </span>':'')+'สถิติดีสุด: รอด '+best.nights+' คืน · กำจัด '+best.kills+' ตัว'+(best.wins?' · รอดสำเร็จ '+best.wins+' ครั้ง':'');
   $('pStart').hidden=true;$('pOver').hidden=false;$('overlay').hidden=false;$('bAgain').focus();
 }

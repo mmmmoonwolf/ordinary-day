@@ -35,7 +35,8 @@
 | `config/world.js` | `RC` (เส้นกลางถนน), `OFF` (ระยะทางเท้า), `LIM`, `groundY()` |
 | `config/items.js` | `GRADES`, `DEF` (อาวุธ กระสุน ยา), `SLOTNAME`, `gradeOf()`, `itemColor()` |
 | `config/loot.js` | `POOLS`, `GRADE_W`, `MED_W`, `CAT_W` |
-| `config/zombies.js` | `ZC` (HP ความเร็ว ระยะมอง ดาเมจ), `isSpecial()` |
+| `config/zombies.js` | `ZC` (HP ความเร็ว ระยะมอง ดาเมจ โอกาสติดเชื้อ), `INFECT_MINUTES`, `isSpecial()` |
+| `config/goal.js` | `GOAL_NIGHTS = 7`, `LZ`, `RESCUE_FROM` / `RESCUE_UNTIL`, `nightsSurvived()` |
 | `world/textures.js` · `materials.js` | texture วาดด้วย canvas, วัสดุที่ใช้ร่วมกัน, `box()`, `part()` |
 | `world/collision.js` · `sidewalk.js` | `solids` (กล่องชน), `collide()`, `rayWall()` · กราฟทางเท้าของ NPC |
 | `world/props.js` · `city.js` | ต้นไม้ เสาไฟ รถ ตู้คอนเทนเนอร์ · `buildCity()`, `buildings`, `lootSpots`, `vendorSpots` |
@@ -47,6 +48,8 @@
 | `systems/inventory.js` · `combat.js` | `inv`, `pickup()`, `useHeal()`, `addStack()`, `takeAmmo()` · `fireGun()`, `meleeHit()`, `aimAssist()`, `hurtPlayer()` |
 | `systems/phases.js` · `weather.js` | `EVENTS`, `runEvents()` (DAY/NIGHT, spawn กลางคืน) · `updateSky()` ฝน แสง ไฟถนน |
 | `systems/effects.js` · `game.js` | เลือด วงแหวน tracer ระเบิด · `reset()` เริ่มเกมใหม่ |
+| `systems/audio.js` · `records.js` | เสียงสังเคราะห์ `sfx.*` (no-op ถ้าไม่มี WebAudio), `toggleMute()` · `recordRun()` สถิติดีสุด |
+| `systems/infection.js` · `goal.js` | `infectPlayer()`, `updateInfection()`, `cureInfection()` · `updateGoal()` เฮลิคอปเตอร์ ลูกศร และการชนะ |
 | `systems/save.js` | เซฟอัตโนมัติ 1 ช่องใน localStorage: `saveGame()`, `loadGame()`, `readSave()`, `clearSave()`, `autosave()` |
 | `ui/hud.js` · `bag.js` · `input.js` | `say()`, `feed()`, `updateHUD()`, `updateLoadout()`, `gameOver()` · หน้ากระเป๋า · คีย์บอร์ด เมาส์ จอยสติ๊ก ปุ่มบนจอ |
 
@@ -64,7 +67,7 @@
 
 - `node tools/smoke-test.js` (หรือ `npm test`) จำลองเกม 2 วันเต็มแบบไม่มีหน้าจอ (THREE ถูกแทนด้วย stub) โดย import โมดูลใน `src/` แล้วรายงาน error ใช้จับบั๊กตรรกะเท่านั้น ไม่ได้ตรวจภาพ
 - ต้องเปิดผ่าน dev server (`npx serve .`) แล้วทดสอบทั้งจอคอมและจอมือถือ (DevTools device mode) ก่อน commit
-- ทดสอบด้วยตาทุกครั้ง: เริ่มเกม 07:30, การระบาด 09:30, เปลี่ยนเป็นกลางคืน 18:30, รุ่งเช้า 06:00, ยิงปืนทุกแบบ, เปิดกระเป๋า, ตายแล้วเล่นใหม่, รีเฟรชหน้าแล้วกดเล่นต่อ
+- ทดสอบด้วยตาทุกครั้ง: เริ่มเกม 07:30, การระบาด 09:30, เปลี่ยนเป็นกลางคืน 18:30, รุ่งเช้า 06:00, ยิงปืนทุกแบบ, เปิดกระเป๋า, ตายแล้วเล่นใหม่, รีเฟรชหน้าแล้วกดเล่นต่อ, ติดเชื้อแล้วใช้ Antibiotic, เปิดปิดเสียง, เช้าวันที่ 8 ตามลูกศรไปขึ้นเฮลิคอปเตอร์
 
 ## การสรุปงาน
 

@@ -59,6 +59,10 @@ const { inv } = await import('../src/systems/inventory.js');
 const { renderBag, openBag, closeBag } = await import('../src/ui/bag.js');
 const S = await import('../src/systems/save.js');
 const { hurtPlayer } = await import('../src/systems/combat.js');
+const { infectPlayer } = await import('../src/systems/infection.js');
+const { useHeal } = await import('../src/systems/inventory.js');
+const { gameOver } = await import('../src/ui/hud.js');
+const { LZ } = await import('../src/config/goal.js');
 const T = { inv, get player() { return P.player; }, makeItem, drops, G, agents, becomeZombie, makeAgent, renderBag, openBag, closeBag };
 
 const errs = [];
@@ -87,7 +91,9 @@ T.G.min = 18 * 60 + 20; step(200);
 for (const k of ['zombie', 'sprinter', 'boomer', 'armor', 'tyrant', 'armor', 'boomer']) { const a = T.makeAgent(p.pos.x + 3 + Math.random() * 4, p.pos.z + 3); T.becomeZombie(a, k); T.agents.push(a); }
 for (const slot of ['Digit1', 'Digit2', 'Digit3', 'Digit1']) { key(slot, 'keydown'); for (let i = 0; i < 40; i++) { key('Space', 'keydown'); step(15); key('Space', 'keyup'); step(5); } key('KeyR', 'keydown'); step(150); }
 T.openBag(); T.renderBag(); T.closeBag();
-console.log('combat: hp', Math.round(p.hp), 'kills', T.G.kills, 'resurrect used', !T.inv.bag.some(e => e.id === 'resurrect'));
+const killsBySum = Object.values(T.G.killsBy).reduce((a, b) => a + b, 0);
+if (killsBySum !== T.G.kills) errs.push('kills per class ' + killsBySum + ' != kills ' + T.G.kills);
+console.log('combat: hp', Math.round(p.hp), 'kills', T.G.kills, JSON.stringify(T.G.killsBy), 'resurrect used', !T.inv.bag.some(e => e.id === 'resurrect'));
 for (let i = 0; i < 20; i++) { key('Space', 'keydown'); step(300); key('Space', 'keyup'); }
 console.log('after night:', els.clock.textContent, els.phaseName.textContent, 'zombie kinds', [...new Set(T.agents.filter(a => a.state === 'zombie').map(a => a.kind))].join(','));
 
@@ -95,6 +101,7 @@ console.log('after night:', els.clock.textContent, els.phaseName.textContent, 'z
 const fail = m => errs.push('save test: ' + m);
 els.bAgain.fire('click');
 T.inv.bag.push({ id: 'bandage', n: 3 }, { id: 'a9', n: 40 }); T.inv.eq.secondary = T.makeItem('pistol_c');
+T.player.inv = 1e9;   // keep the player alive so the result does not depend on the night's zombies
 T.G.min = 19 * 60; step(1000);
 if (!store.has('ordinary-day.save')) fail('no autosave after ~17 s of play');
 store.clear(); document.visibilityState = 'hidden'; handlers['document:visibilitychange'].forEach(f => f()); document.visibilityState = 'visible';
@@ -110,6 +117,37 @@ T.G.running = true; step(300);
 T.inv.bag = T.inv.bag.filter(e => e.id !== 'resurrect'); T.player.inv = 0; T.player.down = 0; hurtPlayer(9999);
 if (store.has('ordinary-day.save')) fail('save still exists after death');
 console.log('save: restored', live().length, 'agents and', T.drops.length, 'drops at', els.clock.textContent, '| deleted on death', !store.has('ordinary-day.save'));
+
+// 4) infection: progresses with in-game time, blocks regen, Antibiotic cures, a Resurrection Kit clears it, 100% kills
+const bad = m => errs.push('v0.4 test: ' + m);
+els.bAgain.fire('click'); T.G.running = true;
+T.player.hp = 50; infectPlayer(); step(300);
+const pc = T.player.infect;
+if (!(pc > 0.05 && pc < 0.2)) bad('infection after 5 s should be ~8%, got ' + pc);
+if (T.player.hp > 50.01) bad('HP regenerated while infected');
+if (els.infRow.hidden) bad('infection bar hidden');
+T.inv.bag.push({ id: 'antibiotic', n: 1 }); T.player.hp = T.player.maxHp; useHeal();
+if (T.player.infect !== 0 || T.inv.bag.some(e => e.id === 'antibiotic')) bad('Antibiotic did not cure at full HP');
+T.inv.bag.push({ id: 'resurrect', n: 1 }); infectPlayer(); T.player.infect = 0.999; step(30);
+if (!T.player.alive || T.player.infect !== 0) bad('Resurrection Kit did not save an infected player');
+step(240); T.inv.bag = T.inv.bag.filter(e => e.id !== 'resurrect'); T.player.inv = 0;
+infectPlayer(); T.player.infect = 0.999; step(30);
+if (T.player.alive || T.G.endCause !== 'infected') bad('infection at 100% did not kill (alive ' + T.player.alive + ', cause ' + T.G.endCause + ')');
+gameOver();
+if (els.oTitle.textContent !== 'คุณกลายเป็นซอมบี้' || !els.sKillsBy.innerHTML.includes('Tyrant') || !els.sBest.innerHTML.includes('สถิติดีสุด')) bad('infected game-over summary not filled');
+console.log('infection: after 5 s', (pc * 100).toFixed(1) + '%', '| summary:', els.oTitle.textContent, '|', els.sBest.innerHTML.replace(/<[^>]+>/g, ''));
+// 5) goal: day 8 morning, helicopter lands at the LZ, reaching it wins
+els.bAgain.fire('click'); T.G.running = true;
+T.G.min = 7 * 1440 + 6 * 60 + 5; step(20);
+if (!els.msg.textContent.includes('เฮลิคอปเตอร์')) bad('no rescue announcement at dawn of day 8: ' + els.msg.textContent);
+if (els.lz.hidden) bad('rescue arrow hidden on day 8 morning');
+if (!els.dayline.textContent.includes('รอด 7/7 คืน')) bad('dayline progress: ' + els.dayline.textContent);
+T.G.min = 7 * 1440 + 8 * 60 + 30; step(20);
+if (T.G.over) bad('won without reaching the LZ');
+T.player.pos.x = LZ.x + 1; T.player.pos.z = LZ.z; step(20);
+if (!T.G.over || T.G.endCause !== 'won' || els.oTitle.textContent !== 'คุณรอดแล้ว') bad('reaching the helicopter did not win (over ' + T.G.over + ', cause ' + T.G.endCause + ')');
+if (store.has('ordinary-day.save')) bad('save kept after winning');
+console.log('goal:', els.dayline.textContent, '|', els.oEyebrow.textContent, els.oTitle.textContent, '|', els.sNights.textContent, 'nights | best', store.get('ordinary-day.best'));
 
 console.log(errs.length ? `FAILED: ${errs.length} runtime errors\n` + errs.slice(0, 3).join('\n---\n') : 'PASSED: no runtime errors');
 process.exit(errs.length ? 1 : 0);

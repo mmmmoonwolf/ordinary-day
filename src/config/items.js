@@ -33,7 +33,7 @@ Object.assign(DEF,{
   a12:{name:'12 Gauge',kind:'ammo',stack:24,find:[4,10],color:'#9a3328'},
   a762:{name:'7.62mm',kind:'ammo',stack:20,find:[3,8],color:'#4a4f5a'},
   bandage:{name:'Bandage',kind:'heal',heal:.25,stack:5,color:'#78D99B'},
-  antibiotic:{name:'Antibiotic',kind:'heal',heal:.35,stack:4,color:'#66B0FF'},
+  antibiotic:{name:'Antibiotic',kind:'heal',heal:.35,cure:true,stack:4,color:'#66B0FF'},
   painkiller:{name:'Painkiller',kind:'heal',heal:.5,stack:3,color:'#b58cff'},
   firstaid:{name:'First Aid Kit',kind:'heal',heal:.8,stack:2,color:'#ff9a4a'},
   resurrect:{name:'Resurrection Kit',kind:'revive',stack:1,color:'#F0C46B'},

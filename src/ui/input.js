@@ -10,6 +10,7 @@ import {reset} from '../systems/game.js';
 import {readSave,loadGame,clearSave} from '../systems/save.js';
 import {chipEls,hhmm,say} from './hud.js';
 import {openBag,closeBag} from './bag.js';
+import {isMuted,toggleMute} from '../systems/audio.js';
 
 // ---------- input ----------
 let rightId=null;
@@ -19,10 +20,12 @@ function showContinue(){
   $('bContinue').hidden=!has;$('bStart').classList.toggle('alt',has);$('saveNote').hidden=!has;
   if(has)$('contInfo').textContent='วันที่ '+(Math.floor(s.G.min/1440)+1)+' · '+hhmm(s.G.min);
 }
+function showSound(){$('bSound').textContent='เสียง: '+(isMuted()?'ปิด':'เปิด');}
 export function initInput(){
   addEventListener('keydown',e=>{
     if(e.code==='Tab'||e.code==='KeyI'){e.preventDefault();$('bag').hidden?openBag():closeBag();return;}
     if(e.code==='Escape'){closeBag();return;}
+    if(e.code==='KeyM'){toggleMute();showSound();return;}
     if(G.paused)return;
     keys[e.code]=true;
     if(e.code==='Space'){e.preventDefault();if(!e.repeat){ctl.fireHeld=true;ctl.fireQ=.2;}}
@@ -62,6 +65,7 @@ export function initInput(){
   $('bStart').addEventListener('click',()=>{clearSave();$('overlay').hidden=true;G.running=true;});
   $('bContinue').addEventListener('click',()=>{if(!loadGame()){showContinue();return;}$('overlay').hidden=true;G.running=true;say('เล่นต่อจากเซฟ · '+$('contInfo').textContent,'',4);});
   showContinue();
+  $('bSound').addEventListener('click',()=>{toggleMute();showSound();});showSound();
   $('bAgain').addEventListener('click',()=>{reset();$('overlay').hidden=true;G.running=true;});
   if(isTouch){$('atkKey').textContent='กดค้าง';}
   $('keys').innerHTML=isTouch

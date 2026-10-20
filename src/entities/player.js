@@ -12,13 +12,15 @@ import {updateDead,makeNoise} from './ai.js';
 import {drops} from '../systems/drops.js';
 import {curWeapon,pickup,gradeTag} from '../systems/inventory.js';
 import {aimAssist,finishReload,fireGun,meleeHit} from '../systems/combat.js';
+import {updateInfection} from '../systems/infection.js';
+import {sfx} from '../systems/audio.js';
 
 // ---------- player ----------
 export let player;
 export function setPlayer(p){player=p;}
 export function makePlayer(){
   const p=makeAgent(OFF,OFF,{shirt:'#c4612a',pants:'#24272c',skin:'#d8a882',hair:'#15130f'});
-  Object.assign(p,{state:'player',hp:100,maxHp:100,alive:true,swing:0,swingDur:.4,hitDone:true,lastHit:-99,face:Math.PI*1.25,cool:0,reloadT:0,recoil:0,aimT:0,held:null,heldId:'fist',down:0,inv:0});
+  Object.assign(p,{state:'player',hp:100,maxHp:100,alive:true,swing:0,swingDur:.4,hitDone:true,lastHit:-99,face:Math.PI*1.25,cool:0,reloadT:0,recoil:0,aimT:0,held:null,heldId:'fist',down:0,inv:0,infect:0,infWarn:0});
   return p;
 }
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),mray=new THREE.Raycaster();
@@ -46,7 +48,7 @@ export function updatePlayer(dt){
   if(ctl.fireQ>0)ctl.fireQ-=dt;
   if((ctl.fireHeld||ctl.fireQ>0)&&player.cool<=0&&player.reloadT<=0){
     if(def.gun){if(def.auto||ctl.fireQ>0){ctl.fireQ=0;aimAssist(def);fireGun(w,def);}}
-    else{ctl.fireQ=0;aimAssist(def);player.swing=player.swingDur=def.cd;player.hitDone=false;player.cool=def.cd;player.aimT=.3;}
+    else{ctl.fireQ=0;aimAssist(def);sfx.swing();player.swing=player.swingDur=def.cd;player.hitDone=false;player.cool=def.cd;player.aimT=.3;}
   }
   if(player.swing>0){player.swing-=dt;if(!player.hitDone&&player.swing<player.swingDur*.55){player.hitDone=true;meleeHit(def);}}
   player.recoil=Math.max(0,player.recoil-dt*8);
@@ -54,7 +56,8 @@ export function updatePlayer(dt){
   const np=nearestPickable();const bp=$('bPick');
   if(np){const key=String(drops.indexOf(np));if(bp.hidden||bp.dataset.for!==key){bp.hidden=false;bp.dataset.for=key;$('pickName').textContent=DEF[np.item.id].name+gradeTag(np.item.id);bp.style.setProperty('--pg',itemColor(np.item.id));bp.style.borderColor=itemColor(np.item.id);}player.near=np;}
   else{if(!bp.hidden)bp.hidden=true;player.near=null;}
-  if(performance.now()/1000-player.lastHit>6&&player.hp<player.maxHp)player.hp=Math.min(player.maxHp,player.hp+1.5*dt);
+  if(performance.now()/1000-player.lastHit>6&&player.hp<player.maxHp&&!(player.infect>0))player.hp=Math.min(player.maxHp,player.hp+1.5*dt);
+  updateInfection(dt);
 }
 export function syncHeld(){
   const id=curWeapon().id;if(id===player.heldId)return;player.heldId=id;
