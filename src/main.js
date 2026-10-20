@@ -19,6 +19,7 @@ import {updateGoal} from './systems/goal.js';
 import {updateHUD} from './ui/hud.js';
 import {initInput} from './ui/input.js';
 import {initPause} from './ui/pause.js';
+import {updateTips} from './ui/tips.js';
 
 buildCity();
 initInput();
@@ -50,6 +51,7 @@ function loop(now){
     const pulse=.45+.3*Math.sin(now/280);for(const k in ringMats)ringMats[k].opacity=pulse;
     updateSky(dt,now);
     updateGoal(dt,now);
+    updateTips(dt);
   }
   camTarget.x+=(player.pos.x-camTarget.x)*Math.min(1,dt*5);camTarget.z+=(player.pos.z-camTarget.z)*Math.min(1,dt*5);
   camera.position.copy(camTarget).add(camOffset);camera.lookAt(camTarget);

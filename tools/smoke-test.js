@@ -25,14 +25,14 @@ const startHidden = new Set(['boss', 'bag', 'pOver', 'joy', 'bPick', 'pause']);
 function el(id) {
   const h = {};
   const e = {
-    id, style: { setProperty() {}, removeProperty() {} }, classList: { toggle() {}, remove() {}, add() {} }, dataset: {}, children: [],
+    id, style: { setProperty() {}, removeProperty() {} }, classList: { toggle() {}, remove() {}, add() {}, contains() { return false; } }, dataset: {}, children: [],
     hidden: startHidden.has(id), textContent: '', innerHTML: '', className: '', disabled: false,
     appendChild(c) { this.children.push(c); c.remove = () => { const i = this.children.indexOf(c); if (i >= 0) this.children.splice(i, 1); }; },
     removeChild(c) { const i = this.children.indexOf(c); if (i >= 0) this.children.splice(i, 1); },
     get firstChild() { return this.children[0]; },
     addEventListener(t, fn) { (h[t] = h[t] || []).push(fn); },
     fire(t, ev) { (h[t] || []).forEach(f => f(Object.assign({ preventDefault() {}, pointerType: 'touch', pointerId: 1, clientX: 300, clientY: 300, button: 0, target: e }, ev || {}))); },
-    focus() {}, setPointerCapture() {}, querySelector() { return el('q'); },
+    focus() {}, setPointerCapture() {}, querySelector() { return el('q'); }, getBoundingClientRect() { return { top: 0, bottom: 0, left: 0, right: 0 }; },
   };
   return e;
 }
@@ -168,6 +168,32 @@ if (T.G.running || T.G.paused || els.overlay.hidden || els.pStart.hidden || els.
 T.G.min = 3000; els.bStart.fire('click');
 if (T.G.min !== 450 || store.has('ordinary-day.save') || !T.G.running) pfail('new day after back-to-title did not start fresh (min ' + T.G.min + ')');
 console.log('pause: P/Esc/background pause, manual save, back to title, new day OK =', !errs.some(e => e.startsWith('pause test')));
+
+// 7) ambulance Resurrection Kit and first-time tips
+const afail = m => errs.push('ambulance/tips test: ' + m);
+const { lootSpots } = await import('../src/world/city.js');
+const { fillDay, fillNight } = await import('../src/systems/drops.js');
+const { freeAt } = await import('../src/world/collision.js');
+els.bAgain.fire('click'); T.G.running = true; T.player.inv = 1e9;
+const amb = lootSpots.filter(sp => sp.zone === 'ambulance');
+if (amb.length !== 1 || !amb[0].drop || amb[0].drop.item.id !== 'resurrect') afail('no Resurrection Kit at the ambulance at the start');
+if (lootSpots.length !== 81 || lootSpots.indexOf(amb[0]) !== 80) afail('ambulance spot should be appended last (index 80 of 81)');
+if (!freeAt(amb[0].x, amb[0].z, 0.4)) afail('ambulance kit sits inside a solid');
+T.player.pos.x = amb[0].x; T.player.pos.z = amb[0].z; step(5);
+if (!T.inv.bag.some(e => e.id === 'resurrect') || amb[0].drop) afail('walking onto the kit did not pick it up');
+fillDay(1); fillNight();
+if (amb[0].drop) afail('day/night refills put loot back at the ambulance');
+els.bAgain.fire('click'); T.G.running = true; T.player.inv = 1e9;
+const { setTipsOff } = await import('../src/ui/tips.js');
+setTipsOff(true); setTipsOff(false);   // same as turning tips off and on in the pause menu: shows them all again
+T.G.min = 7 * 60 + 40; step(3);
+const tip1 = els.tipText.textContent;
+if (!tip1.includes('วงแหวน')) afail('first tip should explain loot rings, got: ' + tip1);
+step(600);
+const tip2 = els.tipText.textContent;
+if (tip2 === tip1) afail('tip queue did not advance after 9 s');
+const seenTips = JSON.parse(store.get('ordinary-day.tips') || '{}').seen || {};
+console.log('ambulance kit + tips:', amb[0].x, amb[0].z, '| tips seen', Object.keys(seenTips).join(','), '| now:', tip2.slice(0, 40));
 
 console.log(errs.length ? `FAILED: ${errs.length} runtime errors\n` + errs.slice(0, 3).join('\n---\n') : 'PASSED: no runtime errors');
 process.exit(errs.length ? 1 : 0);

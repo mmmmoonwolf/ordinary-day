@@ -9,6 +9,7 @@ import {drops,removeDrop,spawnDrop,makeItem,fillDay} from './drops.js';
 import {inv} from './inventory.js';
 import {EVENTS} from './phases.js';
 import {updateLoadout} from '../ui/hud.js';
+import {clearTip} from '../ui/tips.js';
 
 // ---------- new game ----------
 export function reset(){
@@ -21,6 +22,7 @@ export function reset(){
   setPlayer(makePlayer());spawnPopulation();camTarget.set(player.pos.x,0,player.pos.z);
   let near=null,nd=1e9;for(const s of lootSpots){if(s.zone!=='city')continue;const d=Math.hypot(s.x-player.pos.x,s.z-player.pos.z);if(d>4&&d<nd){nd=d;near=s;}}
   if(near)spawnDrop(makeItem(pick(['pipe_c','knife_c','bat_c'])),near.x,near.z,near);
+  for(const s of lootSpots)if(s.zone==='ambulance')spawnDrop(makeItem('resurrect'),s.x,s.z,s);
   fillDay(.6);
-  $('hurt').style.opacity=0;$('boss').hidden=true;updateLoadout(true);
+  $('hurt').style.opacity=0;$('boss').hidden=true;clearTip();updateLoadout(true);
 }

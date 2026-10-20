@@ -4,7 +4,7 @@ import {RC} from '../config/world.js';
 import {S,box,scaleUV,unitBox,wallMats,groundMat,roadMat,puddleMat,greyMat,walkMat,woodMat,darkMetal,grassMat} from './materials.js';
 import {WALLS,TAR,CORR} from './textures.js';
 import {solid,freeAt} from './collision.js';
-import {tree,lamp,car,armyTruck,container,bench,trash} from './props.js';
+import {tree,lamp,car,ambulance,armyTruck,container,bench,trash} from './props.js';
 
 // The whole city comes from the seeded rand(), so it looks the same every run.
 // buildCity() must stay the only consumer of rand() and keep this call order.
@@ -93,4 +93,6 @@ export function buildCity(){
   for(const [x,z,ax] of [[RC[1]+2.4,RC[1]+15,false],[RC[3]-15,RC[2]-2.4,true],[RC[2]-2.4,RC[3]+17,false]]){car(x,z,ax,true);spot(ax?x:x-2.2,ax?z+2.2:z,'police');}
   for(let k=0;k<18;k++){const ri=Math.floor(R(0,5)),seg=Math.floor(R(0,4)),along=RC[seg]+R(9.5,22.5),side=rand()<.5?-1:1;const vx=rand()<.5;const x=vx?RC[ri]+side*2.4:along,z=vx?along:RC[ri]+side*2.4;if(freeAt(x,z,2.4))car(x,z,!vx);}
   for(let i=lootSpots.length-1;i>=0;i--)if(!freeAt(lootSpots[i].x,lootSpots[i].z,.5))lootSpots.splice(i,1);
+  // abandoned ambulance west of the market with one Resurrection Kit per game (v0.4.2); added last so rand() and spot indices stay as before
+  ambulance(-29.6,20,false);spot(-29.6,23.4,'ambulance');
 }

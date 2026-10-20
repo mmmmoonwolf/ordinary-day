@@ -6,6 +6,7 @@ import {saveGame} from '../systems/save.js';
 import {hhmm,updateLoadout} from './hud.js';
 import {closeBag} from './bag.js';
 import {showContinue} from './input.js';
+import {tipsOff,setTipsOff} from './tips.js';
 
 // ---------- pause menu ----------
 // Stops the game like the bag does (G.paused). Opens by itself when the page goes to the background,
@@ -21,7 +22,9 @@ export function openPause(){
 }
 export function closePause(){if(!isPauseOpen())return;$('pause').hidden=true;G.paused=false;updateLoadout(true);}
 export function togglePause(){isPauseOpen()?closePause():openPause();}
+const showTips=()=>{$('bTips').textContent='คำแนะนำ: '+(tipsOff()?'ปิด':'เปิด');};
 export function initPause(){
+  showTips();$('bTips').addEventListener('click',()=>{setTipsOff(!tipsOff());showTips();});   // turning tips back on shows them all again
   $('bPause').addEventListener('click',openPause);
   $('bResume').addEventListener('click',closePause);
   $('bSaveNow').addEventListener('click',()=>{
