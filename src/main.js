@@ -3,6 +3,7 @@ import {renderer,scene,camera,camOffset,camTarget,flash,muzzle,boomLight} from '
 import {G} from './core/state.js';
 import {RATE,SPEEDS} from './config/time.js';
 import {buildCity} from './world/city.js';
+import {buildInteriors} from './world/interiors.js';
 import {updateOcclusion} from './world/occlusion.js';
 import {agents,removeAgent} from './entities/agents.js';
 import {updateHuman,updateZombie,updateDead} from './entities/ai.js';
@@ -14,6 +15,7 @@ import {runEvents} from './systems/phases.js';
 import {updateSky} from './systems/weather.js';
 import {reset} from './systems/game.js';
 import {autosave,initSave} from './systems/save.js';
+import {updateShelter} from './systems/doors.js';
 import {initAudio} from './systems/audio.js';
 import {updateGoal} from './systems/goal.js';
 import {updateHUD} from './ui/hud.js';
@@ -23,6 +25,7 @@ import {updateTips} from './ui/tips.js';
 import {updateMinimap} from './ui/minimap.js';
 
 buildCity();
+buildInteriors();   // after the city: its own rng, new loot spots appended
 initInput();
 initPause();
 initSave();
@@ -35,7 +38,7 @@ function loop(now){
   requestAnimationFrame(loop);
   const dt=Math.min(.05,(now-last)/1000);last=now;frame++;
   if(!G.paused){
-    if(G.running){G.min+=dt*RATE*SPEEDS[G.speedIdx];runEvents();updatePlayer(dt);autosave(dt);}
+    if(G.running){G.min+=dt*RATE*SPEEDS[G.speedIdx];runEvents();updatePlayer(dt);updateShelter();autosave(dt);}
     for(let i=agents.length-1;i>=0;i--){
       const a=agents[i];
       if(a.state==='human'||a.state==='infected')updateHuman(a,dt);

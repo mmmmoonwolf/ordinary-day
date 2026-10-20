@@ -5,6 +5,7 @@ import {keys,ctl,mouse,joy} from '../core/controls.js';
 import {SPEEDS} from '../config/time.js';
 import {player} from '../entities/player.js';
 import {switchTo,pickup,useHeal,eatBest} from '../systems/inventory.js';
+import {toggleDoor} from '../systems/doors.js';
 import {DIFFS} from '../config/difficulty.js';
 import {startReload} from '../systems/combat.js';
 import {reset} from '../systems/game.js';
@@ -33,7 +34,7 @@ export function initInput(){
     if(e.code==='Space'){e.preventDefault();if(!e.repeat){ctl.fireHeld=true;ctl.fireQ=.2;}}
     if(e.code==='Digit1')switchTo('primary');if(e.code==='Digit2')switchTo('secondary');if(e.code==='Digit3')switchTo('melee');
     if(e.code==='KeyR')startReload();if(e.code==='KeyH')useHeal();if(e.code==='KeyG')eatBest();
-    if((e.code==='KeyE'||e.code==='KeyF')&&player.near)pickup(player.near);
+    if(e.code==='KeyE'||e.code==='KeyF'){if(player.near)pickup(player.near);else if(player.nearDoor>=0)toggleDoor(player.nearDoor);}
   });
   addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Space')ctl.fireHeld=false;});
   addEventListener('blur',()=>{for(const k in keys)keys[k]=false;ctl.fireHeld=false;});
@@ -68,7 +69,7 @@ export function initInput(){
   const pickDiff=k=>{if(!DIFFS[k])k='normal';G.diff=k;for(const b of document.querySelectorAll('.diffs button')){b.classList.toggle('on',b.dataset.diff===k);b.setAttribute('aria-checked',b.dataset.diff===k);}$('diffNote').textContent=DIFFS[k].desc;try{localStorage.setItem('ordinary-day.diff',k);}catch(_){}};
   for(const b of document.querySelectorAll('.diffs button'))b.addEventListener('click',()=>pickDiff(b.dataset.diff));
   pickDiff(pref);
-  $('bPick').addEventListener('click',()=>{if(player.near)pickup(player.near);});
+  $('bPick').addEventListener('click',()=>{if(player.near)pickup(player.near);else if(player.nearDoor>=0)toggleDoor(player.nearDoor);});
   for(const c of chipEls)c.addEventListener('click',()=>switchTo(c.dataset.slot));
   $('bStart').addEventListener('click',()=>{clearSave();reset();$('overlay').hidden=true;G.running=true;});
   $('bContinue').addEventListener('click',()=>{if(!loadGame()){showContinue();return;}$('overlay').hidden=true;G.running=true;say('เล่นต่อจากเซฟ · '+$('contInfo').textContent,'',4);});

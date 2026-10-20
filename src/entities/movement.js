@@ -1,6 +1,8 @@
 import {rnd,pick} from '../core/util.js';
 import {collide} from '../world/collision.js';
 import {nodeXZ,neighbors,nearestNode,same} from '../world/sidewalk.js';
+import {G} from '../core/state.js';
+import {roomAt,viaDoor,doorDist} from '../world/interiors.js';
 
 // ---------- movement ----------
 export function lerpAng(a,b,t){const d=((b-a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;return a+d*t;}
@@ -20,5 +22,13 @@ export function followNodes(a,speed,dt){
     a.prev=a.node;a.node=choice;if(Math.random()<.18)a.wait=rnd(1,4);return;
   }
   moveAgent(a,dx,dz,speed,dt);
+}
+// walk the sidewalks, but first find the way out when inside a building (v0.6)
+export function wander(a,speed,dt){
+  const k=roomAt(a.pos.x,a.pos.z);
+  if(k<0){followNodes(a,speed,dt);return;}
+  a.node=null;
+  if(G.doors&&G.doors[k]&&!G.doors[k].open&&doorDist(k,a.pos.x,a.pos.z)<1.6){a.moving=0;return;}   // shut in: wait by the door
+  const w=viaDoor(k,a.pos.x,a.pos.z,true);moveAgent(a,w.x-a.pos.x,w.z-a.pos.z,speed,dt);
 }
 export const d2=(a,b)=>{const x=a.pos.x-b.pos.x,z=a.pos.z-b.pos.z;return x*x+z*z;};

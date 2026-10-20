@@ -3,7 +3,7 @@ import {LIM} from '../config/world.js';
 
 // solid boxes on the ground plane, used for movement, bullets and loot placement
 export const solids=[];
-export function solid(cx,cz,hw,hd){solids.push({x0:cx-hw,x1:cx+hw,z0:cz-hd,z1:cz+hd});}
+export function solid(cx,cz,hw,hd){const b={x0:cx-hw,x1:cx+hw,z0:cz-hd,z1:cz+hd};solids.push(b);return b;}
 export function freeAt(x,z,m){for(const b of solids)if(x>b.x0-m&&x<b.x1+m&&z>b.z0-m&&z<b.z1+m)return false;return Math.abs(x)<LIM&&Math.abs(z)<LIM;}
 export function collide(p,r){
   for(const b of solids){

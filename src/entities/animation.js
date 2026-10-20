@@ -1,4 +1,5 @@
 import {groundY} from '../config/world.js';
+import {collide} from '../world/collision.js';
 import {DEF} from '../config/items.js';
 import {agents} from './agents.js';
 import {player} from './player.js';
@@ -35,5 +36,5 @@ export function animate(a,dt){
 }
 export function separate(){
   const L=agents.filter(a=>a.state!=='dead');if(player.alive)L.push(player);
-  for(let i=0;i<L.length;i++)for(let j=i+1;j<L.length;j++){const a=L[i],b=L[j];const need=(a.rad||.34)+(b.rad||.34);const dx=b.pos.x-a.pos.x,dz=b.pos.z-a.pos.z,dd=dx*dx+dz*dz;if(dd>need*need||dd<1e-6)continue;const d=Math.sqrt(dd),push=(need-d)/2;a.pos.x-=dx/d*push;a.pos.z-=dz/d*push;b.pos.x+=dx/d*push;b.pos.z+=dz/d*push;}
+  for(let i=0;i<L.length;i++)for(let j=i+1;j<L.length;j++){const a=L[i],b=L[j];const need=(a.rad||.34)+(b.rad||.34);const dx=b.pos.x-a.pos.x,dz=b.pos.z-a.pos.z,dd=dx*dx+dz*dz;if(dd>need*need||dd<1e-6)continue;const d=Math.sqrt(dd),push=(need-d)/2;a.pos.x-=dx/d*push;a.pos.z-=dz/d*push;b.pos.x+=dx/d*push;b.pos.z+=dz/d*push;collide(a.pos,a.rad||.34);collide(b.pos,b.rad||.34);}   // never push anyone through a thin wall
 }

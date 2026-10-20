@@ -16,13 +16,15 @@ import {updateInfection} from '../systems/infection.js';
 import {updateNeeds} from '../systems/needs.js';
 import {LOW_NEED} from '../config/needs.js';
 import {sfx} from '../systems/audio.js';
+import {nearDoor} from '../systems/doors.js';
+import {DOOR_HP} from '../config/shelter.js';
 
 // ---------- player ----------
 export let player;
 export function setPlayer(p){player=p;}
 export function makePlayer(){
   const p=makeAgent(OFF,OFF,{shirt:'#c4612a',pants:'#24272c',skin:'#d8a882',hair:'#15130f'});
-  Object.assign(p,{state:'player',hp:100,maxHp:100,alive:true,swing:0,swingDur:.4,hitDone:true,lastHit:-99,face:Math.PI*1.25,cool:0,reloadT:0,recoil:0,aimT:0,held:null,heldId:'fist',down:0,inv:0,infect:0,infWarn:0,food:100,water:100,needWarn:0,starving:false});
+  Object.assign(p,{state:'player',hp:100,maxHp:100,alive:true,swing:0,swingDur:.4,hitDone:true,lastHit:-99,face:Math.PI*1.25,cool:0,reloadT:0,recoil:0,aimT:0,held:null,heldId:'fist',down:0,inv:0,infect:0,infWarn:0,food:100,water:100,needWarn:0,starving:false,room:-1,nearDoor:-1});
   return p;
 }
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),mray=new THREE.Raycaster();
@@ -57,7 +59,10 @@ export function updatePlayer(dt){
   for(let i=drops.length-1;i>=0;i--){const d=drops[i];const k=DEF[d.item.id].kind;if((k==='ammo'||k==='heal'||k==='revive'||k==='food')&&Math.hypot(d.x-player.pos.x,d.z-player.pos.z)<.9)pickup(d,true);}
   const np=nearestPickable();const bp=$('bPick');
   if(np){const key=String(drops.indexOf(np));if(bp.hidden||bp.dataset.for!==key){bp.hidden=false;bp.dataset.for=key;$('pickName').textContent=DEF[np.item.id].name+gradeTag(np.item.id);bp.style.setProperty('--pg',itemColor(np.item.id));bp.style.borderColor=itemColor(np.item.id);}player.near=np;}
-  else{if(!bp.hidden)bp.hidden=true;player.near=null;}
+  else{player.near=null;const k=nearDoor();player.nearDoor=k;
+    if(k>=0){const st=G.doors[k],label=(st.open?'ปิดประตู':'เปิดประตู')+(st.hp<DOOR_HP?' · '+Math.round(st.hp/DOOR_HP*100)+'%':''),key='door'+k+label;   // E / the pick button also works doors (v0.6)
+      if(bp.hidden||bp.dataset.for!==key){bp.hidden=false;bp.dataset.for=key;$('pickName').textContent=label;bp.style.setProperty('--pg','#e2a64a');bp.style.borderColor='#e2a64a';}}
+    else if(!bp.hidden)bp.hidden=true;}
   if(performance.now()/1000-player.lastHit>6&&player.hp<player.maxHp&&!(player.infect>0)&&player.food>=LOW_NEED&&player.water>=LOW_NEED)player.hp=Math.min(player.maxHp,player.hp+1.5*dt);
   updateInfection(dt);updateNeeds(dt);
 }

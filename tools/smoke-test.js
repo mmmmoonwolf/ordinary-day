@@ -177,7 +177,7 @@ const { freeAt } = await import('../src/world/collision.js');
 els.bAgain.fire('click'); T.G.running = true; T.player.inv = 1e9;
 const amb = lootSpots.filter(sp => sp.zone === 'ambulance');
 if (amb.length !== 1 || !amb[0].drop || amb[0].drop.item.id !== 'resurrect') afail('no Resurrection Kit at the ambulance at the start');
-if (lootSpots.length !== 81 || lootSpots.indexOf(amb[0]) !== 80) afail('ambulance spot should be appended last (index 80 of 81)');
+if (lootSpots.indexOf(amb[0]) !== 80 || lootSpots.slice(81).some(s => s.zone !== 'indoor')) afail('ambulance spot should stay at index 80, with only v0.6 indoor spots after it');
 if (!freeAt(amb[0].x, amb[0].z, 0.4)) afail('ambulance kit sits inside a solid');
 T.player.pos.x = amb[0].x; T.player.pos.z = amb[0].z; step(5);
 if (!T.inv.bag.some(e => e.id === 'resurrect') || amb[0].drop) afail('walking onto the kit did not pick it up');
@@ -244,6 +244,64 @@ const bestAll = JSON.parse(store.get('ordinary-day.best') || '{}');
 if (!bestAll.hard || !els.oEyebrow.textContent.includes('ยาก')) vfail('records not kept per difficulty: ' + store.get('ordinary-day.best'));
 T.G.diff = 'normal';
 console.log('v0.5: durability, needs (food', (50 - f1).toFixed(2), 'water', (50 - w1).toFixed(2), 'in 10 s), armor back, tyrant smash + save, difficulty', [dE, dN, dH].join('/'));
+
+// 9) v0.6: enterable buildings, doors, walls block sight and blows, zombies break doors
+const ifail = m => errs.push('v0.6 test: ' + m);
+const I = await import('../src/world/interiors.js');
+const Dr = await import('../src/systems/doors.js');
+const { buildings } = await import('../src/world/city.js');
+const { makeNoise } = await import('../src/entities/ai.js');
+const { DOOR_HP, HEAR_WALL } = await import('../src/config/shelter.js');
+const rooms = I.rooms;
+if (rooms.length < 6) ifail('only ' + rooms.length + ' enterable buildings');
+for (const r of rooms) {
+  if (solids.includes(r.b.box)) ifail('a room still has its solid footprint');
+  if (!freeAt(r.dx + r.n[0] * 1.4, r.dz + r.n[1] * 1.4, .5)) ifail('a doorway opens onto something solid');
+  if (!freeAt((r.x0 + r.x1) / 2, (r.z0 + r.z1) / 2, .5)) ifail('a room centre is blocked by furniture');
+}
+const indoorSpots = lootSpots.filter(s => s.zone === 'indoor').length;
+// a clean world: no people or zombies but the ones each check adds
+const clear = () => { els.bAgain.fire('click'); T.G.running = true; for (const a of T.agents) a.gone = true; step(2); T.player.inv = 0; T.player.hp = 100; };
+const zAt = (x, z, kind = 'zombie') => { const a = T.makeAgent(x, z); T.becomeZombie(a, kind); T.agents.push(a); return a; };
+const r = rooms[0], k = 0, [nx, nz] = r.n, cx = (r.x0 + r.x1) / 2, cz = (r.z0 + r.z1) / 2;
+// walking in turns the cutaway on, and the door can be shut behind
+clear(); T.player.pos.x = cx; T.player.pos.z = cz; step(2);
+if (T.player.room !== k || I.shownRoom() !== k || !r.cut.visible || r.b.meshes[0].visible) ifail('cutaway did not switch on inside the room');
+T.player.pos.x = r.dx - nx * .2; T.player.pos.z = r.dz - nz * .2; step(1);
+if (Dr.toggleDoor(k)) ifail('door closed on a player standing in the doorway');
+T.player.pos.x = r.dx - nx * 1.2; T.player.pos.z = r.dz - nz * 1.2; step(1);
+if (T.player.nearDoor !== k) ifail('door prompt did not show next to the door');
+key('KeyE', 'keydown'); key('KeyE', 'keyup');
+if (T.G.doors[k].open || !solids.includes(r.doorBox)) ifail('E did not close the door');
+// a zombie outside does not see a player deep inside, cannot hit through the wall, and is not reached by melee
+T.player.pos.x = cx - nx * 1.5; T.player.pos.z = cz - nz * 1.5; step(1);
+const zo = zAt(r.dx + nx * 6, r.dz + nz * 6); step(60 * 4);
+if (T.player.hp < 100 || I.roomAt(zo.pos.x, zo.pos.z) === k) ifail('zombie outside got at the player through a closed door');
+// a noise inside brings it to the door, and it breaks the door down
+makeNoise(T.player.pos.x, T.player.pos.z, 40); step(60 * 20);
+if (!T.G.doors[k].broken) ifail('zombie did not break the door (hp ' + T.G.doors[k].hp + ', zombie at ' + zo.pos.x.toFixed(1) + ',' + zo.pos.z.toFixed(1) + ')');
+step(60 * 3);
+if (!(T.player.hp < 100)) ifail('zombie did not come through the broken door');
+// a zombie behind the building walks round to the door when it hears the player right behind the wall
+clear(); const r2 = rooms[1], [mx, mz] = r2.n, c2x = (r2.x0 + r2.x1) / 2, c2z = (r2.z0 + r2.z1) / 2, depth2 = mx ? (r2.x1 - r2.x0) : (r2.z1 - r2.z0);
+T.player.pos.x = c2x - mx * (depth2 / 2 - .6); T.player.pos.z = c2z - mz * (depth2 / 2 - .6); step(1);
+const zb = zAt(c2x - mx * (depth2 / 2 + 1.4), c2z - mz * (depth2 / 2 + 1.4));step(60 * 25);
+if (!(T.player.hp < 100) || I.roomAt(zb.pos.x, zb.pos.z) !== 1) ifail('zombie behind the building did not find the door (at ' + zb.pos.x.toFixed(1) + ',' + zb.pos.z.toFixed(1) + ' room ' + I.roomAt(zb.pos.x, zb.pos.z) + ')');
+// melee does not reach through a wall
+clear(); T.player.pos.x = c2x - mx * (depth2 / 2 - .5); T.player.pos.z = c2z - mz * (depth2 / 2 - .5); T.player.face = Math.atan2(-mx, -mz);
+const zw = zAt(c2x - mx * (depth2 / 2 + .9), c2z - mz * (depth2 / 2 + .9)); zw.feed = 99; meleeHit(D5.bat_c);
+if (zw.hp < 30) ifail('melee hit through a wall');
+// closed doors muffle noise
+clear(); T.player.pos.x = cx; T.player.pos.z = cz; Dr.toggleDoor(k);
+const zn = zAt(r.dx + nx * 16, r.dz + nz * 16); zn.feed = 99; makeNoise(cx, cz, 25);
+const heardShut = !!zn.heard; Dr.toggleDoor(k); makeNoise(cx, cz, 25);
+if (heardShut || !zn.heard) ifail('door did not muffle noise (shut ' + heardShut + ', open ' + !!zn.heard + ')');
+// door state survives save / new game / load
+Dr.toggleDoor(k); T.G.doors[k].hp = 50; S.saveGame(); els.bAgain.fire('click');
+if (!T.G.doors[k].open || T.G.doors[k].hp !== DOOR_HP || solids.includes(r.doorBox)) ifail('new game did not reset the doors');
+S.loadGame();
+if (T.G.doors[k].open || T.G.doors[k].hp !== 50 || !solids.includes(r.doorBox)) ifail('loading the save lost the door state');
+console.log('v0.6:', rooms.length, 'enterable buildings of', buildings.length, '(doors facing the camera:', rooms.filter(r => r.n[0] > 0 || r.n[1] > 0).length + ')', '|', indoorSpots, 'indoor loot spots | door broken, wall sight, round-the-corner, noise, save OK');
 
 console.log(errs.length ? `FAILED: ${errs.length} runtime errors\n` + errs.slice(0, 3).join('\n---\n') : 'PASSED: no runtime errors');
 process.exit(errs.length ? 1 : 0);

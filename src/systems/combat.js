@@ -5,6 +5,7 @@ import {ctl,mouse} from '../core/controls.js';
 import {DEF,durPct} from '../config/items.js';
 import {diffOf} from '../config/difficulty.js';
 import {rayWall} from '../world/collision.js';
+import {walledOff} from '../world/interiors.js';
 import {agents} from '../entities/agents.js';
 import {player} from '../entities/player.js';
 import {hurtZombie,makeNoise} from '../entities/ai.js';
@@ -30,7 +31,7 @@ export function aimAssist(def){
   if(mouse.active)return;
   const range=def.gun?def.range*.85:def.range+1.6,cone=def.gun?.8:.4;
   const fx=Math.sin(player.face),fz=Math.cos(player.face);let best=null,bs=-9;
-  for(const z of agents){if(z.state!=='zombie'||z.retreat)continue;const dx=z.pos.x-player.pos.x,dz=z.pos.z-player.pos.z,d=Math.hypot(dx,dz);if(d>range||d<1e-3)continue;
+  for(const z of agents){if(z.state!=='zombie'||z.retreat)continue;const dx=z.pos.x-player.pos.x,dz=z.pos.z-player.pos.z,d=Math.hypot(dx,dz);if(d>range||d<1e-3)continue;if(walledOff(player.pos.x,player.pos.z,z.pos.x,z.pos.z))continue;
     const dot=(dx*fx+dz*fz)/d;if(dot<cone&&d>2.2)continue;const s=dot-d/range*.6;if(s>bs){bs=s;best=z;}}
   if(best)player.face=Math.atan2(best.pos.x-player.pos.x,best.pos.z-player.pos.z);
 }
@@ -64,7 +65,7 @@ export function fireGun(w,def){
 export function meleeHit(def){
   const fx=Math.sin(player.face),fz=Math.cos(player.face);let best=null,bd=1e9;
   for(const z of agents){if(z.state!=='zombie')continue;const dx=z.pos.x-player.pos.x,dz=z.pos.z-player.pos.z,d=Math.hypot(dx,dz);
-    if(d-(z.rad-.34)>def.range||d<1e-3)continue;if((dx*fx+dz*fz)/d<def.arc)continue;
+    if(d-(z.rad-.34)>def.range||d<1e-3)continue;if((dx*fx+dz*fz)/d<def.arc)continue;if(walledOff(player.pos.x,player.pos.z,z.pos.x,z.pos.z))continue;   // no hitting through a wall
     if(def.cleave){hurtZombie(z,def.dmg,dx/d,dz/d,def.kb,false);best=best||z;}else if(d<bd){bd=d;best=z;}}
   if(best&&!def.cleave){const dx=best.pos.x-player.pos.x,dz=best.pos.z-player.pos.z,d=Math.hypot(dx,dz);hurtZombie(best,def.dmg,dx/d,dz/d,def.kb,false);}
   if(best){sfx.thud(best.pos.x,best.pos.z);wearMelee(def);}
