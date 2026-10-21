@@ -303,5 +303,26 @@ S.loadGame();
 if (T.G.doors[k].open || T.G.doors[k].hp !== 50 || !solids.includes(r.doorBox)) ifail('loading the save lost the door state');
 console.log('v0.6:', rooms.length, 'enterable buildings of', buildings.length, '(doors facing the camera:', rooms.filter(r => r.n[0] > 0 || r.n[1] > 0).length + ')', '|', indoorSpots, 'indoor loot spots | door broken, wall sight, round-the-corner, noise, save OK');
 
+// 10) v0.6.1 regressions: dropped items must not bounce back, a full bag says so, drops stay reachable
+const rfail = m => errs.push('v0.6.1 test: ' + m);
+const Inv6 = await import('../src/systems/inventory.js');
+const { reachableSpot, spawnDrop: spawnD } = await import('../src/systems/drops.js');
+const spawnDropAt = (id, x, z) => spawnD({ id, n: 6 }, x, z);
+clear(); T.player.inv = 1e9;
+T.inv.bag = [{ id: 'a9', n: 30 }]; Inv6.dropItem(T.inv.bag.shift()); step(30);
+if (T.inv.bag.length) rfail('dropped ammo bounced straight back into the bag');
+const dropped = T.drops[T.drops.length - 1];
+if (Math.hypot(dropped.x - T.player.pos.x, dropped.z - T.player.pos.z) < 1) rfail('dropped item landed under the player');
+T.player.pos.x += 3; step(2); T.player.pos.x = dropped.x; T.player.pos.z = dropped.z; step(2);
+if (!T.inv.bag.some(e => e.id === 'a9')) rfail('dropped ammo could not be picked up again after walking away');
+T.inv.bag = []; for (let i = 0; i < T.inv.cap; i++) T.inv.bag.push({ id: 'pistol_c', mag: 0 });
+const nDrops = T.drops.length; spawnDropAt('a12', T.player.pos.x, T.player.pos.z); step(2);
+if (T.drops.length !== nDrops + 1 || els.bPick.hidden || !els.pickName.textContent.includes('กระเป๋าเต็ม')) rfail('full bag did not show the bag-full button over ammo');
+key('KeyE', 'keydown'); if (els.bag.hidden) rfail('E over ammo with a full bag did not open the bag'); els.bagClose.fire('click');
+let unreachable = 0;
+for (const b of solids.slice(0, 200)) { const [x, z] = reachableSpot(b.x0 + .25, (b.z0 + b.z1) / 2); if (!freeAt(x, z, .3)) unreachable++; }   // a drop just inside the edge, like one knocked out of a dying zombie
+if (unreachable) rfail(unreachable + ' drops inside solids could not be moved somewhere reachable');
+console.log('v0.6.1: drop does not bounce back, full-bag button, drops moved out of solids');
+
 console.log(errs.length ? `FAILED: ${errs.length} runtime errors\n` + errs.slice(0, 3).join('\n---\n') : 'PASSED: no runtime errors');
 process.exit(errs.length ? 1 : 0);
