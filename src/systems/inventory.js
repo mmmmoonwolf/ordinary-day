@@ -2,6 +2,8 @@ import {$,rnd} from '../core/util.js';
 import {DEF,GRADES,SLOTNAME,gradeOf} from '../config/items.js';
 import {player} from '../entities/player.js';
 import {spawnDrop,removeDrop} from './drops.js';
+import {freeAt} from '../world/collision.js';
+import {walledOff} from '../world/interiors.js';
 import {feed,feedOnce,updateLoadout} from '../ui/hud.js';
 import {renderBag} from '../ui/bag.js';
 import {cureInfection} from './infection.js';
@@ -23,17 +25,18 @@ export function pickup(d,quiet){
   if(def.kind==='weapon'){
     if(!inv.eq[def.slot]){inv.eq[def.slot]=it;removeDrop(d);feed('+ '+def.name+gradeTag(it.id)+' → '+SLOTNAME[def.slot],gc);switchTo(def.slot);}
     else if(inv.bag.length<inv.cap){inv.bag.push(it);removeDrop(d);feed('+ '+def.name+gradeTag(it.id)+' (เข้ากระเป๋า)',gc);}
-    else{feedOnce('full','กระเป๋าเต็ม','warn');return;}
+    else{feedOnce('full','กระเป๋าเต็ม','warn');return false;}
   } else if(def.kind==='bag'){
-    if(inv.cap>=def.slots){feedOnce('hasbag','มีกระเป๋าเป้แล้ว','warn');return;}
+    if(inv.cap>=def.slots){feedOnce('hasbag','มีกระเป๋าเป้แล้ว','warn');return false;}
     inv.cap=def.slots;removeDrop(d);feed('+ กระเป๋าเป้ · ช่องเก็บของเพิ่มเป็น '+def.slots+' ช่อง');
   } else {
     const left=addStack(it.id,it.n);
-    if(left===it.n){feedOnce('full','กระเป๋าเต็ม','warn',quiet?5000:1500);return;}
+    if(left===it.n){feedOnce('full','กระเป๋าเต็ม','warn',quiet?5000:1500);return false;}
     feed('+ '+def.name+' ×'+(it.n-left),def.kind==='revive'?'mil':'get');
     if(left>0)it.n=left;else removeDrop(d);
   }
   sfx.pickup();updateLoadout(true);if(!$('bag').hidden)renderBag();
+  return true;
 }
 const HEAL_ORDER=['bandage','antibiotic','painkiller','firstaid'];
 export function useHeal(){
@@ -61,4 +64,10 @@ export function useFoodAt(i){
   e.n--;if(e.n<=0)inv.bag.splice(i,1);
   feed((def.water?'ดื่ม ':'กิน ')+def.name);sfx.eat();updateLoadout(true);
 }
-export function dropItem(it){const a=rnd(0,6.28);spawnDrop(it,player.pos.x+Math.sin(a)*.8,player.pos.z+Math.cos(a)*.8);}
+// drop in front of the player (or the nearest open side), out of auto-pickup reach; `hold` keeps it from being picked
+// straight back up until the player has walked away from it (v0.6.1: dropped ammo, meds and food used to bounce back)
+export function dropItem(it){
+  const p=player.pos;let x=p.x,z=p.z;
+  for(const da of [0,.6,-.6,1.2,-1.2,1.9,-1.9,2.6,-2.6,Math.PI]){const a=player.face+da,qx=p.x+Math.sin(a)*1.15,qz=p.z+Math.cos(a)*1.15;if(freeAt(qx,qz,.3)&&!walledOff(p.x,p.z,qx,qz)){x=qx;z=qz;break;}}
+  spawnDrop(it,x,z).hold=true;
+}

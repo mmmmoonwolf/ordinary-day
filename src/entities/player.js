@@ -56,12 +56,18 @@ export function updatePlayer(dt){
   }
   if(player.swing>0){player.swing-=dt;if(!player.hitDone&&player.swing<player.swingDur*.55){player.hitDone=true;meleeHit(def);}}
   player.recoil=Math.max(0,player.recoil-dt*8);
-  for(let i=drops.length-1;i>=0;i--){const d=drops[i];const k=DEF[d.item.id].kind;if((k==='ammo'||k==='heal'||k==='revive'||k==='food')&&Math.hypot(d.x-player.pos.x,d.z-player.pos.z)<.9)pickup(d,true);}
-  const np=nearestPickable();const bp=$('bPick');
-  if(np){const key=String(drops.indexOf(np));if(bp.hidden||bp.dataset.for!==key){bp.hidden=false;bp.dataset.for=key;$('pickName').textContent=DEF[np.item.id].name+gradeTag(np.item.id);bp.style.setProperty('--pg',itemColor(np.item.id));bp.style.borderColor=itemColor(np.item.id);}player.near=np;}
+  let full=null;   // an item underfoot that does not fit in the bag
+  for(let i=drops.length-1;i>=0;i--){const d=drops[i];const k=DEF[d.item.id].kind;if(k!=='ammo'&&k!=='heal'&&k!=='revive'&&k!=='food')continue;
+    const dist=Math.hypot(d.x-player.pos.x,d.z-player.pos.z);if(d.hold){if(dist>1.4)d.hold=false;continue;}   // just dropped: wait until the player walks away
+    if(dist<.9&&!pickup(d,true))full=d;}
+  const np=nearestPickable();const bp=$('bPick');player.full=!np&&full?full:null;
+  if(player.full){const key='full'+drops.indexOf(full);   // bag full: say so on the button, which opens the bag to make room (v0.6.1)
+    if(bp.hidden||bp.dataset.for!==key){bp.hidden=false;bp.dataset.for=key;$('pickVerb').textContent='';$('pickName').textContent='กระเป๋าเต็ม · '+DEF[full.item.id].name;bp.style.setProperty('--pg','#ff8f7c');bp.style.borderColor='#ff8f7c';}
+    player.near=null;player.nearDoor=-1;}
+  else if(np){const key=String(drops.indexOf(np));if(bp.hidden||bp.dataset.for!==key){bp.hidden=false;bp.dataset.for=key;$('pickVerb').textContent='เก็บ ';$('pickName').textContent=DEF[np.item.id].name+gradeTag(np.item.id);bp.style.setProperty('--pg',itemColor(np.item.id));bp.style.borderColor=itemColor(np.item.id);}player.near=np;}
   else{player.near=null;const k=nearDoor();player.nearDoor=k;
     if(k>=0){const st=G.doors[k],label=(st.open?'ปิดประตู':'เปิดประตู')+(st.hp<DOOR_HP?' · '+Math.round(st.hp/DOOR_HP*100)+'%':''),key='door'+k+label;   // E / the pick button also works doors (v0.6)
-      if(bp.hidden||bp.dataset.for!==key){bp.hidden=false;bp.dataset.for=key;$('pickName').textContent=label;bp.style.setProperty('--pg','#e2a64a');bp.style.borderColor='#e2a64a';}}
+      if(bp.hidden||bp.dataset.for!==key){bp.hidden=false;bp.dataset.for=key;$('pickVerb').textContent='';$('pickName').textContent=label;bp.style.setProperty('--pg','#e2a64a');bp.style.borderColor='#e2a64a';}}
     else if(!bp.hidden)bp.hidden=true;}
   if(performance.now()/1000-player.lastHit>6&&player.hp<player.maxHp&&!(player.infect>0)&&player.food>=LOW_NEED&&player.water>=LOW_NEED)player.hp=Math.min(player.maxHp,player.hp+1.5*dt);
   updateInfection(dt);updateNeeds(dt);

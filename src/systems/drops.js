@@ -5,6 +5,8 @@ import {DEF,gradeOf,itemColor} from '../config/items.js';
 import {POOLS,GRADE_W,MED_W,CAT_W,FOOD_W} from '../config/loot.js';
 import {itemModel} from '../world/item-models.js';
 import {lootSpots} from '../world/city.js';
+import {freeAt} from '../world/collision.js';
+import {walledOff} from '../world/interiors.js';
 
 // ---------- loot rolls ----------
 export function makeItem(id){const d=DEF[id];if(d.kind==='weapon')return d.dur?{id,mag:0,dur:Math.round(d.dur*rnd(.4,1))}:{id,mag:d.gun?Math.floor(rnd(0,d.mag*.6+1)):0};if(d.kind==='ammo')return {id,n:Math.round(rnd(d.find[0],d.find[1]))};if(d.kind==='heal'||d.kind==='revive'||d.kind==='food')return {id,n:1};return {id};}
@@ -21,7 +23,15 @@ export function rollLoot(phase,zone,forceGrade){
 const ringGeo=new THREE.RingGeometry(.34,.46,24).rotateX(-Math.PI/2);
 export const ringMats={};const ringMat=c=>ringMats[c]||(ringMats[c]=new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.7,depthWrite:false}));
 export const drops=[];
+// the nearest spot to (x,z) the player can stand on, on the same side of any wall: a drop that lands in a car,
+// a wall or furniture would be out of reach (v0.6.1)
+export function reachableSpot(x,z){
+  if(freeAt(x,z,.3))return [x,z];
+  for(let r=.3;r<=2.4;r+=.3)for(let a=0;a<12;a++){const px=x+Math.sin(a*Math.PI/6)*r,pz=z+Math.cos(a*Math.PI/6)*r;if(freeAt(px,pz,.3)&&!walledOff(x,z,px,pz))return [px,pz];}
+  return [x,z];
+}
 export function spawnDrop(item,x,z,sp){
+  if(!sp)[x,z]=reachableSpot(x,z);
   const g=new THREE.Group();const m=itemModel(item.id);m.rotation.y=Math.random()*6.28;g.add(m);
   const r=new THREE.Mesh(ringGeo,ringMat(itemColor(item.id)));r.position.y=.015;g.add(r);
   if(gradeOf(item.id)==='mil'){const r2=new THREE.Mesh(ringGeo,ringMat(itemColor(item.id)));r2.scale.setScalar(1.45);r2.position.y=.016;g.add(r2);}
