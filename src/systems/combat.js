@@ -1,4 +1,4 @@
-import {$,rnd} from '../core/util.js';
+import {rnd} from '../core/util.js';
 import {muzzle} from '../core/renderer.js';
 import {G} from '../core/state.js';
 import {ctl} from '../core/controls.js';
@@ -14,7 +14,7 @@ import {addBlood,tracer} from './effects.js';
 import {curWeapon,countAmmo,takeAmmo} from './inventory.js';
 import {clearSave} from './save.js';
 import {cureInfection} from './infection.js';
-import {sfx} from './audio.js';
+import {sfx,sfxFor} from './audio.js';
 import {uiFor,gameOver} from '../ui/hud.js';
 
 // ---------- combat ----------
@@ -23,9 +23,9 @@ export function hurtPlayer(p,n){
   if(!p.alive||p.inv>0||p.down>0)return false;
   const U=uiFor(p);
   // already down (v0.10): every hit takes time off what is left before they bleed out
-  if(p.bleed>0){p.bleed-=n*diffOf(G).dmg*BLEED_PER_DMG;addBlood(p.pos.x,p.pos.z);if(p.local){$('hurt').style.opacity=.85;sfx.hurt();}if(p.bleed<=0)die(p);return true;}
+  if(p.bleed>0){p.bleed-=n*diffOf(G).dmg*BLEED_PER_DMG;addBlood(p.pos.x,p.pos.z);U.hurt();if(p.bleed<=0)die(p);return true;}
   p.hp-=n*diffOf(G).dmg;p.lastHit=performance.now()/1000;addBlood(p.pos.x,p.pos.z);
-  if(p.local){$('hurt').style.opacity=.85;sfx.hurt();}
+  U.hurt();
   if(p.hp<=0){
     const bag=p.gear.bag,ri=bag.findIndex(e=>e.id==='resurrect');
     if(ri>=0){bag.splice(ri,1);p.hp=0;p.down=1.8;if(p.local)ctl.fireHeld=false;cureInfection(p);p.food=Math.max(p.food,30);p.water=Math.max(p.water,30);p.endCause=null;if(p.local)G.endCause=null;U.say('Resurrection Kit ทำงาน · คุณฟื้นคืนชีพ','',5);U.updateLoadout(true);return true;}
@@ -44,6 +44,10 @@ function goDown(p){
 export function die(p){
   p.hp=0;p.bleed=0;p.helping=null;p.alive=false;p.state='dead';p.deadT=0;p.endCause=p.endCause||'hurt';
   if(p.local){ctl.fireHeld=false;G.endCause=p.endCause;}
+  if(players.some(q=>q.alive)){   // the others play on (v0.11): the dead watch a teammate and can be brought back with a Kit
+    uiFor(p).say('คุณตายแล้ว · กำลังดูเพื่อนเล่นต่อ ถ้าเพื่อนมี Resurrection Kit ชุบคุณกลับมาได้','alarm',8);
+    for(const q of players)if(q.alive)uiFor(q).feed(p.name+' ตาย · ชุบได้ด้วย Kit','warn');
+  }
   // nobody left standing: those still down cannot be helped any more
   if(!players.some(standing))for(const q of players)if(q.alive){q.endCause=q.endCause||'hurt';die(q);return;}
   if(!players.some(q=>q.alive)){clearSave();setTimeout(gameOver,1800);}
@@ -61,13 +65,13 @@ export function startReload(p){
   const w=curWeapon(p),def=DEF[w.id];if(!def.gun||p.reloadT>0||!p.alive||p.bleed>0)return;
   if(w.mag>=def.mag)return;
   if(countAmmo(p,def.ammo)<=0){uiFor(p).feedOnce('noammo','ไม่มีกระสุน '+DEF[def.ammo].name+' ในกระเป๋า','warn');return;}
-  p.reloadT=def.reload;p.reloadFor=w;if(p.local)sfx.reload();
+  p.reloadT=def.reload;p.reloadFor=w;sfxFor(p).reload();
 }
 export function finishReload(p){const w=p.reloadFor,def=DEF[w.id];if(w!==curWeapon(p))return;w.mag+=takeAmmo(p,def.ammo,def.mag-w.mag);uiFor(p).updateLoadout(true);}
 export function fireGun(p,w,def){
   const U=uiFor(p);
-  if(w.mag<=0){p.cool=.3;if(p.local)sfx.empty();if(countAmmo(p,def.ammo)>0)startReload(p);else U.feedOnce('noammo','กระสุนหมด · หา '+DEF[def.ammo].name,'warn');return;}
-  w.mag--;p.cool=def.rate;p.recoil=1;p.aimT=.5;sfx.shot(def.model);
+  if(w.mag<=0){p.cool=.3;sfxFor(p).empty();if(countAmmo(p,def.ammo)>0)startReload(p);else U.feedOnce('noammo','กระสุนหมด · หา '+DEF[def.ammo].name,'warn');return;}
+  w.mag--;p.cool=def.rate;p.recoil=1;p.aimT=.5;sfx.shot(def.model,p.pos.x,p.pos.z);
   const fx=Math.sin(p.face),fz=Math.cos(p.face),ox=p.pos.x+fx*.7,oz=p.pos.z+fz*.7;
   const pel=def.pellets||1,pd=def.pellets?def.dmg*1.4/def.pellets:def.dmg;
   for(let k0=0;k0<pel;k0++){

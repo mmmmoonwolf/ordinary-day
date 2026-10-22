@@ -9,11 +9,11 @@ import {updateDead,makeNoise} from './ai.js';
 import {drops} from '../systems/drops.js';
 import {curWeapon,pickup,freshGear} from '../systems/inventory.js';
 import {aimAssist,finishReload,fireGun,meleeHit,die} from '../systems/combat.js';
-import {updateInfection} from '../systems/infection.js';
+import {updateInfection,cureInfection} from '../systems/infection.js';
 import {updateNeeds} from '../systems/needs.js';
 import {LOW_NEED} from '../config/needs.js';
 import {SNEAK_SPEED} from '../config/stealth.js';
-import {sfx} from '../systems/audio.js';
+import {sfxFor} from '../systems/audio.js';
 import {nearDoor,nearFixDoor} from '../systems/doors.js';
 import {CRAWL_SPEED,REVIVE_SECONDS,REVIVE_RANGE,REVIVE_HP} from '../config/party.js';
 import {uiFor} from '../ui/hud.js';
@@ -30,13 +30,21 @@ const LOOKS=[{shirt:'#c4612a',pants:'#24272c',skin:'#d8a882',hair:'#15130f'},{sh
 export const freshInput=()=>({mx:0,mz:0,mag:0,run:false,sneak:false,slow:false,aim:false,face:null,aimDist:0,fire:false,fireQ:0});
 export function makePlayer(i=0){
   const p=makeAgent(OFF+i*1.3,OFF,LOOKS[i%LOOKS.length]);
-  Object.assign(p,{state:'player',id:i,local:false,hp:100,maxHp:100,alive:true,swing:0,swingDur:.4,hitDone:true,lastHit:-99,face:Math.PI*1.25,cool:0,reloadT:0,recoil:0,aimT:0,held:null,heldId:'fist',down:0,inv:0,
+  Object.assign(p,{state:'player',id:i,name:'ผู้เล่น '+(i+1),local:false,hp:100,maxHp:100,alive:true,swing:0,swingDur:.4,hitDone:true,lastHit:-99,face:Math.PI*1.25,cool:0,reloadT:0,recoil:0,aimT:0,held:null,heldId:'fist',down:0,inv:0,
     infect:0,infWarn:0,food:100,water:100,needWarn:0,starving:false,room:-1,nearDoor:-1,bleed:0,reviveT:0,helping:null,helpT:0,nearDown:null,fixDoor:-1,near:null,full:null,sneak:false,runNoise:0,stay:null,endCause:null,gear:freshGear(),input:freshInput()});
   return p;
 }
 // players that zombies can go after
 export const targets=()=>players.filter(p=>p.alive&&p.down<=0);
 export const isDown=p=>p.alive&&p.bleed>0;
+// more than one player in the game: the bag and the pause menu no longer stop the world, no ×2 / ×4 (v0.11)
+export const isSolo=()=>players.length<2;
+// who the camera, sounds and cutaway follow: the player on this device, or once they are dead a teammate still alive
+export function viewed(){
+  if(!player||player.alive)return player;
+  return players.find(q=>q.alive&&!(q.bleed>0))||players.find(q=>q.alive)||player;
+}
+const hasKit=p=>p.gear.bag.some(e=>e.id==='resurrect');
 // how many are still in the game (down counts); the world scales with it (config/party.js, v0.10)
 export const partySize=()=>Math.max(1,players.filter(p=>p.alive).length);
 export function nearestPlayerDist(x,z){let d=1e9;for(const p of players)if(p.alive)d=Math.min(d,Math.hypot(p.pos.x-x,p.pos.z-z));return d;}
@@ -64,7 +72,7 @@ export function updatePlayer(p,dt){
   if(p.helping&&!keepHelping(p,dt)){if(isDown(p.helping))p.helping.reviveT=0;p.helping=null;}
   if((I.fire||I.fireQ>0)&&p.cool<=0&&p.reloadT<=0){
     if(def.gun){if(def.auto||I.fireQ>0){I.fireQ=0;aimAssist(p,def);fireGun(p,w,def);}}
-    else{I.fireQ=0;aimAssist(p,def);if(p.local)sfx.swing();p.swing=p.swingDur=def.cd;p.hitDone=false;p.cool=def.cd;p.aimT=.3;}
+    else{I.fireQ=0;aimAssist(p,def);sfxFor(p).swing();p.swing=p.swingDur=def.cd;p.hitDone=false;p.cool=def.cd;p.aimT=.3;}
   }
   if(p.swing>0){p.swing-=dt;if(!p.hitDone&&p.swing<p.swingDur*.55){p.hitDone=true;if(!def.gun)meleeHit(p,def);}}
   p.recoil=Math.max(0,p.recoil-dt*8);
@@ -88,22 +96,35 @@ function updateDowned(p,dt){
   p.moving=Math.min(p.moving,.4);
   p.bleed-=dt;if(p.bleed<=0)die(p);
 }
-function nearestDowned(p){let best=null,bd=REVIVE_RANGE;for(const q of players){if(q===p||!isDown(q))continue;const d=Math.hypot(q.pos.x-p.pos.x,q.pos.z-p.pos.z);if(d<bd){bd=d;best=q;}}return best;}
+// a teammate down, or dead (v0.11: a Resurrection Kit brings them back)
+function nearestDowned(p){let best=null,bd=REVIVE_RANGE;for(const q of players){if(q===p||!(isDown(q)||q.state==='dead'))continue;const d=Math.hypot(q.pos.x-p.pos.x,q.pos.z-p.pos.z);if(d<bd){bd=d;best=q;}}return best;}
 // E / the pick button next to a downed teammate starts helping; walking off, a new attack or the teammate gone stops it
 export function startHelp(p,q){
-  if(!p.alive||p.bleed>0||p.down>0||!q||!isDown(q))return false;
+  if(!p.alive||p.bleed>0||p.down>0||!q||!(isDown(q)||q.state==='dead'))return false;
   if(p.helping===q)return true;
-  p.helping=q;p.helpT=0;uiFor(p).feed('กำลังช่วยพยุงเพื่อน · ยืนนิ่ง ๆ '+REVIVE_SECONDS+' วินาที');return true;
+  if(!q.alive&&!hasKit(p)){uiFor(p).feedOnce('needkit','ต้องมี Resurrection Kit ถึงจะชุบเพื่อนที่ตายแล้วได้','warn');return false;}
+  p.helping=q;p.helpT=0;uiFor(p).feed((q.alive?'กำลังช่วยพยุงเพื่อน':'กำลังชุบเพื่อนด้วย Resurrection Kit')+' · ยืนนิ่ง ๆ '+REVIVE_SECONDS+' วินาที');return true;
 }
 function keepHelping(p,dt){
   const q=p.helping,I=p.input;
-  if(!isDown(q)||I.mag>.08||I.fire||I.fireQ>0||Math.hypot(q.pos.x-p.pos.x,q.pos.z-p.pos.z)>REVIVE_RANGE+.3)return false;
+  if(!(isDown(q)||q.state==='dead'&&hasKit(p))||I.mag>.08||I.fire||I.fireQ>0||Math.hypot(q.pos.x-p.pos.x,q.pos.z-p.pos.z)>REVIVE_RANGE+.3)return false;
   p.face=Math.atan2(q.pos.x-p.pos.x,q.pos.z-p.pos.z);
   p.helpT+=dt;q.reviveT=p.helpT/REVIVE_SECONDS;
   if(p.helpT<REVIVE_SECONDS)return true;
-  q.bleed=0;q.reviveT=0;q.hp=REVIVE_HP;q.inv=2;q.lastHit=performance.now()/1000;
+  q.reviveT=0;
+  if(!q.alive){resurrect(p,q);return false;}
+  q.bleed=0;q.hp=REVIVE_HP;q.inv=2;q.lastHit=performance.now()/1000;
   uiFor(q).say('เพื่อนช่วยพยุงคุณขึ้นมาแล้ว · HP '+REVIVE_HP,'',4);uiFor(p).feed('ช่วยเพื่อนลุกขึ้นได้แล้ว');
   return false;
+}
+// a Resurrection Kit used on a dead teammate (v0.11, the creator's call on open question 6): back with full HP, cured
+// and fed at least 30, like the Kit does for its owner
+function resurrect(p,q){
+  const bag=p.gear.bag,i=bag.findIndex(e=>e.id==='resurrect');if(i<0)return;
+  bag.splice(i,1);uiFor(p).updateLoadout(true);
+  Object.assign(q,{alive:true,state:'player',deadT:0,hp:q.maxHp,bleed:0,inv:3,down:0,endCause:null,food:Math.max(q.food,30),water:Math.max(q.water,30),lastHit:performance.now()/1000});
+  cureInfection(q);if(q.local)G.endCause=null;
+  uiFor(q).say(p.name+' ใช้ Resurrection Kit ชุบคุณกลับมาแล้ว','',5);uiFor(p).feed('ชุบ '+q.name+' กลับมาแล้ว');
 }
 export function syncHeld(p){
   const id=curWeapon(p).id;if(id===p.heldId)return;p.heldId=id;

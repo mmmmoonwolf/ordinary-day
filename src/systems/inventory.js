@@ -4,7 +4,7 @@ import {spawnDrop,removeDrop} from './drops.js';
 import {uiFor} from '../ui/hud.js';
 import {renderBag} from '../ui/bag.js';
 import {cureInfection} from './infection.js';
-import {sfx} from './audio.js';
+import {sfxFor} from './audio.js';
 import {freeAt} from '../world/collision.js';
 import {walledOff} from '../world/interiors.js';
 
@@ -41,7 +41,7 @@ export function pickup(p,d,quiet){
     U.feed('+ '+def.name+' ×'+(it.n-left),def.kind==='revive'?'mil':'get');
     if(left>0)it.n=left;else removeDrop(d);
   }
-  if(p.local)sfx.pickup();U.updateLoadout(true);if(bagOpen(p))renderBag();
+  sfxFor(p).pickup();U.updateLoadout(true);if(bagOpen(p))renderBag();
   return true;
 }
 const HEAL_ORDER=['bandage','antibiotic','painkiller','firstaid'];
@@ -54,7 +54,7 @@ export function useHeal(p){
 }
 export function useItemAt(p,i){if(cant(p))return;const e=p.gear.bag[i],def=DEF[e.id];if(def.kind!=='heal')return;const amt=Math.round(p.maxHp*def.heal);p.hp=Math.min(p.maxHp,p.hp+amt);e.n--;if(e.n<=0)p.gear.bag.splice(i,1);
   const cured=def.cure&&p.infect>0;if(cured)cureInfection(p);
-  const U=uiFor(p);U.feed('ใช้ '+def.name+' +'+Math.round(def.heal*100)+'%'+(cured?' · ฆ่าเชื้อแล้ว':''));if(p.local)sfx.heal();U.updateLoadout(true);}
+  const U=uiFor(p);U.feed('ใช้ '+def.name+' +'+Math.round(def.heal*100)+'%'+(cured?' · ฆ่าเชื้อแล้ว':''));sfxFor(p).heal();U.updateLoadout(true);}
 // food and water: use whichever fixes the lower bar first
 export function eatBest(p){
   if(cant(p))return;const U=uiFor(p);
@@ -68,7 +68,7 @@ export function useFoodAt(p,i){
   if(cant(p))return;const e=p.gear.bag[i],def=DEF[e.id];if(def.kind!=='food')return;
   if(def.food)p.food=Math.min(100,p.food+def.food);if(def.water)p.water=Math.min(100,p.water+def.water);
   e.n--;if(e.n<=0)p.gear.bag.splice(i,1);
-  const U=uiFor(p);U.feed((def.water?'ดื่ม ':'กิน ')+def.name);if(p.local)sfx.eat();U.updateLoadout(true);
+  const U=uiFor(p);U.feed((def.water?'ดื่ม ':'กิน ')+def.name);sfxFor(p).eat();U.updateLoadout(true);
 }
 // drop in front of the player (or the nearest open side), out of auto-pickup reach; `hold` keeps it from being picked
 // straight back up until the player has walked away from it (v0.6.1: dropped ammo, meds and food used to bounce back)

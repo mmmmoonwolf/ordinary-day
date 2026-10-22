@@ -1,5 +1,6 @@
 import {clamp} from '../core/util.js';
-import {player} from '../entities/player.js';
+import {send} from '../core/bus.js';
+import {player,viewed} from '../entities/player.js';
 
 // ---------- audio ----------
 // Every sound is synthesized with WebAudio (no sound files). Browsers only allow audio after a tap or key press,
@@ -31,10 +32,10 @@ export function toggleMute(){
   return muted;
 }
 
-// volume and stereo pan from where the sound happens relative to the player
+// volume and stereo pan from where the sound happens relative to the player (or the teammate being watched)
 function place(x,z,range){
   if(x===undefined||!player)return {g:1,pan:0};
-  const dx=x-player.pos.x,dz=z-player.pos.z,d=Math.hypot(dx,dz);
+  const v=viewed(),dx=x-v.pos.x,dz=z-v.pos.z,d=Math.hypot(dx,dz);
   return {g:clamp(1-d/range,0,1),pan:clamp((dx-dz)/Math.SQRT2/18,-.8,.8)};
 }
 function out(pan){const p=ctx.createStereoPanner?ctx.createStereoPanner():null;if(!p)return sfxBus;p.pan.value=pan;p.connect(sfxBus);return p;}
@@ -62,8 +63,9 @@ const GUN={
   pistol:{f:1900,dur:.12,peak:.5,thump:110},smg:{f:2300,dur:.07,peak:.32,thump:0},rifle:{f:1500,dur:.11,peak:.5,thump:95},
   shotgun:{f:900,dur:.3,peak:.75,thump:80},sniper:{f:1300,dur:.38,peak:.7,thump:70},lmg:{f:1300,dur:.09,peak:.45,thump:85},
 };
-export const sfx={
-  shot(model){const s=GUN[model]||GUN.pistol;play(s.dur,undefined,0,1,(t,d)=>{noise(t,s.dur,{type:'bandpass',f0:s.f,f1:s.f*.4,q:.8,peak:s.peak,dest:d});if(s.thump)tone(t,.09,{f0:s.thump*1.6,f1:s.thump*.5,peak:s.peak*.8,dest:d});});},
+const S={
+  // heard from where the shooter stands (v0.11: other players' guns are quieter far away)
+  shot(model,x,z){const s=GUN[model]||GUN.pistol;play(s.dur,x,z,70,(t,d,g)=>{noise(t,s.dur,{type:'bandpass',f0:s.f,f1:s.f*.4,q:.8,peak:s.peak*g,dest:d});if(s.thump)tone(t,.09,{f0:s.thump*1.6,f1:s.thump*.5,peak:s.peak*.8*g,dest:d});});},
   empty(){play(.03,undefined,0,1,(t,d)=>noise(t,.02,{type:'highpass',f0:3500,peak:.25,dest:d}));},
   reload(){play(.4,undefined,0,1,(t,d)=>{noise(t,.03,{type:'highpass',f0:2500,peak:.25,dest:d});noise(t+.25,.04,{type:'highpass',f0:1800,peak:.3,dest:d});});},
   swing(){play(.15,undefined,0,1,(t,d)=>noise(t,.12,{type:'bandpass',f0:600,f1:2400,q:2,peak:.18,attack:.03,dest:d}));},
@@ -99,6 +101,17 @@ export const sfx={
     if(v<=0){const r=rotor;rotor=null;setTimeout(()=>{r.src.stop();r.lfo.stop();},1500);}
   },
 };
+
+// Sounds of the world are played here and sent to every other device (v0.11, core/bus.js); the rotor is driven by
+// each device's own frame loop. A sound for one player only (their reload click, a pickup) goes through sfxFor(p):
+// played here when that player is on this device, otherwise sent to theirs.
+export const sfx={};for(const k in S)sfx[k]=k==='rotor'?S[k]:(...a)=>{S[k](...a);send('*','sfx',[k,...a]);};
+const away={};
+export function sfxFor(p){
+  if(p.local)return S;
+  return away[p.id]||(away[p.id]=Object.fromEntries(Object.keys(S).map(k=>[k,(...a)=>send(p.id,'sfx',[k,...a])])));
+}
+export const playLocal=(k,...a)=>{if(S[k])S[k](...a);};
 
 // ---------- music (v0.8) ----------
 // Synthesized, no files: slow pad chords (major before the outbreak, minor after, low and dark at night), a night drone,

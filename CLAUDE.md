@@ -30,6 +30,7 @@
 | `core/util.js` | `isTouch`, `$`, rng (`mulberry32`, `rand`/`R`/`pickS` แบบ seed, `rnd`/`pick`/`wpick` แบบสุ่มจริง), `clamp` |
 | `core/renderer.js` | `renderer`, `scene`, `camera`, `camTarget`, แสง (`sun` `hemi` `flash` `muzzle` `boomLight`), `resize()`, `zoom()`, `QUALITY` / `setQuality()` |
 | `core/state.js` | `G` (เวลา เฟส ฝน kills ฯลฯ), `freshG()` |
+| `core/bus.js` | คิวสิ่งที่ host ส่งไปเครื่องอื่น `bus` (`on`, `out`), `send(to,kind,args)` |
 | `core/controls.js` | สถานะปุ่มดิบ `keys`, `ctl`, `mouse`, `joy` อ่านได้เฉพาะ `ui/input.js` (แปลงเป็น `player.input` ใน `pollInput()`) |
 | `config/time.js` | `DAY_REAL_SECONDS = 300`, `RATE`, `SPEEDS`, `NIGHT_START`, `DAY_START`, `DUSK_WARN`, `isNightTod()` |
 | `config/world.js` | `RC` (เส้นกลางถนน), `OFF` (ระยะทางเท้า), `LIM`, `groundY()` |
@@ -50,12 +51,12 @@
 | `world/item-models.js` · `occlusion.js` | โมเดลอาวุธและไอเท็ม · ทำตึกที่บังผู้เล่นให้โปร่งใส |
 | `entities/agents.js` | ร่างตัวละคร, `agents`, `makeAgent()`, `styleZombie()`, `becomeZombie()`, `setKind()`, `spawnEdge()` |
 | `entities/movement.js` · `ai.js` | `moveAgent()`, `followNodes()`, `wander()` (ออกจากตึกก่อน) · `updateHuman()`, `updateZombie()`, `hurtZombie()`, `makeNoise()` |
-| `entities/player.js` · `animation.js` | `players` (ทุกคน), `player` (คนในเครื่องนี้), `makePlayer(i)`, `updatePlayer(p,dt)`, `syncHeld(p)`, `targets()`, `nearestPlayerDist()`, `freshInput()`, `isDown()`, `startHelp(p,q)`, `partySize()` · `animate()`, `separate()` |
+| `entities/player.js` · `animation.js` | `players` (ทุกคน), `player` (คนในเครื่องนี้), `makePlayer(i)`, `updatePlayer(p,dt)`, `syncHeld(p)`, `targets()`, `nearestPlayerDist()`, `freshInput()`, `isDown()`, `startHelp(p,q)` (ช่วยลุก หรือชุบเพื่อนที่ตายด้วย Kit), `partySize()`, `isSolo()`, `viewed()` (คนที่กล้องตาม) · `animate()`, `separate()` |
 | `systems/drops.js` | `makeItem()`, `rollLoot()`, `drops`, `spawnDrop()`, `fillDay()`, `fillNight()`, `takeByOthers()`, `dropGuaranteed()`, `reachableSpot()` |
 | `systems/inventory.js` · `combat.js` | `p.gear` ต่อคน, `freshGear()`, `pickup(p,d)`, `useHeal(p)`, `addStack(p,…)`, `takeAmmo(p,…)` · `fireGun(p,…)`, `meleeHit(p,def)`, `aimAssist(p,def)`, `hurtPlayer(p,n)` (Kit → ล้มถ้ามีเพื่อนยืน → ตาย), `die(p)`, `standing(q)` |
 | `systems/phases.js` · `weather.js` | `EVENTS`, `runEvents()` (DAY/NIGHT, spawn กลางคืน) · `updateSky()` ฝน แสง ไฟถนน |
 | `systems/effects.js` · `game.js` | เลือด วงแหวน tracer ระเบิด · `reset()` เริ่มเกมใหม่ (ผู้เล่นในเครื่อง 1 คน), `addPlayer()` เพิ่มผู้เล่น |
-| `systems/audio.js` · `records.js` | เสียงสังเคราะห์ `sfx.*` (no-op ถ้าไม่มี WebAudio), `toggleMute()`, `setVolumes()`, เพลง `updateMusic()` · `recordRun()` สถิติดีสุด |
+| `systems/audio.js` · `records.js` | เสียงสังเคราะห์ `sfx.*` เสียงของโลก (ส่งถึงทุกเครื่อง), `sfxFor(p)` เสียงส่วนตัว, `playLocal()` (no-op ถ้าไม่มี WebAudio), `toggleMute()`, `setVolumes()`, เพลง `updateMusic()` · `recordRun()` สถิติดีสุด |
 | `systems/infection.js` · `goal.js` | `infectPlayer()`, `updateInfection()`, `cureInfection()` · `updateGoal()` เฮลิคอปเตอร์ ลูกศร และการชนะ |
 | `systems/needs.js` · `obstacles.js` | `updateNeeds()` หิวกระหาย · `smashNear()`, `restoreObstacles()`, `applyBroken()` สิ่งกีดขวางที่ Tyrant ทุบ |
 | `systems/doors.js` | `G.doors`, `toggleDoor()`, `damageDoor()`, `nearDoor()`, `fixDoor()` ไม้กระดาน, `restoreDoors()`, `applyDoors()`, `updateShelter()`, กลิ่น `G.stay` |
@@ -67,7 +68,7 @@
 | `ui/report.js` | ปุ่มแจ้งบั๊กในหน้าหยุดเกม `reportInfo()` (ข้อมูลที่แนบ), เก็บ error ล่าสุด 5 รายการตั้งแต่โหลดหน้า |
 | `ui/settings.js` | หน้าตั้งค่า `settings` (คุณภาพ เสียง FPS), `openSettings()`, `tickFps()` |
 | `ui/pause.js` | หน้าหยุดเกม `openPause()`, `closePause()`, `togglePause()` ใช้ `G.paused` แบบเดียวกับกระเป๋า เปิดได้ทีละหน้า |
-| `ui/hud.js` · `bag.js` · `input.js` | `say()`, `feed()`, `uiFor(p)` ข้อความถึงผู้เล่นคนเดียว, `updateHUD()`, `updateLoadout()`, `gameOver()` · หน้ากระเป๋า (ของ `player`) · คีย์บอร์ด เมาส์ จอยสติ๊ก ปุ่มบนจอ, `pollInput(p)` |
+| `ui/hud.js` · `bag.js` · `input.js` | `say()`, `feed()` (ถึงทุกคน), `uiFor(p)` ข้อความ จอแดง (`hurt()`) ถึงผู้เล่นคนเดียว, `receive(m)` แสดงสิ่งที่ host ส่งมา, `updateHUD()`, `updateLoadout()`, `gameOver()` · หน้ากระเป๋า (ของ `player`) · คีย์บอร์ด เมาส์ จอยสติ๊ก ปุ่มบนจอ, `pollInput(p)` |
 | `ui/prompts.js` | ปุ่มเก็บของ / ประตู / ค้อน ของผู้เล่นในเครื่อง `updatePrompts()` |
 
 ค่าตัวเลขเกือบทั้งหมดอยู่ในตาราง `DEF`, `ZC`, `POOLS` และ `*_W` ใน `src/config/` แก้ที่ตารางก่อนแก้ตรรกะ
@@ -77,7 +78,7 @@
 - `rand()` (seed 2626) ต้องถูกเรียกเฉพาะใน `buildCity()` ตามลำดับเดิม ไม่อย่างนั้นผังเมืองจะเปลี่ยน ของที่เพิ่มทีหลัง (เช่นรถพยาบาล) ให้วางท้าย `buildCity()` โดยไม่เรียก `rand()` และต่อ `lootSpots` ท้ายสุด
 - โค้ดระดับบนสุดของโมดูล (นอกฟังก์ชัน) ใช้ได้เฉพาะของจากโมดูลชั้นล่าง (`core`, `config`, `world`) เพราะโมดูลชั้นบน import วนกันเอง ตอนโหลดจะยังไม่พร้อม
 - ตัวแปรที่หลายไฟล์ต้องเขียนให้เก็บใน object (`G`, `ctl`, ผู้เล่นแต่ละคน) หรือมี setter (`setPlayer()`) เพราะ import ที่เป็น `let` เขียนทับจากไฟล์อื่นไม่ได้
-- **หลายผู้เล่น (v0.9):** ตรรกะเกมห้ามอ้าง `player` (คนในเครื่อง) ตรง ๆ ให้รับผู้เล่นเป็นพารามิเตอร์ตัวแรก (`pickup(p,…)`) หรือวน `players` ซอมบี้เลือกเป้าจาก `targets()` `player` ใช้ได้เฉพาะกล้อง HUD แผนที่ เสียง และ cutaway ข้อความถึงผู้เล่นคนใดคนหนึ่งใช้ `uiFor(p).feed(…)` ข้อความถึงทุกคน (กลางคืน วิทยุ) ใช้ `say()` ได้ ตรรกะเกมห้ามอ่าน `keys` / `mouse` / `joy` ให้อ่าน `p.input` (ชื่อ `p.inv` คือเวลาอมตะ กระเป๋าคือ `p.gear`)
+- **หลายผู้เล่น (v0.9):** ตรรกะเกมห้ามอ้าง `player` (คนในเครื่อง) ตรง ๆ ให้รับผู้เล่นเป็นพารามิเตอร์ตัวแรก (`pickup(p,…)`) หรือวน `players` ซอมบี้เลือกเป้าจาก `targets()` `player` ใช้ได้เฉพาะกล้อง HUD แผนที่ เสียง และ cutaway ข้อความถึงผู้เล่นคนใดคนหนึ่งใช้ `uiFor(p).feed(…)` ข้อความถึงทุกคน (กลางคืน วิทยุ) ใช้ `say()` ได้ เสียงส่วนตัว (รีโหลด เก็บของ) ใช้ `sfxFor(p)` ห้ามเขียน `if(p.local)sfx…` เพราะเครื่องของคนอื่นจะไม่ได้ยิน เอฟเฟกต์ใหม่ที่เครื่องอื่นต้องเห็นให้ส่งผ่าน `send()` และเพิ่มใน `FX` / `receive()` ตรรกะเกมห้ามอ่าน `keys` / `mouse` / `joy` ให้อ่าน `p.input` (ชื่อ `p.inv` คือเวลาอมตะ กระเป๋าคือ `p.gear`)
 - สิ่งที่เปลี่ยนสถานะเกมต้องอยู่ใน `simStep()` (จังหวะคงที่) ไม่ใช่ในส่วนวาดภาพ เพื่อให้ทุกเครื่องจำลองเหมือนกันตอนเล่นออนไลน์
 - เพิ่ม field ใหม่ให้ agent, `G`, `inv` หรือไอเท็ม ต้องดูว่าเซฟใน `systems/save.js` ต้องเก็บด้วยไหม ถ้าเปลี่ยนรูปแบบเซฟ ผังเมือง หรือลำดับ `lootSpots` ให้เพิ่ม `SAVE_VERSION` เซฟเก่าจะถูกข้ามแทนที่จะโหลดผิด (`G.broken` เก็บลำดับใน `breakables` ถ้าลำดับการสร้างรถ กองขยะ หรือม้านั่งเปลี่ยนก็ต้องเพิ่มเหมือนกัน)
 - `buildInteriors()` รันหลัง `buildCity()` ด้วย rng ของตัวเอง (`mulberry32(606)`) และเลือกตึกตามลำดับใน `buildings` ถ้าเปลี่ยนวิธีเลือกตึกหรือลำดับจุดเกิดของในตึก `G.doors` และจุดของในเซฟเก่าจะชี้ผิด ให้เพิ่ม `SAVE_VERSION`
@@ -89,7 +90,7 @@
 - GitHub Actions รัน `npm test` ทุก PR และทุก push เข้า `main` (`.github/workflows/smoke-test.yml`) อย่า merge ถ้าแดง
 - `node tools/smoke-test.js` (หรือ `npm test`) จำลองเกม 2 วันเต็มแบบไม่มีหน้าจอ (THREE ถูกแทนด้วย stub) โดย import โมดูลใน `src/` แล้วรายงาน error ใช้จับบั๊กตรรกะเท่านั้น ไม่ได้ตรวจภาพ
 - ต้องเปิดผ่าน dev server (`npx serve .`) แล้วทดสอบทั้งจอคอมและจอมือถือ (DevTools device mode) ก่อน commit
-- ทดสอบด้วยตาทุกครั้ง: เริ่มเกม 07:30, การระบาด 09:30, เปลี่ยนเป็นกลางคืน 18:30, รุ่งเช้า 06:00, ยิงปืนทุกแบบ, เปิดกระเป๋า, ตายแล้วเล่นใหม่, รีเฟรชหน้าแล้วกดเล่นต่อ, ติดเชื้อแล้วใช้ Antibiotic, เปิดปิดเสียง, หยุดเกมแล้วเซฟเองและกลับหน้าแรก, เก็บ Resurrection Kit ที่รถพยาบาล, คำแนะนำไม่บังตัวละครบนจอแคบ, แผนที่ไม่ทับ HUD ตอนติดเชื้อและมีข้อความยาว (จอ 360 / 412 / 700 / 1280), ดู HUD ที่จอกว้าง 360 px, เช้าวันที่ 8 ตามลูกศรไปขึ้นเฮลิคอปเตอร์, เลือกระดับความยากแล้วเริ่มเกม, กินและดื่มด้วยปุ่ม 🍴, ตีจนอาวุธประชิดพัง, ยิง Armor Walker จากด้านหลัง, Tyrant ทุบรถแล้วรีเฟรชหน้าเล่นต่อ, เข้าตึกแล้วปิดประตู (คอมกด E มือถือแตะปุ่มประตู) ดูหลังคาหายและเห็นข้างใน, ซอมบี้มาพังประตูตอนกลางคืน, ทิ้งกระสุนจากกระเป๋าแล้วไม่เด้งกลับ, กระเป๋าเต็มแล้วเหยียบกระสุนเห็นปุ่มกระเป๋าเต็ม, แจ้งบั๊กจากหน้าหยุดเกมแล้วกดคัดลอก, เพิ่มผู้เล่นคนที่ 2 จาก console (`addPlayer()`) ให้ล้มแล้วกดช่วยเพื่อนลุก และให้ตัวเองล้มแล้วดูปุ่มนับถอยหลัง, ตอกไม้ประตูและซ่อมประตูที่พัง, ย่องผ่านซอมบี้, ขว้างขวดล่อซอมบี้ตอนกลางคืน, หลบตึกเดิมทั้งคืนแล้วซอมบี้มาพังประตู, เปลี่ยนคุณภาพกราฟิกและเสียงในหน้าตั้งค่า, เพลงเปลี่ยนตอนกลางคืนและตอนโดนไล่, เสบียงทิ้งจากฟ้า ฝูงซอมบี้ และไฟดับ
+- ทดสอบด้วยตาทุกครั้ง: เริ่มเกม 07:30, การระบาด 09:30, เปลี่ยนเป็นกลางคืน 18:30, รุ่งเช้า 06:00, ยิงปืนทุกแบบ, เปิดกระเป๋า, ตายแล้วเล่นใหม่, รีเฟรชหน้าแล้วกดเล่นต่อ, ติดเชื้อแล้วใช้ Antibiotic, เปิดปิดเสียง, หยุดเกมแล้วเซฟเองและกลับหน้าแรก, เก็บ Resurrection Kit ที่รถพยาบาล, คำแนะนำไม่บังตัวละครบนจอแคบ, แผนที่ไม่ทับ HUD ตอนติดเชื้อและมีข้อความยาว (จอ 360 / 412 / 700 / 1280), ดู HUD ที่จอกว้าง 360 px, เช้าวันที่ 8 ตามลูกศรไปขึ้นเฮลิคอปเตอร์, เลือกระดับความยากแล้วเริ่มเกม, กินและดื่มด้วยปุ่ม 🍴, ตีจนอาวุธประชิดพัง, ยิง Armor Walker จากด้านหลัง, Tyrant ทุบรถแล้วรีเฟรชหน้าเล่นต่อ, เข้าตึกแล้วปิดประตู (คอมกด E มือถือแตะปุ่มประตู) ดูหลังคาหายและเห็นข้างใน, ซอมบี้มาพังประตูตอนกลางคืน, ทิ้งกระสุนจากกระเป๋าแล้วไม่เด้งกลับ, กระเป๋าเต็มแล้วเหยียบกระสุนเห็นปุ่มกระเป๋าเต็ม, แจ้งบั๊กจากหน้าหยุดเกมแล้วกดคัดลอก, เพิ่มผู้เล่นคนที่ 2 จาก console (`addPlayer()`) ให้ล้มแล้วกดช่วยเพื่อนลุก และให้ตัวเองล้มแล้วดูปุ่มนับถอยหลัง, มีผู้เล่น 2 คนแล้วเปิดกระเป๋า (นาฬิกาเดินต่อ ปุ่ม ×1 หายไป), ให้เพื่อนตายแล้วใช้ Resurrection Kit ชุบ, ตัวเองตายแล้วกล้องตามเพื่อน, ตอกไม้ประตูและซ่อมประตูที่พัง, ย่องผ่านซอมบี้, ขว้างขวดล่อซอมบี้ตอนกลางคืน, หลบตึกเดิมทั้งคืนแล้วซอมบี้มาพังประตู, เปลี่ยนคุณภาพกราฟิกและเสียงในหน้าตั้งค่า, เพลงเปลี่ยนตอนกลางคืนและตอนโดนไล่, เสบียงทิ้งจากฟ้า ฝูงซอมบี้ และไฟดับ
 
 ## การสรุปงาน
 

@@ -3,7 +3,7 @@ import {cv,zoom,camera} from '../core/renderer.js';
 import {G} from '../core/state.js';
 import {keys,ctl,mouse,joy} from '../core/controls.js';
 import {SPEEDS} from '../config/time.js';
-import {player,startHelp} from '../entities/player.js';
+import {player,startHelp,isSolo} from '../entities/player.js';
 import {switchTo,pickup,useHeal,eatBest} from '../systems/inventory.js';
 import {toggleDoor,fixDoor} from '../systems/doors.js';
 import {throwBottle} from '../systems/throw.js';
@@ -31,6 +31,7 @@ function usePick(){if(player.nearDown)startHelp(player,player.nearDown);else if(
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),mray=new THREE.Raycaster();
 export function pollInput(p){
   const I=p.input;let ix=0,iy=0;
+  if(!$('bag').hidden||!$('pause').hidden){Object.assign(I,{mx:0,mz:0,mag:0,run:false,fire:false,fireQ:0,face:null});return;}   // a menu open while the world goes on (v0.11)
   if(keys.KeyW||keys.ArrowUp)iy+=1;if(keys.KeyS||keys.ArrowDown)iy-=1;if(keys.KeyD||keys.ArrowRight)ix+=1;if(keys.KeyA||keys.ArrowLeft)ix-=1;
   if(joy.id!==null){ix+=joy.x;iy-=joy.y;}
   let mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1;}
@@ -75,7 +76,7 @@ export function initInput(){
   cv.addEventListener('contextmenu',e=>e.preventDefault());
   cv.addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY>0?1.1:1/1.1);},{passive:false});
   $('bZin').addEventListener('click',()=>zoom(1/1.2));$('bZout').addEventListener('click',()=>zoom(1.2));
-  $('bSpeed').addEventListener('click',()=>{G.speedIdx=(G.speedIdx+1)%SPEEDS.length;$('bSpeed').textContent='×'+SPEEDS[G.speedIdx];});
+  $('bSpeed').addEventListener('click',()=>{if(!isSolo())return;G.speedIdx=(G.speedIdx+1)%SPEEDS.length;$('bSpeed').textContent='×'+SPEEDS[G.speedIdx];});
   $('bBag').addEventListener('click',()=>{$('bag').hidden?openBag():closeBag();});
   $('bagClose').addEventListener('click',closeBag);
   $('bag').addEventListener('pointerdown',e=>{if(e.target===$('bag'))closeBag();});

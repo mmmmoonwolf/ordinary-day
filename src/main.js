@@ -8,7 +8,7 @@ import {buildInteriors} from './world/interiors.js';
 import {updateOcclusion} from './world/occlusion.js';
 import {agents,removeAgent} from './entities/agents.js';
 import {updateHuman,updateZombie,updateDead} from './entities/ai.js';
-import {player,players,updatePlayer,syncHeld} from './entities/player.js';
+import {player,players,updatePlayer,syncHeld,isSolo,viewed} from './entities/player.js';
 import {animate,separate} from './entities/animation.js';
 import {ring,alertRing,blast,tracers} from './systems/effects.js';
 import {drops,ringMats} from './systems/drops.js';
@@ -44,6 +44,7 @@ initAudio();
 // every player online) runs the same simulation; drawing, animation and the HUD still run once per frame.
 const STEP=1/60,MAX_STEPS=5;
 function simStep(dt,now){
+  if(!isSolo())G.speedIdx=0;   // no ×2 / ×4 with more than one player (v0.11)
   if(G.running){G.min+=dt*RATE*SPEEDS[G.speedIdx];runEvents(now);pollInput(player);for(const p of players)updatePlayer(p,dt);updateShelter();autosave(dt);}
   for(let i=agents.length-1;i>=0;i--){
     const a=agents[i];
@@ -75,14 +76,15 @@ function loop(now){
   updatePrompts();
   updateMinimap(dt,now);tickFps(dt);
   // music mood: night, after the outbreak, and danger = zombies chasing the player (v0.8)
-  let chasing=0;if(G.running&&player.alive)for(const a of agents)if(a.state==='zombie'&&a.seenP===player&&!a.retreat)chasing++;
+  const view=viewed();   // the player on this device, or the teammate they watch once dead (v0.11)
+  let chasing=0;if(G.running&&view.alive)for(const a of agents)if(a.state==='zombie'&&a.seenP===view&&!a.retreat)chasing++;
   updateMusic({night:G.night||0,outbreak:G.outbreak,danger:Math.min(1,chasing/4)});
-  camTarget.x+=(player.pos.x-camTarget.x)*Math.min(1,dt*5);camTarget.z+=(player.pos.z-camTarget.z)*Math.min(1,dt*5);
+  camTarget.x+=(view.pos.x-camTarget.x)*Math.min(1,dt*5);camTarget.z+=(view.pos.z-camTarget.z)*Math.min(1,dt*5);
   camera.position.copy(camTarget).add(camOffset);camera.lookAt(camTarget);
   ring.position.set(player.pos.x,player.y+.03,player.pos.z);ring.visible=player.alive;
   if(G.alertT>0&&G.alertA){G.alertT-=dt;alertRing.position.set(G.alertA.pos.x,G.alertA.y+.04,G.alertA.pos.z);alertRing.material.opacity=Math.min(1,G.alertT)*(.5+.5*Math.sin(now/120));alertRing.scale.setScalar(1+.25*Math.sin(now/200));}else alertRing.material.opacity=0;
-  const fx=Math.sin(player.face),fz=Math.cos(player.face);
-  flash.position.set(player.pos.x-fx*.2,2.2,player.pos.z-fz*.2);flash.target.position.set(player.pos.x+fx*8,0,player.pos.z+fz*8);
+  const fx=Math.sin(view.face),fz=Math.cos(view.face);
+  flash.position.set(view.pos.x-fx*.2,2.2,view.pos.z-fz*.2);flash.target.position.set(view.pos.x+fx*8,0,view.pos.z+fz*8);
   if(frame%4===0)updateOcclusion();
   updateHUD(dt);
   renderer.render(scene,camera);

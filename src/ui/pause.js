@@ -1,7 +1,7 @@
 import {$} from '../core/util.js';
 import {G} from '../core/state.js';
 import {ctl,joy} from '../core/controls.js';
-import {player} from '../entities/player.js';
+import {player,isSolo} from '../entities/player.js';
 import {saveGame} from '../systems/save.js';
 import {hhmm,updateLoadout} from './hud.js';
 import {closeBag} from './bag.js';
@@ -12,13 +12,14 @@ import {initReport,closeReport} from './report.js';
 
 // ---------- pause menu ----------
 // Stops the game like the bag does (G.paused). Opens by itself when the page goes to the background,
-// so a phone player comes back to a paused game instead of a fight.
+// so a phone player comes back to a paused game instead of a fight. With other players in the game it only opens
+// the menu: the world keeps going (v0.11).
 const when=()=>'วันที่ '+(Math.floor(G.min/1440)+1)+' · '+hhmm(G.min)+' · '+diffOf(G).name;
 export function isPauseOpen(){return !$('pause').hidden;}
 export function openPause(){
   if(!G.running||G.over||!player.alive||isPauseOpen())return;
   closeBag();
-  $('pause').hidden=false;G.paused=true;ctl.fireHeld=false;joy.id=null;$('joy').hidden=true;
+  $('pause').hidden=false;G.paused=isSolo();ctl.fireHeld=false;joy.id=null;$('joy').hidden=true;
   $('pauseInfo').textContent=when();$('saveMsg').textContent='เกมบันทึกอัตโนมัติทุก 15 วินาทีอยู่แล้ว';
   closeReport();$('bResume').focus();
 }
