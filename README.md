@@ -124,7 +124,7 @@ src/config/                    ตารางค่าเกม: time, world, i
 src/world/                     textures, materials, collision, sidewalk, props, city, interiors, item-models, occlusion
 src/entities/                  agents, movement, ai, player, animation
 src/systems/                   drops, inventory, combat, phases, weather, effects, game (reset), save, audio, infection, goal, records, needs, obstacles, doors, throw, events
-src/ui/                        hud, bag, input, pause, tips, minimap, report (แจ้งบั๊ก), settings
+src/ui/                        hud, bag, input, pause, tips, minimap, report (แจ้งบั๊ก), settings, prompts
 CLAUDE.md                      กติกาสำหรับ Claude Code และ AI ที่ช่วยพัฒนา
 docs/project-summary.md        เอกสารสรุประบบทั้งหมด + Decision Log
 docs/design-draft-01.md        Game System Design Draft 01 จากทีม
@@ -141,6 +141,7 @@ tools/smoke-test.js            ทดสอบตรรกะเกมแบบ�
 
 | เวอร์ชัน | สิ่งที่เพิ่ม |
 | --- | --- |
+| v0.9 | ปรับโครงสร้างให้รองรับหลายผู้เล่น (เฟส 2): ผู้เล่นทุกคนอยู่ใน `players` มีกระเป๋า HP หิว ติดเชื้อของตัวเอง ซอมบี้ไล่คนที่ใกล้ที่สุด จำลองเกมเป็นจังหวะคงที่ 60 ครั้งต่อวินาที เซฟเก็บผู้เล่นทุกคน (เซฟเก่ายังโหลดได้) · เล่นคนเดียวเหมือนเดิมทุกอย่าง |
 | v0.8 | เหตุการณ์ประจำวัน (เสบียงทิ้งจากฟ้า ฝูงซอมบี้ ไฟดับ), หน้าตั้งค่า (คุณภาพกราฟิก เสียง 3 ช่อง FPS), เพลงสังเคราะห์ตามช่วงเวลาและความอันตราย |
 | v0.7 | ของหายากขึ้นตามวันและถูกผู้รอดคนอื่นเก็บไป, ซอมบี้ได้กลิ่นคนที่หลบตึกเดิมนานตอนกลางคืน, ไม้กระดานตอกและซ่อมประตู, ย่อง, ขวดแก้วขว้างล่อซอมบี้ |
 | v0.6.2 | ปุ่มแจ้งบั๊กในหน้าหยุดเกม (แนบเวอร์ชัน สถานะเกม อุปกรณ์ error ล่าสุด คัดลอกหรือเปิด GitHub), CI รัน smoke test ทุก PR, แก้หน้าหยุดเกมและกระเป๋าล้นขอบจอมือถือ, เปลี่ยนชื่อเอกสารเป็น `docs/project-summary.md` |

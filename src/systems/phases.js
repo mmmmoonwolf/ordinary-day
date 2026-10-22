@@ -4,7 +4,7 @@ import {DAY_START,DUSK_WARN,isNightTod} from '../config/time.js';
 import {isSpecial} from '../config/zombies.js';
 import {agents,becomeZombie,setKind,zombies,spawnEdge} from '../entities/agents.js';
 import {d2} from '../entities/movement.js';
-import {player} from '../entities/player.js';
+import {players,nearestPlayerDist} from '../entities/player.js';
 import {fillDay,fillNight,takeByOthers} from './drops.js';
 import {REFILL,refillScale} from '../config/loot.js';
 import {sfx} from './audio.js';
@@ -15,7 +15,7 @@ import {updateEvents} from './events.js';
 // ---------- story + phases ----------
 function startOutbreak(){
   G.outbreak=true;
-  let best=null,bd=1e9;for(const a of agents){if(a.state!=='human'||a.vendor)continue;const s=Math.abs(Math.sqrt(d2(a,player))-16);if(s<bd){bd=s;best=a;}}
+  let best=null,bd=1e9;for(const a of agents){if(a.state!=='human'||a.vendor)continue;const s=Math.abs(nearestPlayerDist(a.pos.x,a.pos.z)-16);if(s<bd){bd=s;best=a;}}
   if(best){becomeZombie(best,'walker');G.alertA=best;G.alertT=8;}
   say('มีคนกัดกันกลางถนน! ตอนกลางวันพวกมันยังเชื่องช้า ใช้เวลานี้หาของ','alarm',7);
 }
@@ -45,10 +45,10 @@ function onDay(){
   say('รุ่งเช้า วันที่ '+day+' · ซอมบี้กลับมาเชื่องช้า ออกไปหาของได้','',6);
   const zs=zombies();
   for(const z of zs){if(z.kind==='zombie')setKind(z,'walker');else if(isSpecial(z.kind))z.retreat=true;}
-  const walkers=zs.filter(z=>z.kind==='walker').sort((a,b)=>d2(b,player)-d2(a,player));
+  const walkers=zs.filter(z=>z.kind==='walker').sort((a,b)=>nearestPlayerDist(b.pos.x,b.pos.z)-nearestPlayerDist(a.pos.x,a.pos.z));
   for(let i=0;i<walkers.length-18;i++)walkers[i].retreat=true;
   G.armorNight=false;G.tyrantPending=false;G.nightSpawnNext=1e9;
-  if(takeByOthers(player.pos.x,player.pos.z)>0)feed('ของที่ทิ้งไว้ไกล ๆ บางส่วนถูกผู้รอดชีวิตคนอื่นเก็บไปแล้ว','warn');
+  if(takeByOthers(players)>0)feed('ของที่ทิ้งไว้ไกล ๆ บางส่วนถูกผู้รอดชีวิตคนอื่นเก็บไปแล้ว','warn');
   fillDay(REFILL.day*refillScale(day));
 }
 function nightMix(){const day=Math.floor(G.min/1440)+1;return {zombie:Math.max(40,65-(day-1)*5),sprinter:20+(day-1)*3,boomer:15+(day-1)*2};}

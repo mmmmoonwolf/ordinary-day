@@ -4,7 +4,7 @@ import {G} from '../core/state.js';
 import {DAY_START} from '../config/time.js';
 import {GOAL_NIGHTS,LZ,RESCUE_FROM,RESCUE_UNTIL,RESCUE_RADIUS,nightsSurvived} from '../config/goal.js';
 import {S,part,whiteMat,blackMat} from '../world/materials.js';
-import {player} from '../entities/player.js';
+import {player,players} from '../entities/player.js';
 import {clearSave} from './save.js';
 import {sfx} from './audio.js';
 import {say,gameOver} from '../ui/hud.js';
@@ -49,7 +49,9 @@ export function updateGoal(dt,now){
     if(stage==='coming')say((day===GOAL_NIGHTS+1?'รอดครบ '+GOAL_NIGHTS+' คืนแล้ว! ':'')+'วิทยุ: เฮลิคอปเตอร์กู้ภัยจะลงจอดที่สี่แยกข้างสวนตอน 08:00 และรอถึง 12:00 ตามลูกศรไป','radio',9);
     else if(stage==='landed')say('เฮลิคอปเตอร์มาถึงแล้ว! ไปให้ถึงก่อน 12:00','alarm',7);
     else say('เฮลิคอปเตอร์บินออกไปแล้ว จะกลับมาอีกพรุ่งนี้ 08:00','alarm',7);}
-  if(h===0&&player.alive&&player.down<=0&&dist<RESCUE_RADIUS){
+  // everyone still alive has to be on board (v0.9: one or more players)
+  const alive=players.filter(p=>p.alive);
+  if(h===0&&alive.length&&alive.every(p=>p.down<=0&&Math.hypot(LZ.x-p.pos.x,LZ.z-p.pos.z)<RESCUE_RADIUS)){
     G.endCause='won';clearSave();sfx.rotor(0);sfx.win();say('ขึ้นเฮลิคอปเตอร์ได้แล้ว คุณรอด!','',6);gameOver();
   }
 }

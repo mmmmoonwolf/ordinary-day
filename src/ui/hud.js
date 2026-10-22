@@ -6,7 +6,7 @@ import {diffOf} from '../config/difficulty.js';
 import {agents} from '../entities/agents.js';
 import {d2} from '../entities/movement.js';
 import {player} from '../entities/player.js';
-import {inv,curWeapon,countAmmo,gradeTag} from '../systems/inventory.js';
+import {curWeapon,countAmmo,gradeTag} from '../systems/inventory.js';
 import {closeBag} from './bag.js';
 import {ZC} from '../config/zombies.js';
 import {GOAL_NIGHTS,nightsSurvived} from '../config/goal.js';
@@ -19,6 +19,10 @@ let msgTimer=0;
 export function say(text,cls,dur){if(cls==='radio')sfx.radio();const m=$('msg');m.textContent=text;m.className='show '+(cls||'');msgTimer=dur||6;}
 export function feed(text,cls){const f=$('feed');const el=document.createElement('div');el.textContent=text;el.className=cls||'get';f.appendChild(el);while(f.children.length>4)f.removeChild(f.firstChild);setTimeout(()=>el.remove(),3000);}
 const once={};export function feedOnce(key,text,cls,gap){const t=performance.now();if(once[key]&&t-once[key]<(gap||2500))return;once[key]=t;feed(text,cls);}
+// messages meant for one player: shown when it is the player on this device, dropped for anyone else (v0.9)
+const LOCAL={say:(...a)=>say(...a),feed:(...a)=>feed(...a),feedOnce:(...a)=>feedOnce(...a),updateLoadout:f=>updateLoadout(f)};
+const QUIET={say(){},feed(){},feedOnce(){},updateLoadout(){}};
+export function uiFor(p){return p===player?LOCAL:QUIET;}
 
 // ---------- HUD ----------
 const DAYS=['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
@@ -29,8 +33,8 @@ export const chipEls=[...document.querySelectorAll('.chips button[data-slot]')];
 let loadKey='';
 export function updateLoadout(force){
   if(!player)return;
-  const w=curWeapon(),def=DEF[w.id];
-  const reserve=def.gun?countAmmo(def.ammo):0;
+  const inv=player.gear,w=curWeapon(player),def=DEF[w.id];
+  const reserve=def.gun?countAmmo(player,def.ammo):0;
   const heals=inv.bag.reduce((s,e)=>s+(DEF[e.id].kind==='heal'?e.n:0),0),foods=inv.bag.reduce((s,e)=>s+(DEF[e.id].kind==='food'?e.n:0),0);
   const key=[w.id,w.mag,w.dur,reserve,inv.active,!!inv.eq.primary,!!inv.eq.secondary,!!inv.eq.melee,heals,foods,player.reloadT>0].join('|');
   if(!force&&key===loadKey)return;loadKey=key;

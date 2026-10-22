@@ -55,7 +55,6 @@ const { G } = await import('../src/core/state.js');
 const { agents, becomeZombie, makeAgent } = await import('../src/entities/agents.js');
 const P = await import('../src/entities/player.js');
 const { makeItem, drops } = await import('../src/systems/drops.js');
-const { inv } = await import('../src/systems/inventory.js');
 const { renderBag, openBag, closeBag } = await import('../src/ui/bag.js');
 const S = await import('../src/systems/save.js');
 const { hurtPlayer } = await import('../src/systems/combat.js');
@@ -63,7 +62,7 @@ const { infectPlayer } = await import('../src/systems/infection.js');
 const { useHeal } = await import('../src/systems/inventory.js');
 const { gameOver } = await import('../src/ui/hud.js');
 const { LZ } = await import('../src/config/goal.js');
-const T = { inv, get player() { return P.player; }, makeItem, drops, G, agents, becomeZombie, makeAgent, renderBag, openBag, closeBag };
+const T = { get inv() { return P.player.gear; }, get player() { return P.player; }, makeItem, drops, G, agents, becomeZombie, makeAgent, renderBag, openBag, closeBag };
 
 const errs = [];
 let now = 1000;
@@ -114,24 +113,24 @@ if (!S.loadGame()) fail('loadGame returned false');
 const after = { min: T.G.min, phase: T.G.phase, x: T.player.pos.x, z: T.player.pos.z, hp: T.player.hp, agents: live().map(a => a.state + ':' + a.kind).sort().join(), drops: T.drops.length, inv: JSON.stringify([T.inv.bag, T.inv.eq, T.inv.active, T.inv.cap]) };
 for (const k in before) if (before[k] !== after[k]) fail(k + ' changed after load: ' + String(before[k]).slice(0, 60) + ' -> ' + String(after[k]).slice(0, 60));
 T.G.running = true; step(300);
-T.inv.bag = T.inv.bag.filter(e => e.id !== 'resurrect'); T.player.inv = 0; T.player.down = 0; hurtPlayer(9999);
+T.inv.bag = T.inv.bag.filter(e => e.id !== 'resurrect'); T.player.inv = 0; T.player.down = 0; hurtPlayer(T.player, 9999);
 if (store.has('ordinary-day.save')) fail('save still exists after death');
 console.log('save: restored', live().length, 'agents and', T.drops.length, 'drops at', els.clock.textContent, '| deleted on death', !store.has('ordinary-day.save'));
 
 // 4) infection: progresses with in-game time, blocks regen, Antibiotic cures, a Resurrection Kit clears it, 100% kills
 const bad = m => errs.push('v0.4 test: ' + m);
 els.bAgain.fire('click'); T.G.running = true;
-T.player.hp = 50; infectPlayer(); step(300);
+T.player.hp = 50; infectPlayer(T.player); step(300);
 const pc = T.player.infect;
 if (!(pc > 0.05 && pc < 0.2)) bad('infection after 5 s should be ~8%, got ' + pc);
 if (T.player.hp > 50.01) bad('HP regenerated while infected');
 if (els.infRow.hidden) bad('infection bar hidden');
-T.inv.bag.push({ id: 'antibiotic', n: 1 }); T.player.hp = T.player.maxHp; useHeal();
+T.inv.bag.push({ id: 'antibiotic', n: 1 }); T.player.hp = T.player.maxHp; useHeal(T.player);
 if (T.player.infect !== 0 || T.inv.bag.some(e => e.id === 'antibiotic')) bad('Antibiotic did not cure at full HP');
-T.inv.bag.push({ id: 'resurrect', n: 1 }); infectPlayer(); T.player.infect = 0.999; step(30);
+T.inv.bag.push({ id: 'resurrect', n: 1 }); infectPlayer(T.player); T.player.infect = 0.999; step(30);
 if (!T.player.alive || T.player.infect !== 0) bad('Resurrection Kit did not save an infected player');
 step(240); T.inv.bag = T.inv.bag.filter(e => e.id !== 'resurrect'); T.player.inv = 0;
-infectPlayer(); T.player.infect = 0.999; step(30);
+infectPlayer(T.player); T.player.infect = 0.999; step(30);
 if (T.player.alive || T.G.endCause !== 'infected') bad('infection at 100% did not kill (alive ' + T.player.alive + ', cause ' + T.G.endCause + ')');
 gameOver();
 if (els.oTitle.textContent !== 'คุณกลายเป็นซอมบี้' || !els.sKillsBy.innerHTML.includes('Tyrant') || !els.sBest.innerHTML.includes('สถิติดีสุด')) bad('infected game-over summary not filled');
@@ -211,13 +210,13 @@ if (!(pipe.dur >= 36 && pipe.dur <= 90)) vfail('found pipe durability out of ran
 if (durPct({ id: 'knife_c' }) !== 1) vfail('pre-v0.5 knife without dur should count as new');
 T.inv.eq.melee = { id: 'knife_c', mag: 0, dur: 1 }; T.inv.active = 'melee'; T.player.face = 0;
 const victim = T.makeAgent(T.player.pos.x, T.player.pos.z + 1); T.becomeZombie(victim, 'zombie'); T.agents.push(victim);
-meleeHit(D5.knife_c);
+meleeHit(T.player, D5.knife_c);
 if (T.inv.eq.melee !== null) vfail('knife at 1 durability did not break after a hit');
 // hunger and thirst
 T.player.food = 50; T.player.water = 50; step(600);
 const f1 = T.player.food, w1 = T.player.water;
 if (!(f1 < 50 && w1 < 50 && 50 - w1 > 50 - f1)) vfail('needs did not drain (water faster): food ' + f1.toFixed(2) + ' water ' + w1.toFixed(2));
-T.inv.bag.push({ id: 'water', n: 1 }, { id: 'canned', n: 1 }); T.player.water = 10; eatBest();
+T.inv.bag.push({ id: 'water', n: 1 }, { id: 'canned', n: 1 }); T.player.water = 10; eatBest(T.player);
 if (T.player.water < 59 || T.inv.bag.some(e => e.id === 'water')) vfail('G did not drink the water first when thirstier');
 T.player.hp = 60; T.player.food = 0; T.player.water = 80; const hp0 = T.player.hp; step(120);
 if (!(T.player.hp < hp0)) vfail('empty food bar did not drain HP');
@@ -237,7 +236,7 @@ if (carB.broken || !solids.includes(carB.box)) vfail('new game did not restore t
 S.loadGame();
 if (!carB.broken || solids.includes(carB.box)) vfail('loading the save did not re-break the car');
 // difficulty: only the damage the player takes changes here
-const hit = diff => { els.bAgain.fire('click'); T.G.diff = diff; T.G.running = true; T.player.inv = 0; T.player.hp = 100; hurtPlayer(10); return 100 - T.player.hp; };
+const hit = diff => { els.bAgain.fire('click'); T.G.diff = diff; T.G.running = true; T.player.inv = 0; T.player.hp = 100; hurtPlayer(T.player, 10); return 100 - T.player.hp; };
 const dE = hit('easy'), dN = hit('normal'), dH = hit('hard');
 if (Math.abs(dE - 6) > 1e-6 || Math.abs(dN - 10) > 1e-6 || Math.abs(dH - 14) > 1e-6) vfail('difficulty damage scale: ' + [dE, dN, dH].join('/'));
 T.G.diff = 'hard'; T.G.endCause = 'hurt'; T.G.over = false; gameOver();
@@ -269,7 +268,7 @@ const r = rooms[0], k = 0, [nx, nz] = r.n, cx = (r.x0 + r.x1) / 2, cz = (r.z0 + 
 clear(); T.player.pos.x = cx; T.player.pos.z = cz; step(2);
 if (T.player.room !== k || I.shownRoom() !== k || !r.cut.visible || r.b.meshes[0].visible) ifail('cutaway did not switch on inside the room');
 T.player.pos.x = r.dx - nx * .2; T.player.pos.z = r.dz - nz * .2; step(1);
-if (Dr.toggleDoor(k)) ifail('door closed on a player standing in the doorway');
+if (Dr.toggleDoor(T.player, k)) ifail('door closed on a player standing in the doorway');
 T.player.pos.x = r.dx - nx * 1.2; T.player.pos.z = r.dz - nz * 1.2; step(1);
 if (T.player.nearDoor !== k) ifail('door prompt did not show next to the door');
 key('KeyE', 'keydown'); key('KeyE', 'keyup');
@@ -290,15 +289,15 @@ const zb = zAt(c2x - mx * (depth2 / 2 + 1.4), c2z - mz * (depth2 / 2 + 1.4));ste
 if (!(T.player.hp < 100) || I.roomAt(zb.pos.x, zb.pos.z) !== 1) ifail('zombie behind the building did not find the door (at ' + zb.pos.x.toFixed(1) + ',' + zb.pos.z.toFixed(1) + ' room ' + I.roomAt(zb.pos.x, zb.pos.z) + ')');
 // melee does not reach through a wall
 clear(); T.player.pos.x = c2x - mx * (depth2 / 2 - .5); T.player.pos.z = c2z - mz * (depth2 / 2 - .5); T.player.face = Math.atan2(-mx, -mz);
-const zw = zAt(c2x - mx * (depth2 / 2 + .9), c2z - mz * (depth2 / 2 + .9)); zw.feed = 99; meleeHit(D5.bat_c);
+const zw = zAt(c2x - mx * (depth2 / 2 + .9), c2z - mz * (depth2 / 2 + .9)); zw.feed = 99; meleeHit(T.player, D5.bat_c);
 if (zw.hp < 30) ifail('melee hit through a wall');
 // closed doors muffle noise
-clear(); T.player.pos.x = cx; T.player.pos.z = cz; Dr.toggleDoor(k);
+clear(); T.player.pos.x = cx; T.player.pos.z = cz; Dr.toggleDoor(T.player, k);
 const zn = zAt(r.dx + nx * 16, r.dz + nz * 16); zn.feed = 99; makeNoise(cx, cz, 25);
-const heardShut = !!zn.heard; Dr.toggleDoor(k); makeNoise(cx, cz, 25);
+const heardShut = !!zn.heard; Dr.toggleDoor(T.player, k); makeNoise(cx, cz, 25);
 if (heardShut || !zn.heard) ifail('door did not muffle noise (shut ' + heardShut + ', open ' + !!zn.heard + ')');
 // door state survives save / new game / load
-Dr.toggleDoor(k); T.G.doors[k].hp = 50; S.saveGame(); els.bAgain.fire('click');
+Dr.toggleDoor(T.player, k); T.G.doors[k].hp = 50; S.saveGame(); els.bAgain.fire('click');
 if (!T.G.doors[k].open || T.G.doors[k].hp !== DOOR_HP || solids.includes(r.doorBox)) ifail('new game did not reset the doors');
 S.loadGame();
 if (T.G.doors[k].open || T.G.doors[k].hp !== 50 || !solids.includes(r.doorBox)) ifail('loading the save lost the door state');
@@ -310,7 +309,7 @@ const Inv6 = await import('../src/systems/inventory.js');
 const { reachableSpot, spawnDrop: spawnD } = await import('../src/systems/drops.js');
 const spawnDropAt = (id, x, z) => spawnD({ id, n: 6 }, x, z);
 clear(); T.player.inv = 1e9;
-T.inv.bag = [{ id: 'a9', n: 30 }]; Inv6.dropItem(T.inv.bag.shift()); step(30);
+T.inv.bag = [{ id: 'a9', n: 30 }]; Inv6.dropItem(T.player, T.inv.bag.shift()); step(30);
 if (T.inv.bag.length) rfail('dropped ammo bounced straight back into the bag');
 const dropped = T.drops[T.drops.length - 1];
 if (Math.hypot(dropped.x - T.player.pos.x, dropped.z - T.player.pos.z) < 1) rfail('dropped item landed under the player');
@@ -346,11 +345,11 @@ if (L7.refillScale(1) !== 1 || !(L7.refillScale(7) < .5) || L7.refillScale(30) !
 clear();
 const far = D7.spawnDrop({ id: 'a9', n: 5 }, T.player.pos.x + 40, T.player.pos.z), mine = D7.spawnDrop({ id: 'a9', n: 5 }, T.player.pos.x + 41, T.player.pos.z); mine.mine = true;
 const police = lootSpots.find(s => s.zone === 'police'); if (police.drop) D7.removeDrop(police.drop); D7.spawnDrop({ id: 'a9', n: 5 }, police.x, police.z, police);
-for (let i = 0; i < 40 && T.drops.includes(far); i++) D7.takeByOthers(T.player.pos.x, T.player.pos.z);
+for (let i = 0; i < 40 && T.drops.includes(far); i++) D7.takeByOthers([T.player]);
 if (T.drops.includes(far) || !T.drops.includes(mine) || !police.drop) sfail('other survivors: far loot should go, own drops and police spots stay');
 // scent: hide in a closed room at night, a zombie 20 m away is sent to the door
 clear(); T.G.phase = 'night'; T.G.min = 22 * 60;
-const r7 = rooms[2], k7 = 2; T.player.pos.x = (r7.x0 + r7.x1) / 2; T.player.pos.z = (r7.z0 + r7.z1) / 2; step(1); Dr.toggleDoor(k7);
+const r7 = rooms[2], k7 = 2; T.player.pos.x = (r7.x0 + r7.x1) / 2; T.player.pos.z = (r7.z0 + r7.z1) / 2; step(1); Dr.toggleDoor(T.player, k7);
 const zs = zAt(r7.dx + r7.n[0] * 18, r7.dz + r7.n[1] * 18); zs.feed = 1e9; step(1);
 if (zs.heard && zs.heard.t > 0) sfail('zombie smelled the player straight away');
 T.G.min += Sh.SCENT_AFTER + 1; step(2);
@@ -407,6 +406,56 @@ if (!JSON.parse(store.get('ordinary-day.settings')).fps) efail('settings not sav
 els.optFps.checked = false; els.optFps.fire('change');
 updateMusic({ night: 1, outbreak: true, danger: 1 });
 console.log('v0.8: events plan', T.G.plan.map(e => e.kind[0]).join(''), '| airdrop, horde of', horde.length, ', blackout, settings saved');
+
+// 14) v0.9: two players in one game (the second one driven by a bot through p.input), fixed simulation steps
+const mfail = m => errs.push('v0.9 test: ' + m);
+const Game = await import('../src/systems/game.js');
+const Inv9 = await import('../src/systems/inventory.js');
+const Cb = await import('../src/systems/combat.js');
+clear(); T.player.inv = 1e9;
+const p2 = Game.addPlayer(); p2.inv = 1e9;
+if (P.players.length !== 2 || p2.local || P.player !== P.players[0]) mfail('addPlayer did not add a second, non-local player');
+// own gear: what p2 picks up is p2's
+const d9 = T.makeItem('a9'); const dd = (await import('../src/systems/drops.js')).spawnDrop(d9, p2.pos.x, p2.pos.z); Inv9.pickup(p2, dd);
+if (!p2.gear.bag.some(e => e.id === 'a9') || T.inv.bag.some(e => e.id === 'a9')) mfail('p2 pickup went to the wrong bag');
+// the bot walks: input moves p2, not p1
+const p1x = T.player.pos.x, p2x = p2.pos.x; Object.assign(p2.input, { mx: 1, mz: 0, mag: 1 }); step(60); Object.assign(p2.input, { mx: 0, mz: 0, mag: 0 });
+if (!(p2.pos.x > p2x + 2) || Math.abs(T.player.pos.x - p1x) > .5) mfail('bot input moved the wrong player (p2 ' + (p2.pos.x - p2x).toFixed(2) + ', p1 ' + (T.player.pos.x - p1x).toFixed(2) + ')');
+// a zombie next to p2 and far from p1 goes for p2
+T.G.min = 22 * 60; T.G.phase = 'night'; p2.inv = 0; p2.hp = 100; T.player.hp = 100;
+const z9 = zAt(p2.pos.x + 1.2, p2.pos.z); step(120);
+if (z9.seenP !== p2 || !(p2.hp < 100) || T.player.hp < 100) mfail('zombie should chase and hit the nearer player p2 (seen ' + (z9.seenP === p2 ? 'p2' : z9.seenP === T.player ? 'p1' : 'none') + ', p2 hp ' + p2.hp + ')');
+// p2 shoots with its own gun and ammo
+z9.gone = true; step(2);
+p2.gear.eq.secondary = Object.assign(T.makeItem('pistol_c'), { mag: 5 }); p2.gear.active = 'secondary';
+Object.assign(p2.pos, { x: 0, z: 14 }); if (!freeAt(0, 14, .4) || !freeAt(0, 19, .4)) mfail('test spot on the road is blocked');   // the middle of a road: nothing in the line of fire
+const target = zAt(0, 19); target.feed = 1e9; p2.face = 0; p2.input.aim = false;
+Object.assign(p2.input, { fire: true, fireQ: .2 }); step(4); Object.assign(p2.input, { fire: false, fireQ: 0 });
+if (!(p2.gear.eq.secondary.mag < 5) || !(target.hp < 30)) mfail('p2 could not shoot its own pistol (mag ' + p2.gear.eq.secondary.mag + ', target hp ' + target.hp + ')');
+// one player down is not game over; both are
+T.player.inv = 0; T.inv.bag = []; Cb.hurtPlayer(T.player, 9999); step(150);
+if (T.G.over || T.player.alive) mfail('game ended while p2 was still alive');
+p2.inv = 0; p2.gear.bag = []; Cb.hurtPlayer(p2, 9999);
+await new Promise(r => setTimeout(r, 1900)); if (!T.G.over) mfail('game did not end with every player dead');
+// save / load keeps both players with their own gear
+clear(); const q2 = Game.addPlayer(); q2.gear.bag.push({ id: 'planks', n: 4 }); q2.pos.x += 3; T.inv.bag.push({ id: 'water', n: 2 });
+S.saveGame(); els.bAgain.fire('click'); S.loadGame();
+const s2 = P.players[1];
+if (P.players.length !== 2 || !s2.gear.bag.some(e => e.id === 'planks') || !T.inv.bag.some(e => e.id === 'water') || s2.gear.bag.some(e => e.id === 'water')) mfail('save/load lost a player or mixed their bags');
+// an old (v1) save still loads as one player
+store.set('ordinary-day.save', JSON.stringify({ v: 1, savedAt: 0, G: Object.assign({}, T.G, { stay: null }), player: { x: 10, z: 10, face: 0, hp: 77, down: 0, inv: 0, infect: 0, infWarn: 0, food: 50, water: 60, sinceHit: 9 }, inv: { bag: [{ id: 'a9', n: 7 }], cap: 6, eq: { primary: null, secondary: null, melee: null }, active: 'melee' }, agents: [], drops: [] }));
+if (!S.loadGame() || P.players.length !== 1 || Math.round(T.player.hp) !== 77 || !T.inv.bag.some(e => e.id === 'a9' && e.n === 7)) mfail('a v1 save did not load into one player');
+// the rescue waits for every live player
+clear(); const r3 = Game.addPlayer(); T.player.inv = r3.inv = 1e9;
+T.G.min = 7 * 1440 + 9 * 60; Object.assign(T.player.pos, { x: LZ.x, z: LZ.z }); step(5);
+if (T.G.over) mfail('rescued while the second player was still away');
+Object.assign(r3.pos, { x: LZ.x + 1, z: LZ.z }); step(5);
+if (!T.G.over || T.G.endCause !== 'won') mfail('not rescued with both players at the LZ');
+// fixed steps: game time per real second does not depend on the frame rate
+clear(); const t0 = T.G.min; for (let i = 0; i < 60; i++) { now += 16.7; raf(now); } const fast = T.G.min - t0;
+const t1 = T.G.min; for (let i = 0; i < 20; i++) { now += 50; raf(now); } const slow = T.G.min - t1;
+if (Math.abs(fast - slow) > .2) mfail('game time per second differs with frame rate: 60 fps ' + fast.toFixed(2) + ' vs 20 fps ' + slow.toFixed(2));
+console.log('v0.9: two players (own gear, bot input, nearest target, own gun, game over when all dead, save v2 + v1 upgrade, rescue waits for both), fixed steps', fast.toFixed(2), '/', slow.toFixed(2), 'min');
 
 console.log(errs.length ? `FAILED: ${errs.length} runtime errors\n` + errs.slice(0, 3).join('\n---\n') : 'PASSED: no runtime errors');
 process.exit(errs.length ? 1 : 0);

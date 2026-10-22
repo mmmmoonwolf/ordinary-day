@@ -8,7 +8,7 @@ import {buildInteriors} from './world/interiors.js';
 import {updateOcclusion} from './world/occlusion.js';
 import {agents,removeAgent} from './entities/agents.js';
 import {updateHuman,updateZombie,updateDead} from './entities/ai.js';
-import {player,updatePlayer,syncHeld} from './entities/player.js';
+import {player,players,updatePlayer,syncHeld} from './entities/player.js';
 import {animate,separate} from './entities/animation.js';
 import {ring,alertRing,blast,tracers} from './systems/effects.js';
 import {drops,ringMats} from './systems/drops.js';
@@ -21,9 +21,10 @@ import {updateThrows} from './systems/throw.js';
 import {initAudio,updateMusic} from './systems/audio.js';
 import {updateGoal} from './systems/goal.js';
 import {updateHUD} from './ui/hud.js';
-import {initInput} from './ui/input.js';
+import {initInput,pollInput} from './ui/input.js';
 import {initPause} from './ui/pause.js';
 import {updateTips} from './ui/tips.js';
+import {updatePrompts} from './ui/prompts.js';
 import {updateMinimap} from './ui/minimap.js';
 import {VERSION} from './config/version.js';
 import {initSettings,tickFps} from './ui/settings.js';
@@ -39,22 +40,29 @@ initSave();
 initAudio();
 
 // ---------- loop ----------
+// The game state moves in fixed steps of 1/60 s (v0.9), however fast the screen draws, so every device (and later
+// every player online) runs the same simulation; drawing, animation and the HUD still run once per frame.
+const STEP=1/60,MAX_STEPS=5;
+function simStep(dt,now){
+  if(G.running){G.min+=dt*RATE*SPEEDS[G.speedIdx];runEvents(now);pollInput(player);for(const p of players)updatePlayer(p,dt);updateShelter();autosave(dt);}
+  for(let i=agents.length-1;i>=0;i--){
+    const a=agents[i];
+    if(a.state==='human'||a.state==='infected')updateHuman(a,dt);
+    else if(a.state==='zombie')updateZombie(a,dt);
+    else updateDead(a,dt);
+    if(a.gone||(a.state==='dead'&&a.deadT>25)){removeAgent(a);agents.splice(i,1);}
+  }
+  separate();updateThrows(dt);
+}
 reset();
-let last=performance.now(),frame=0;
+let last=performance.now(),frame=0,acc=0;
 function loop(now){
   requestAnimationFrame(loop);
-  const dt=Math.min(.05,(now-last)/1000);last=now;frame++;
+  const real=Math.min(.25,(now-last)/1000),dt=Math.min(.05,real);last=now;frame++;
   if(!G.paused){
-    if(G.running){G.min+=dt*RATE*SPEEDS[G.speedIdx];runEvents(now);updatePlayer(dt);updateShelter();autosave(dt);}
-    for(let i=agents.length-1;i>=0;i--){
-      const a=agents[i];
-      if(a.state==='human'||a.state==='infected')updateHuman(a,dt);
-      else if(a.state==='zombie')updateZombie(a,dt);
-      else updateDead(a,dt);
-      if(a.gone||(a.state==='dead'&&a.deadT>25)){removeAgent(a);agents.splice(i,1);continue;}
-      animate(a,dt);
-    }
-    separate();syncHeld();animate(player,dt);
+    acc+=real;let n=0;while(acc>=STEP&&n<MAX_STEPS){simStep(STEP,now);acc-=STEP;n++;}if(n===MAX_STEPS)acc=0;   // a long stall is dropped, not replayed
+    for(const a of agents)animate(a,dt);
+    for(const p of players){syncHeld(p);animate(p,dt);}
     for(const tr of tracers){if(tr.t>0){tr.t-=dt;tr.l.material.opacity=Math.max(0,tr.t/.07)*.95;}}
     muzzle.intensity=Math.max(0,muzzle.intensity-dt*60);boomLight.intensity=Math.max(0,boomLight.intensity-dt*20);
     if(blast.userData.t>0){blast.userData.t-=dt;const k=1-blast.userData.t/.4;blast.scale.setScalar(.5+k*4);blast.material.opacity=Math.max(0,.75*(1-k));}else blast.material.opacity=0;
@@ -62,11 +70,12 @@ function loop(now){
     const pulse=.45+.3*Math.sin(now/280);for(const k in ringMats)ringMats[k].opacity=pulse;
     updateSky(dt,now);
     updateGoal(dt,now);
-    updateTips(dt);updateThrows(dt);
+    updateTips(dt);
   }
+  updatePrompts();
   updateMinimap(dt,now);tickFps(dt);
   // music mood: night, after the outbreak, and danger = zombies chasing the player (v0.8)
-  let chasing=0;if(G.running&&player.alive)for(const a of agents)if(a.state==='zombie'&&a.seenP&&!a.retreat)chasing++;
+  let chasing=0;if(G.running&&player.alive)for(const a of agents)if(a.state==='zombie'&&a.seenP===player&&!a.retreat)chasing++;
   updateMusic({night:G.night||0,outbreak:G.outbreak,danger:Math.min(1,chasing/4)});
   camTarget.x+=(player.pos.x-camTarget.x)*Math.min(1,dt*5);camTarget.z+=(player.pos.z-camTarget.z)*Math.min(1,dt*5);
   camera.position.copy(camTarget).add(camOffset);camera.lookAt(camTarget);
