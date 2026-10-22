@@ -42,10 +42,15 @@ Object.assign(DEF,{
   // v0.5 food and water (PLACEHOLDER amounts, % of the bar)
   canned:{name:'อาหารกระป๋อง',kind:'food',food:45,stack:4,color:'#d9a24a'},
   water:{name:'น้ำดื่ม',kind:'food',water:50,stack:4,color:'#6fb3e0'},
+  // v0.7 (stack sizes PLACEHOLDER): planks board up doors, bottles are thrown to lure zombies with the noise
+  planks:{name:'ไม้กระดาน',kind:'mat',stack:6,color:'#a9834f'},
+  bottle:{name:'ขวดแก้ว',kind:'throw',stack:3,color:'#7fae8a'},
 });
 export const SLOTNAME={primary:'อาวุธหลัก',secondary:'อาวุธรอง',melee:'อาวุธประชิด'};
 export function gradeOf(id){return DEF[id].grade||null;}
 export function itemColor(id){const d=DEF[id];if(d.kind==='weapon'&&d.grade)return GRADES[d.grade].color;if(d.kind==='ammo')return '#d9d2bf';return d.color||'#e8e3d6';}
 export function wname(id){return DEF[id].name;}
 // melee wear left, 0..1; items from before v0.5 have no dur and count as new
+// kinds that stack (n) and are picked up by walking over them
+export const STACKS=new Set(['ammo','heal','revive','food','mat','throw']);
 export function durPct(it){const m=DEF[it.id].dur;return m?Math.max(0,(it.dur??m)/m):1;}

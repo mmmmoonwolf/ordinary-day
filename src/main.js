@@ -17,6 +17,7 @@ import {updateSky} from './systems/weather.js';
 import {reset} from './systems/game.js';
 import {autosave,initSave} from './systems/save.js';
 import {updateShelter} from './systems/doors.js';
+import {updateThrows} from './systems/throw.js';
 import {initAudio} from './systems/audio.js';
 import {updateGoal} from './systems/goal.js';
 import {updateHUD} from './ui/hud.js';
@@ -59,7 +60,7 @@ function loop(now){
     const pulse=.45+.3*Math.sin(now/280);for(const k in ringMats)ringMats[k].opacity=pulse;
     updateSky(dt,now);
     updateGoal(dt,now);
-    updateTips(dt);
+    updateTips(dt);updateThrows(dt);
   }
   updateMinimap(dt,now);
   camTarget.x+=(player.pos.x-camTarget.x)*Math.min(1,dt*5);camTarget.z+=(player.pos.z-camTarget.z)*Math.min(1,dt*5);

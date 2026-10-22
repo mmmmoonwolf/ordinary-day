@@ -17,7 +17,7 @@ export function animate(a,dt){
     p.head.rotation.z=a.kind==='walker'?.35:.2;p.body.rotation.z=Math.sin(a.phase*.5)*(a.kind==='walker'?.09:.05);p.body.rotation.x=a.kind==='sprinter'?.35:.12;
   }
   else if(a===player){
-    const def=DEF[curWeapon().id];p.armL.rotation.z=0;
+    const def=DEF[curWeapon().id];p.armL.rotation.z=0;p.body.rotation.x=a.sneak?.4:0;   // crouch while sneaking
     if(def.gun){
       const rec=a.recoil*.22;
       if(a.reloadT>0){p.armR.rotation.x=-.9;p.armL.rotation.x=-.6+Math.sin(a.reloadT*14)*.25;}

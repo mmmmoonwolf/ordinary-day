@@ -21,7 +21,7 @@ function any() {
     construct() { return any(); },
   });
 }
-const startHidden = new Set(['boss', 'bag', 'pOver', 'joy', 'bPick', 'pause', 'reportBox']);
+const startHidden = new Set(['boss', 'bag', 'pOver', 'joy', 'bPick', 'pause', 'reportBox', 'bFix', 'bThrow']);
 function el(id) {
   const h = {};
   const e = {
@@ -329,10 +329,49 @@ clear(); key('KeyP', 'keydown'); els.bReport.fire('click');
 const info = els.reportText.value;
 if (els.reportBox.hidden || !els.pacts.hidden) errs.push('v0.6.2 test: bug report panel did not open');
 if (!/เวอร์ชัน: \d+\.\d+/.test(info) || !info.includes('วันที่') || !info.includes('อุปกรณ์')) errs.push('v0.6.2 test: report is missing version, day or device: ' + info.slice(0, 80));
-if (!els.verLabel.textContent.includes('0.6')) errs.push('v0.6.2 test: version label not set');
+const { VERSION } = await import('../src/config/version.js');
+if (!els.verLabel.textContent.endsWith(VERSION)) errs.push('v0.6.2 test: version label not set to ' + VERSION);
 els.bReportBack.fire('click'); if (!els.reportBox.hidden) errs.push('v0.6.2 test: back did not close the report panel');
 key('KeyP', 'keydown');
 console.log('v0.6.2: bug report', info.split('\n').length, 'lines |', info.split('\n')[0]);
+
+// 12) v0.7: scarcer loot, scent, planks, sneak, bottles
+const sfail = m => errs.push('v0.7 test: ' + m);
+const L7 = await import('../src/config/loot.js');
+const D7 = await import('../src/systems/drops.js');
+const Sh = await import('../src/config/shelter.js');
+const Th = await import('../src/systems/throw.js');
+if (L7.refillScale(1) !== 1 || !(L7.refillScale(7) < .5) || L7.refillScale(30) !== L7.REFILL.floor) sfail('refill scale by day');
+clear();
+const far = D7.spawnDrop({ id: 'a9', n: 5 }, T.player.pos.x + 40, T.player.pos.z), mine = D7.spawnDrop({ id: 'a9', n: 5 }, T.player.pos.x + 41, T.player.pos.z); mine.mine = true;
+const police = lootSpots.find(s => s.zone === 'police'); if (police.drop) D7.removeDrop(police.drop); D7.spawnDrop({ id: 'a9', n: 5 }, police.x, police.z, police);
+for (let i = 0; i < 40 && T.drops.includes(far); i++) D7.takeByOthers(T.player.pos.x, T.player.pos.z);
+if (T.drops.includes(far) || !T.drops.includes(mine) || !police.drop) sfail('other survivors: far loot should go, own drops and police spots stay');
+// scent: hide in a closed room at night, a zombie 20 m away is sent to the door
+clear(); T.G.phase = 'night'; T.G.min = 22 * 60;
+const r7 = rooms[2], k7 = 2; T.player.pos.x = (r7.x0 + r7.x1) / 2; T.player.pos.z = (r7.z0 + r7.z1) / 2; step(1); Dr.toggleDoor(k7);
+const zs = zAt(r7.dx + r7.n[0] * 18, r7.dz + r7.n[1] * 18); zs.feed = 1e9; step(1);
+if (zs.heard && zs.heard.t > 0) sfail('zombie smelled the player straight away');
+T.G.min += Sh.SCENT_AFTER + 1; step(2);
+if (!zs.heard || Math.hypot(zs.heard.x - T.player.pos.x, zs.heard.z - T.player.pos.z) > 1) sfail('scent did not send the zombie after ' + Sh.SCENT_AFTER + ' min in one building');
+// planks: board a closed door, rebuild a broken one
+T.inv.bag = [{ id: 'planks', n: 3 }]; T.player.pos.x = r7.dx - r7.n[0] * 1.2; T.player.pos.z = r7.dz - r7.n[1] * 1.2; step(1);
+if (T.player.fixDoor !== k7 || els.bFix.hidden) sfail('hammer button did not show by a closed door with planks');
+key('KeyB', 'keydown');
+if (T.G.doors[k7].hp !== Sh.DOOR_HP + Sh.PLANK_HP) sfail('B did not board the door (hp ' + T.G.doors[k7].hp + ')');
+Object.assign(T.G.doors[k7], { open: true, broken: true, hp: 0 }); Dr.applyDoors(T.G.doors); step(1);
+key('KeyB', 'keydown');
+if (T.G.doors[k7].broken || T.G.doors[k7].open || T.G.doors[k7].hp !== Sh.REBUILT_HP || T.inv.bag.some(e => e.id === 'planks')) sfail('rebuilding the broken door went wrong: ' + JSON.stringify(T.G.doors[k7]) + ' bag ' + JSON.stringify(T.inv.bag));
+// sneak: a zombie 10 m away notices a walking player but not a sneaking one
+const sense = (sneak) => { clear(); T.G.phase = 'night'; T.G.min = 22 * 60; const z = zAt(T.player.pos.x + 10, T.player.pos.z); if (sneak) key('KeyC', 'keydown'); step(3); key('KeyC', 'keyup'); return !!z.seenP; };
+const seenWalking = sense(false), seenSneaking = sense(true);
+if (!seenWalking || seenSneaking) sfail('sneak: seen walking ' + seenWalking + ', seen sneaking ' + seenSneaking);
+// bottle: thrown, breaks, the noise pulls a zombie
+clear(); T.G.phase = 'night'; T.G.min = 22 * 60; T.player.face = 0; T.inv.bag = [{ id: 'bottle', n: 1 }];
+const zb7 = zAt(T.player.pos.x + 20, T.player.pos.z + 8); zb7.feed = 1e9;
+key('KeyQ', 'keydown'); key('KeyQ', 'keyup'); step(60);
+if (T.inv.bag.length || !zb7.heard || zb7.heard.t <= 0) sfail('bottle did not draw the zombie (heard ' + JSON.stringify(zb7.heard) + ')');
+console.log('v0.7: scarcer loot, scent after', Sh.SCENT_AFTER, 'min, planks board + rebuild, sneak, bottle noise');
 
 console.log(errs.length ? `FAILED: ${errs.length} runtime errors\n` + errs.slice(0, 3).join('\n---\n') : 'PASSED: no runtime errors');
 process.exit(errs.length ? 1 : 0);

@@ -1,7 +1,7 @@
 import {mulberry32} from '../core/util.js';
 import {scene} from '../core/renderer.js';
 import {RC} from '../config/world.js';
-import {WALL_T,DOOR_W,STUB_H} from '../config/shelter.js';
+import {WALL_T,DOOR_W,STUB_H,DOOR_HP,PLANK_HP} from '../config/shelter.js';
 import {S,part} from './materials.js';
 import {solids,freeAt,rayWall} from './collision.js';
 import {buildings,lootSpots,LAYOUT} from './city.js';
@@ -15,6 +15,7 @@ export const rooms=[];
 const floorMats=['#7a6650','#6d6a62','#806c55','#5f6a6e'].map(c=>S({color:c,roughness:.85}));
 const furnMats=['#6b5a46','#4c5560','#7d4b3c','#8b8577','#3f4a3a'].map(c=>S({color:c,roughness:.8}));
 const doorMat=S({color:'#5a3d26',roughness:.7}),holeMat=S({color:'#141210',roughness:1}),brokenMat=S({color:'#3a2a1c',roughness:.9});
+const plankMat=S({color:'#a9834f',roughness:.85});
 const signMat=S({color:'#3a2f22',emissive:'#ffb35a',emissiveIntensity:.9});
 const FURN=[{d:.5,h:1.9},{d:.8,h:.85},{d:.9,h:.75},{d:.6,h:1.1}];   // shelf, counter, sofa, cabinet
 
@@ -57,6 +58,9 @@ function makeRoom(b,[nx,nz],rng){
   const fl=new THREE.Mesh(new THREE.PlaneGeometry(r.x1-r.x0,r.z1-r.z0),floorMats[Math.floor(rng()*floorMats.length)]);fl.rotation.x=-Math.PI/2;fl.position.set((r.x0+r.x1)/2,y0+.012,(r.z0+r.z1)/2);fl.receiveShadow=true;r.cut.add(fl);
   r.cutDoor=slab(doorMat,D.x0+(nx?T*.3:0),D.x1-(nx?T*.3:0),D.z0+(nz?T*.3:0),D.z1-(nz?T*.3:0),y0,y0+STUB_H*.95);r.cut.add(r.cutDoor);
   r.cutBroken=slab(brokenMat,D.x0,D.x1,D.z0,D.z1,y0,y0+.08);r.cut.add(r.cutBroken);
+  // planks nailed across the inside of the door (v0.7), shown by setDoorLook from the door's extra HP
+  const px=dx-nx*(T+.05),pz=dz-nz*(T+.05),pw=DOOR_W/2+.2;
+  r.cutPlanks=[.35,.72].map(h=>slab(plankMat,nx?px-.04:dx-pw,nx?px+.04:dx+pw,nx?dz-pw:pz-.04,nx?dz+pw:pz+.04,y0+h,y0+h+.14));r.cut.add(...r.cutPlanks);
   for(const [sx,sz] of SIDES){
     if(sx===nx&&sz===nz||rng()<.2)continue;
     const f=FURN[Math.floor(rng()*FURN.length)],wl=sx?r.z1-r.z0:r.x1-r.x0,L=Math.min(wl-2.8,1.6+rng()*1.8);if(L<1.2)continue;
@@ -118,7 +122,8 @@ export function showRoom(k){
   shown=k;
 }
 // door look for a state {open, broken}
-export function setDoorLook(k,st){const r=rooms[k];r.extDoor.visible=!st.open;r.extHole.visible=st.open;r.cutDoor.visible=!st.open;r.cutBroken.visible=!!st.broken;}
+export function setDoorLook(k,st){const r=rooms[k];r.extDoor.visible=!st.open;r.extHole.visible=st.open;r.cutDoor.visible=!st.open;r.cutBroken.visible=!!st.broken;
+  const boards=st.open?0:Math.ceil((st.hp-DOOR_HP)/PLANK_HP);r.cutPlanks.forEach((m,i)=>{m.visible=i<boards;});}
 // is a wall between these two points? Only checked when one of them is inside a room, so outdoor sight works as before
 export function walledOff(ax,az,bx,bz){
   const ra=roomAt(ax,az),rb=roomAt(bx,bz);if(ra===rb)return false;

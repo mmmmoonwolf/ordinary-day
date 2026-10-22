@@ -11,13 +11,15 @@ import {EVENTS} from './phases.js';
 import {updateLoadout} from '../ui/hud.js';
 import {clearTip} from '../ui/tips.js';
 import {restoreObstacles} from './obstacles.js';
+import {REFILL} from '../config/loot.js';
 import {restoreDoors} from './doors.js';
+import {clearThrows} from './throw.js';
 
 // ---------- new game ----------
 export function reset(){
   for(const a of agents)removeAgent(a);agents.length=0;if(player)removeAgent(player);
   for(const m of blood){scene.remove(m);m.geometry.dispose();}blood.length=0;
-  while(drops.length)removeDrop(drops[0]);
+  while(drops.length)removeDrop(drops[0]);clearThrows();
   restoreObstacles();
   Object.assign(G,freshG());restoreDoors();
   Object.assign(inv,{bag:[],cap:6,eq:{primary:null,secondary:null,melee:null},active:'melee'});
@@ -26,6 +28,6 @@ export function reset(){
   let near=null,nd=1e9;for(const s of lootSpots){if(s.zone!=='city')continue;const d=Math.hypot(s.x-player.pos.x,s.z-player.pos.z);if(d>4&&d<nd){nd=d;near=s;}}
   if(near)spawnDrop(makeItem(pick(['pipe_c','knife_c','bat_c'])),near.x,near.z,near);
   for(const s of lootSpots)if(s.zone==='ambulance')spawnDrop(makeItem('resurrect'),s.x,s.z,s);
-  fillDay(.6);
+  fillDay(REFILL.start);
   $('hurt').style.opacity=0;$('boss').hidden=true;clearTip();updateLoadout(true);
 }

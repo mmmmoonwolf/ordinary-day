@@ -5,7 +5,8 @@ import {keys,ctl,mouse,joy} from '../core/controls.js';
 import {SPEEDS} from '../config/time.js';
 import {player} from '../entities/player.js';
 import {switchTo,pickup,useHeal,eatBest} from '../systems/inventory.js';
-import {toggleDoor} from '../systems/doors.js';
+import {toggleDoor,fixDoor} from '../systems/doors.js';
+import {throwBottle} from '../systems/throw.js';
 import {DIFFS} from '../config/difficulty.js';
 import {startReload} from '../systems/combat.js';
 import {reset} from '../systems/game.js';
@@ -37,6 +38,8 @@ export function initInput(){
     if(e.code==='Digit1')switchTo('primary');if(e.code==='Digit2')switchTo('secondary');if(e.code==='Digit3')switchTo('melee');
     if(e.code==='KeyR')startReload();if(e.code==='KeyH')useHeal();if(e.code==='KeyG')eatBest();
     if(e.code==='KeyE'||e.code==='KeyF')usePick();
+    if(e.code==='KeyB'&&player.fixDoor>=0)fixDoor(player.fixDoor);
+    if(e.code==='KeyQ'&&!e.repeat)throwBottle();
   });
   addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Space')ctl.fireHeld=false;});
   addEventListener('blur',()=>{for(const k in keys)keys[k]=false;ctl.fireHeld=false;});
@@ -72,6 +75,8 @@ export function initInput(){
   for(const b of document.querySelectorAll('.diffs button'))b.addEventListener('click',()=>pickDiff(b.dataset.diff));
   pickDiff(pref);
   $('bPick').addEventListener('click',usePick);
+  $('bFix').addEventListener('click',()=>{if(player.fixDoor>=0)fixDoor(player.fixDoor);});
+  $('bThrow').addEventListener('click',throwBottle);
   for(const c of chipEls)c.addEventListener('click',()=>switchTo(c.dataset.slot));
   $('bStart').addEventListener('click',()=>{clearSave();reset();$('overlay').hidden=true;G.running=true;});
   $('bContinue').addEventListener('click',()=>{if(!loadGame()){showContinue();return;}$('overlay').hidden=true;G.running=true;say('เล่นต่อจากเซฟ · '+$('contInfo').textContent,'',4);});

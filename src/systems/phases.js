@@ -5,7 +5,8 @@ import {isSpecial} from '../config/zombies.js';
 import {agents,becomeZombie,setKind,zombies,spawnEdge} from '../entities/agents.js';
 import {d2} from '../entities/movement.js';
 import {player} from '../entities/player.js';
-import {fillDay,fillNight} from './drops.js';
+import {fillDay,fillNight,takeByOthers} from './drops.js';
+import {REFILL,refillScale} from '../config/loot.js';
 import {sfx} from './audio.js';
 import {diffOf} from '../config/difficulty.js';
 import {say,feed} from '../ui/hud.js';
@@ -35,7 +36,7 @@ function onNight(){
   G.armorNight=Math.random()<.6;G.armorNext=G.min+30;G.armorAnnounced=false;G.armorCount=0;
   G.tyrantPending=Math.random()<.4;G.tyrantAt=G.min-(G.min%1440)+1440;
   G.nightSpawnNext=G.min+15;
-  fillNight();feed('ของระดับ Police และ Military เกิดขึ้นทั่วเมือง','pol');
+  fillNight(REFILL.night*refillScale(Math.floor(G.min/1440)+1));feed('ของระดับ Police และ Military เกิดขึ้นทั่วเมือง','pol');
 }
 function onDay(){
   G.phase='day';sfx.dawn();
@@ -46,7 +47,8 @@ function onDay(){
   const walkers=zs.filter(z=>z.kind==='walker').sort((a,b)=>d2(b,player)-d2(a,player));
   for(let i=0;i<walkers.length-18;i++)walkers[i].retreat=true;
   G.armorNight=false;G.tyrantPending=false;G.nightSpawnNext=1e9;
-  fillDay(.3);
+  if(takeByOthers(player.pos.x,player.pos.z)>0)feed('ของที่ทิ้งไว้ไกล ๆ บางส่วนถูกผู้รอดชีวิตคนอื่นเก็บไปแล้ว','warn');
+  fillDay(REFILL.day*refillScale(day));
 }
 function nightMix(){const day=Math.floor(G.min/1440)+1;return {zombie:Math.max(40,65-(day-1)*5),sprinter:20+(day-1)*3,boomer:15+(day-1)*2};}
 export function runEvents(){

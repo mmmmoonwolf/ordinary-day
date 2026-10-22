@@ -7,6 +7,13 @@ export const POOLS={
 // Draft 01 percentages are used as WEIGHTS inside each phase's table (decision Q02/Q03 default)
 export const GRADE_W={day:{civ:70},night:{pol:40,mil:10},nightLot:{pol:40,mil:20}};
 export const MED_W={day:{bandage:50,antibiotic:30,resurrect:1},night:{bandage:50,antibiotic:30,painkiller:15,firstaid:5,resurrect:1}};
-// food weights added in v0.5 are PLACEHOLDERS
-export const CAT_W={day:{weapon:22,ammo:38,med:30,bag:6,food:24},night:{weapon:32,ammo:42,med:26,food:16}};
+// food (v0.5), planks and bottles (v0.7) weights are PLACEHOLDERS
+export const CAT_W={day:{weapon:22,ammo:38,med:30,bag:6,food:24,mat:10,throw:8},night:{weapon:32,ammo:42,med:26,food:16,mat:6,throw:6}};
 export const FOOD_W={canned:1,water:1.2};
+// v0.7 scarcity, all PLACEHOLDERS. Chance that an empty loot spot gets an item: at a new game, each 06:00 and each 18:30.
+// The 06:00 / 18:30 chances shrink by `fade` per day (never below `floor` of the day-1 value), so later days are leaner.
+export const REFILL={start:.6,day:.3,night:.4,fade:.85,floor:.4};
+export const refillScale=day=>Math.max(REFILL.floor,Math.pow(REFILL.fade,day-1));
+// each 06:00, loot nobody picked up that lies farther than `minDist` from the player is gone with this chance
+// (other survivors took it). Police / military / ambulance spots and things the player dropped are never taken.
+export const TAKEN={chance:.35,minDist:25};

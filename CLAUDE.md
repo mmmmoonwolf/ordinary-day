@@ -33,11 +33,12 @@
 | `core/controls.js` | สถานะ input ที่หลายไฟล์ใช้ร่วม: `keys`, `ctl.fireHeld` / `ctl.fireQ`, `mouse`, `joy` |
 | `config/time.js` | `DAY_REAL_SECONDS = 300`, `RATE`, `SPEEDS`, `NIGHT_START`, `DAY_START`, `DUSK_WARN`, `isNightTod()` |
 | `config/world.js` | `RC` (เส้นกลางถนน), `OFF` (ระยะทางเท้า), `LIM`, `groundY()` |
-| `config/items.js` | `GRADES`, `DEF` (อาวุธ กระสุน ยา อาหาร, `dur` ความทนอาวุธประชิด), `SLOTNAME`, `gradeOf()`, `itemColor()`, `durPct()` |
-| `config/loot.js` | `POOLS`, `GRADE_W`, `MED_W`, `CAT_W`, `FOOD_W` |
+| `config/items.js` | `GRADES`, `DEF` (อาวุธ กระสุน ยา อาหาร ไม้กระดาน ขวด, `dur` ความทนอาวุธประชิด), `STACKS` (ชนิดที่ซ้อนและเก็บอัตโนมัติ), `SLOTNAME`, `gradeOf()`, `itemColor()`, `durPct()` |
+| `config/loot.js` | `POOLS`, `GRADE_W`, `MED_W`, `CAT_W`, `FOOD_W`, `REFILL` / `refillScale()` / `TAKEN` (ของหายากตามวัน) |
 | `config/zombies.js` | `ZC` (HP ความเร็ว ระยะมอง ดาเมจ โอกาสติดเชื้อ), `INFECT_MINUTES`, `isSpecial()` |
 | `config/goal.js` | `GOAL_NIGHTS = 7`, `LZ`, `RESCUE_FROM` / `RESCUE_UNTIL`, `nightsSurvived()` |
-| `config/shelter.js` | ค่าผนัง ประตู และการได้ยินผ่านผนัง (PLACEHOLDER) |
+| `config/shelter.js` | ค่าผนัง ประตู การได้ยินผ่านผนัง ไม้กระดาน และกลิ่น (PLACEHOLDER) |
+| `config/stealth.js` | ย่องและขวด (PLACEHOLDER) |
 | `config/version.js` | `VERSION` (ขึ้นหน้าเริ่มเกมและแนบในรายงานบั๊ก เปลี่ยนพร้อมตารางเวอร์ชันใน README), `REPO` |
 | `config/needs.js` · `difficulty.js` | ค่าหิวกระหาย (PLACEHOLDER) · `DIFFS` ง่าย/ปกติ/ยาก (ตัวคูณ PLACEHOLDER), `diffOf(G)` |
 | `world/textures.js` · `materials.js` | texture วาดด้วย canvas, วัสดุที่ใช้ร่วมกัน, `box()`, `part()` |
@@ -48,14 +49,15 @@
 | `entities/agents.js` | ร่างตัวละคร, `agents`, `makeAgent()`, `styleZombie()`, `becomeZombie()`, `setKind()`, `spawnEdge()` |
 | `entities/movement.js` · `ai.js` | `moveAgent()`, `followNodes()`, `wander()` (ออกจากตึกก่อน) · `updateHuman()`, `updateZombie()`, `hurtZombie()`, `makeNoise()` |
 | `entities/player.js` · `animation.js` | `player`, `makePlayer()`, `updatePlayer()`, `syncHeld()` · `animate()`, `separate()` |
-| `systems/drops.js` | `makeItem()`, `rollLoot()`, `drops`, `spawnDrop()`, `fillDay()`, `fillNight()`, `dropGuaranteed()` |
+| `systems/drops.js` | `makeItem()`, `rollLoot()`, `drops`, `spawnDrop()`, `fillDay()`, `fillNight()`, `takeByOthers()`, `dropGuaranteed()`, `reachableSpot()` |
 | `systems/inventory.js` · `combat.js` | `inv`, `pickup()`, `useHeal()`, `addStack()`, `takeAmmo()` · `fireGun()`, `meleeHit()`, `aimAssist()`, `hurtPlayer()` |
 | `systems/phases.js` · `weather.js` | `EVENTS`, `runEvents()` (DAY/NIGHT, spawn กลางคืน) · `updateSky()` ฝน แสง ไฟถนน |
 | `systems/effects.js` · `game.js` | เลือด วงแหวน tracer ระเบิด · `reset()` เริ่มเกมใหม่ |
 | `systems/audio.js` · `records.js` | เสียงสังเคราะห์ `sfx.*` (no-op ถ้าไม่มี WebAudio), `toggleMute()` · `recordRun()` สถิติดีสุด |
 | `systems/infection.js` · `goal.js` | `infectPlayer()`, `updateInfection()`, `cureInfection()` · `updateGoal()` เฮลิคอปเตอร์ ลูกศร และการชนะ |
 | `systems/needs.js` · `obstacles.js` | `updateNeeds()` หิวกระหาย · `smashNear()`, `restoreObstacles()`, `applyBroken()` สิ่งกีดขวางที่ Tyrant ทุบ |
-| `systems/doors.js` | `G.doors`, `toggleDoor()`, `damageDoor()`, `nearDoor()`, `restoreDoors()`, `applyDoors()`, `updateShelter()` |
+| `systems/doors.js` | `G.doors`, `toggleDoor()`, `damageDoor()`, `nearDoor()`, `fixDoor()` ไม้กระดาน, `restoreDoors()`, `applyDoors()`, `updateShelter()`, กลิ่น `G.stay` |
+| `systems/throw.js` | ขวดที่ขว้าง `throwBottle()`, `updateThrows()`, `clearThrows()` |
 | `systems/save.js` | เซฟอัตโนมัติ 1 ช่องใน localStorage: `saveGame()`, `loadGame()`, `readSave()`, `clearSave()`, `autosave()` |
 | `ui/minimap.js` | แผนที่เล็ก `updateMinimap()` พื้นหลังวาดครั้งเดียวจาก `solids` / `LAYOUT` ส่วนที่ขยับวาดทุก 0.1 วินาที จุดสำคัญมาจาก `pois` ใน `world/city.js` |
 | `ui/tips.js` | คำแนะนำครั้งแรกที่เจอสถานการณ์ ตาราง `TIPS` = [key, เงื่อนไข, ข้อความ] `updateTips()`, `setTipsOff()` |
@@ -80,7 +82,7 @@
 - GitHub Actions รัน `npm test` ทุก PR และทุก push เข้า `main` (`.github/workflows/smoke-test.yml`) อย่า merge ถ้าแดง
 - `node tools/smoke-test.js` (หรือ `npm test`) จำลองเกม 2 วันเต็มแบบไม่มีหน้าจอ (THREE ถูกแทนด้วย stub) โดย import โมดูลใน `src/` แล้วรายงาน error ใช้จับบั๊กตรรกะเท่านั้น ไม่ได้ตรวจภาพ
 - ต้องเปิดผ่าน dev server (`npx serve .`) แล้วทดสอบทั้งจอคอมและจอมือถือ (DevTools device mode) ก่อน commit
-- ทดสอบด้วยตาทุกครั้ง: เริ่มเกม 07:30, การระบาด 09:30, เปลี่ยนเป็นกลางคืน 18:30, รุ่งเช้า 06:00, ยิงปืนทุกแบบ, เปิดกระเป๋า, ตายแล้วเล่นใหม่, รีเฟรชหน้าแล้วกดเล่นต่อ, ติดเชื้อแล้วใช้ Antibiotic, เปิดปิดเสียง, หยุดเกมแล้วเซฟเองและกลับหน้าแรก, เก็บ Resurrection Kit ที่รถพยาบาล, คำแนะนำไม่บังตัวละครบนจอแคบ, แผนที่ไม่ทับ HUD ตอนติดเชื้อและมีข้อความยาว (จอ 360 / 412 / 700 / 1280), ดู HUD ที่จอกว้าง 360 px, เช้าวันที่ 8 ตามลูกศรไปขึ้นเฮลิคอปเตอร์, เลือกระดับความยากแล้วเริ่มเกม, กินและดื่มด้วยปุ่ม 🍴, ตีจนอาวุธประชิดพัง, ยิง Armor Walker จากด้านหลัง, Tyrant ทุบรถแล้วรีเฟรชหน้าเล่นต่อ, เข้าตึกแล้วปิดประตู (คอมกด E มือถือแตะปุ่มประตู) ดูหลังคาหายและเห็นข้างใน, ซอมบี้มาพังประตูตอนกลางคืน, ทิ้งกระสุนจากกระเป๋าแล้วไม่เด้งกลับ, กระเป๋าเต็มแล้วเหยียบกระสุนเห็นปุ่มกระเป๋าเต็ม, แจ้งบั๊กจากหน้าหยุดเกมแล้วกดคัดลอก
+- ทดสอบด้วยตาทุกครั้ง: เริ่มเกม 07:30, การระบาด 09:30, เปลี่ยนเป็นกลางคืน 18:30, รุ่งเช้า 06:00, ยิงปืนทุกแบบ, เปิดกระเป๋า, ตายแล้วเล่นใหม่, รีเฟรชหน้าแล้วกดเล่นต่อ, ติดเชื้อแล้วใช้ Antibiotic, เปิดปิดเสียง, หยุดเกมแล้วเซฟเองและกลับหน้าแรก, เก็บ Resurrection Kit ที่รถพยาบาล, คำแนะนำไม่บังตัวละครบนจอแคบ, แผนที่ไม่ทับ HUD ตอนติดเชื้อและมีข้อความยาว (จอ 360 / 412 / 700 / 1280), ดู HUD ที่จอกว้าง 360 px, เช้าวันที่ 8 ตามลูกศรไปขึ้นเฮลิคอปเตอร์, เลือกระดับความยากแล้วเริ่มเกม, กินและดื่มด้วยปุ่ม 🍴, ตีจนอาวุธประชิดพัง, ยิง Armor Walker จากด้านหลัง, Tyrant ทุบรถแล้วรีเฟรชหน้าเล่นต่อ, เข้าตึกแล้วปิดประตู (คอมกด E มือถือแตะปุ่มประตู) ดูหลังคาหายและเห็นข้างใน, ซอมบี้มาพังประตูตอนกลางคืน, ทิ้งกระสุนจากกระเป๋าแล้วไม่เด้งกลับ, กระเป๋าเต็มแล้วเหยียบกระสุนเห็นปุ่มกระเป๋าเต็ม, แจ้งบั๊กจากหน้าหยุดเกมแล้วกดคัดลอก, ตอกไม้ประตูและซ่อมประตูที่พัง, ย่องผ่านซอมบี้, ขว้างขวดล่อซอมบี้ตอนกลางคืน, หลบตึกเดิมทั้งคืนแล้วซอมบี้มาพังประตู
 
 ## การสรุปงาน
 

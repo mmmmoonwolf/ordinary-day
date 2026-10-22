@@ -88,8 +88,12 @@ body{background:var(--ground);color:var(--ink);font-family:var(--f-ui);overflow:
 #bAtk:active{background:rgba(201,71,58,.6)}
 #bReload{position:absolute;right:max(124px,calc(env(safe-area-inset-right,0px) + 124px));bottom:calc(env(safe-area-inset-bottom,0px) + 36px);width:58px;height:58px;border-radius:50%;border:1.5px solid var(--line);background:var(--panel);font-family:var(--f-clock)!important;font-size:20px;font-weight:700;display:grid;place-items:center;line-height:1}
 #bReload:disabled{opacity:.3}
-#bPick{position:absolute;right:max(22px,calc(env(safe-area-inset-right,0px) + 22px));bottom:calc(env(safe-area-inset-bottom,0px) + 222px);height:42px;padding:0 16px;border:1.5px solid var(--amber);background:rgba(226,166,74,.22);font-size:14px;font-weight:700;max-width:236px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#bThrow{position:absolute;right:max(190px,calc(env(safe-area-inset-right,0px) + 190px));bottom:calc(env(safe-area-inset-bottom,0px) + 40px);width:50px;height:50px;border-radius:50%;border:1.5px solid #7fae8a;background:var(--panel);font-size:18px;display:grid;place-items:center;line-height:1;padding:0}
+#bThrow small{display:block;font-size:10px;color:var(--ink-dim);font-weight:700}
+#bPick{position:absolute;right:max(22px,calc(env(safe-area-inset-right,0px) + 22px));bottom:calc(env(safe-area-inset-bottom,0px) + 238px);height:42px;padding:0 16px;border:1.5px solid var(--amber);background:rgba(226,166,74,.22);font-size:14px;font-weight:700;max-width:236px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #bPick b{color:var(--pg,var(--amber))}
+#bFix{position:absolute;right:max(22px,calc(env(safe-area-inset-right,0px) + 22px));bottom:calc(env(safe-area-inset-bottom,0px) + 288px);height:40px;padding:0 14px;border:1.5px solid #a9834f;background:rgba(169,131,79,.22);font-size:13px;font-weight:700;max-width:236px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#bFix b{color:#e0c08f}
 #feed{position:absolute;left:max(16px,calc(env(safe-area-inset-left,0px) + 12px));bottom:calc(env(safe-area-inset-bottom,0px) + 176px);display:grid;gap:4px;font-size:13px;font-weight:500;text-shadow:0 1px 4px rgba(0,0,0,.9);max-width:48vw}
 #feed div{animation:fade 3s forwards}
 #feed .warn{color:#ff8f7c}#feed .get{color:#e7dcc0}#feed .pol{color:var(--g-pol)}#feed .mil{color:var(--g-mil)}#feed .civ{color:var(--g-civ)}
@@ -215,6 +219,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
   </div>
   <div id="feed"></div>
   <button id="bPick" hidden><span id="pickVerb">เก็บ </span><b id="pickName"></b></button>
+  <button id="bFix" hidden title="ตอกไม้ / ซ่อมประตู (B)">🔨 <b id="fixName"></b></button>
   <div class="loadout" id="loadout">
     <div class="wrow"><div class="wname"><span id="wGrade"></span><span id="wName">มือเปล่า</span></div><span id="wAmmo">—</span></div>
     <div class="chips">
@@ -226,8 +231,9 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
     </div>
   </div>
   <button id="bReload" aria-label="รีโหลด">R<small>รีโหลด</small></button>
+  <button id="bThrow" hidden aria-label="ขว้างขวด (Q)">🍾<small id="throwN">0</small></button>
   <button id="bAtk" aria-label="โจมตี"><span id="atkLabel">ต่อย</span><small id="atkKey">SPACE</small></button>
-  <div class="hint" id="hint">WASD เดิน · Shift วิ่ง · เมาส์เล็ง คลิกโจมตี · 1 2 3 สลับอาวุธ · R รีโหลด · E เก็บของ · Tab กระเป๋า · H รักษา · G กิน/ดื่ม · P หยุด</div>
+  <div class="hint" id="hint">WASD เดิน · Shift วิ่ง · เมาส์เล็ง คลิกโจมตี · 1 2 3 สลับอาวุธ · R รีโหลด · E เก็บของ · Tab กระเป๋า · H รักษา · G กิน/ดื่ม · C ย่อง · Q ขว้างขวด · B ตอกไม้ · P หยุด</div>
 </div>
 <div id="joy" hidden><div id="knob"></div></div>
 
@@ -271,7 +277,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 
 <div id="overlay">
   <div class="panel" id="pStart">
-    <div class="eyebrow" id="verLabel">ORDINARY DAY · PROTOTYPE 0.6.2</div>
+    <div class="eyebrow" id="verLabel">ORDINARY DAY · PROTOTYPE 0.7</div>
     <h1>วันธรรมดา</h1>
     <p class="lede">รอดให้ครบ 7 คืน แล้วไปขึ้นเฮลิคอปเตอร์กู้ภัย กลางวันซอมบี้ยังเชื่องช้า ใช้เวลานี้เก็บอาวุธและยา พอ 18:30 กลางคืนจะมาพร้อมซอมบี้ที่เร็ว หูไว และของระดับ Police กับ Military ให้เสี่ยงออกไปหา ถ้าถูกกัดอาจติดเชื้อ ต้องใช้ Antibiotic</p>
     <div class="keys" id="keys"></div>
