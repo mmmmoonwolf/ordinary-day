@@ -6,7 +6,7 @@ import {lootSpots} from '../world/city.js';
 import {agents,makeAgent,removeAgent,styleZombie} from '../entities/agents.js';
 import {player,players} from '../entities/player.js';
 import {drops,spawnDrop,removeDrop} from './drops.js';
-import {freshGear} from './inventory.js';
+import {freshGear,tidyBag} from './inventory.js';
 import {EVENTS} from './phases.js';
 import {reset,addPlayer} from './game.js';
 import {feed,updateLoadout} from '../ui/hud.js';
@@ -55,6 +55,7 @@ export function loadGame(){
     const p=i?addPlayer():player,g=o.gear||{},eq=g.eq||{};
     p.gear=Object.assign(freshGear(),{bag:(g.bag||[]).filter(validItem),cap:g.cap||6,active:g.active||'melee'});
     for(const k of ['primary','secondary','melee'])p.gear.eq[k]=validItem(eq[k])?eq[k]:null;
+    tidyBag(p.gear);   // saves from before v0.14.1 can hold several stacks of one item
     Object.assign(p.pos,{x:o.x,z:o.z});Object.assign(p,{face:o.face,hp:o.hp,down:o.down,bleed:o.bleed||0,inv:o.inv,infect:o.infect||0,infWarn:o.infWarn||0,food:o.food??100,water:o.water??100,stay:o.stay||null,lastHit:performance.now()/1000-o.sinceHit});
     if(o.alive===false)Object.assign(p,{alive:false,state:'dead',deadT:30});
     if(i)Object.assign(p,{token:o.token||null,away:true});   // friends wait as they were until they join the room again (v0.12)

@@ -17,7 +17,7 @@ function itemDesc(it){
   if(d.kind==='mat')return 'ใช้ตอกประตูที่ปิดอยู่ให้ทนขึ้น หรือซ่อมประตูที่พัง ยืนใกล้ประตูแล้ว'+(isTouch?'แตะปุ่มตอกไม้':'กด B')+' · มี '+it.n+' แผ่น';
   if(d.kind==='throw')return 'ขว้างให้แตกเสียงดัง ซอมบี้จะไปดูที่จุดนั้น '+(isTouch?'แตะปุ่ม 🍾':'กด Q (ขว้างไปทางที่เล็ง)')+' · มี '+it.n+' ขวด';
   if(d.kind==='food')return (d.food?'อิ่มขึ้น '+d.food+'%':'หายกระหาย '+d.water+'%')+' · มี '+it.n+' ชิ้น';
-  if(d.kind==='ammo')return 'มี '+it.n+' นัด (สูงสุด '+d.stack+' นัดต่อช่อง)';
+  if(d.kind==='ammo')return 'มี '+it.n+' นัด';
   if(d.kind==='heal')return 'ฟื้น '+Math.round(d.heal*100)+'% ของ HP สูงสุด'+(d.cure?' และรักษาการติดเชื้อ':'')+' · มี '+it.n+' ชิ้น';
   if(d.kind==='revive')return 'ทำงานอัตโนมัติเมื่อ HP หมด ชุบชีวิตด้วย HP 100% (ใช้ครั้งเดียว)';
   return '';

@@ -1,5 +1,5 @@
 import {$} from '../core/util.js';
-import {DEF,GRADES,SLOTNAME,gradeOf} from '../config/items.js';
+import {DEF,STACKS,GRADES,SLOTNAME,gradeOf} from '../config/items.js';
 import {spawnDrop,removeDrop} from './drops.js';
 import {uiFor} from '../ui/hud.js';
 import {renderBag} from '../ui/bag.js';
@@ -16,7 +16,16 @@ const bagOpen=p=>p.local&&!$('bag').hidden;
 export function curWeapon(p){const g=p.gear;if(g.active!=='melee'&&!g.eq[g.active])g.active='melee';return g.eq[g.active]||{id:'fist',mag:0};}
 export function countAmmo(p,t){let s=0;for(const e of p.gear.bag)if(e.id===t)s+=e.n;return s;}
 export function takeAmmo(p,t,n){const bag=p.gear.bag;let got=0;for(let i=bag.length-1;i>=0&&got<n;i--){const e=bag[i];if(e.id!==t)continue;const k=Math.min(e.n,n-got);e.n-=k;got+=k;if(e.n<=0)bag.splice(i,1);}return got;}
-export function addStack(p,id,n){const g=p.gear,st=DEF[id].stack;for(const e of g.bag){if(e.id===id&&e.n<st){const k=Math.min(st-e.n,n);e.n+=k;n-=k;if(!n)return 0;}}while(n>0&&g.bag.length<g.cap){const k=Math.min(st,n);g.bag.push({id,n:k});n-=k;}return n;}
+// returns how many did not fit: all of them when the item is new to a full bag, otherwise none
+export function addStack(p,id,n){const g=p.gear,e=g.bag.find(x=>x.id===id);if(e){e.n+=n;return 0;}if(g.bag.length>=g.cap)return n;g.bag.push({id,n});tidyBag(g);return 0;}
+// the bag keeps one stack per item and is sorted by category (v0.14.1): weapons, ammo, medicine, food, planks, bottles
+const ORDER=['weapon','ammo','heal','revive','food','mat','throw'],IDS=Object.keys(DEF);
+export function tidyBag(g){
+  const out=[];
+  for(const e of g.bag){const s=STACKS.has(DEF[e.id].kind)&&out.find(x=>x.id===e.id);if(s)s.n+=e.n;else out.push(e);}
+  out.sort((a,b)=>ORDER.indexOf(DEF[a.id].kind)-ORDER.indexOf(DEF[b.id].kind)||IDS.indexOf(a.id)-IDS.indexOf(b.id));
+  g.bag.length=0;g.bag.push(...out);
+}
 export function gradeTag(id){const g=gradeOf(id);return g?' ['+GRADES[g].name+']':'';}
 // a downed player (v0.10) cannot use their gear until helped up
 const cant=p=>!p.alive||p.bleed>0;
@@ -30,7 +39,7 @@ export function pickup(p,d,quiet){
   const it=d.item,def=DEF[it.id],gc=gradeOf(it.id)||'get',g=p.gear,U=uiFor(p);
   if(def.kind==='weapon'){
     if(!g.eq[def.slot]){g.eq[def.slot]=it;removeDrop(d);U.feed('+ '+def.name+gradeTag(it.id)+' → '+SLOTNAME[def.slot],gc);switchTo(p,def.slot);}
-    else if(g.bag.length<g.cap){g.bag.push(it);removeDrop(d);U.feed('+ '+def.name+gradeTag(it.id)+' (เข้ากระเป๋า)',gc);}
+    else if(g.bag.length<g.cap){g.bag.push(it);tidyBag(g);removeDrop(d);U.feed('+ '+def.name+gradeTag(it.id)+' (เข้ากระเป๋า)',gc);}
     else{U.feedOnce('full','กระเป๋าเต็ม','warn');return false;}
   } else if(def.kind==='bag'){
     if(g.cap>=def.slots){U.feedOnce('hasbag','มีกระเป๋าเป้แล้ว','warn');return false;}
@@ -83,13 +92,13 @@ const okI=(p,i)=>Number.isInteger(i)&&i>=0&&i<p.gear.bag.length;
 const SLOTS=['primary','secondary','melee'];
 export function equipFromBag(p,i){
   if(cant(p)||!okI(p,i))return;const g=p.gear,it=g.bag[i],d=DEF[it.id];if(d.kind!=='weapon')return;
-  const old=g.eq[d.slot];g.eq[d.slot]=it;if(old)g.bag[i]=old;else g.bag.splice(i,1);g.active=d.slot;p.reloadT=0;uiFor(p).updateLoadout(true);
+  const old=g.eq[d.slot];g.eq[d.slot]=it;if(old)g.bag[i]=old;else g.bag.splice(i,1);tidyBag(g);g.active=d.slot;p.reloadT=0;uiFor(p).updateLoadout(true);
 }
 export function holdSlot(p,s){if(cant(p)||!SLOTS.includes(s)||!p.gear.eq[s])return;p.gear.active=s;p.reloadT=0;uiFor(p).updateLoadout(true);}
 export function unequip(p,s){
   if(cant(p)||!SLOTS.includes(s))return;const g=p.gear,it=g.eq[s];if(!it)return;
   if(g.bag.length>=g.cap){uiFor(p).feedOnce('full','กระเป๋าเต็ม','warn');return;}
-  g.bag.push(it);g.eq[s]=null;uiFor(p).updateLoadout(true);
+  g.bag.push(it);tidyBag(g);g.eq[s]=null;uiFor(p).updateLoadout(true);
 }
 export function dropFromBag(p,i){if(!p.alive||!okI(p,i))return;const it=p.gear.bag.splice(i,1)[0];dropItem(p,it);uiFor(p).updateLoadout(true);}
 export function dropEquipped(p,s){if(!p.alive||!SLOTS.includes(s))return;const it=p.gear.eq[s];if(!it)return;p.gear.eq[s]=null;dropItem(p,it);uiFor(p).updateLoadout(true);}
