@@ -21,7 +21,7 @@ function any() {
     construct() { return any(); },
   });
 }
-const startHidden = new Set(['boss', 'bag', 'pOver', 'joy', 'bPick', 'pause', 'reportBox', 'bFix', 'bThrow']);
+const startHidden = new Set(['boss', 'bag', 'pOver', 'joy', 'bPick', 'pause', 'reportBox', 'bFix', 'bThrow', 'settings', 'fps']);
 function el(id) {
   const h = {};
   const e = {
@@ -221,6 +221,7 @@ T.inv.bag.push({ id: 'water', n: 1 }, { id: 'canned', n: 1 }); T.player.water = 
 if (T.player.water < 59 || T.inv.bag.some(e => e.id === 'water')) vfail('G did not drink the water first when thirstier');
 T.player.hp = 60; T.player.food = 0; T.player.water = 80; const hp0 = T.player.hp; step(120);
 if (!(T.player.hp < hp0)) vfail('empty food bar did not drain HP');
+for (const a of T.agents) a.gone = true; step(2);   // nobody else may hit the player during this check
 T.player.inv = 0; T.inv.bag = T.inv.bag.filter(e => e.id !== 'resurrect'); T.player.food = 0; T.player.water = 0; T.player.hp = 0.5; step(30);
 if (T.player.alive || T.G.endCause !== 'starved') vfail('starving did not end the game as starved (cause ' + T.G.endCause + ')');
 // Armor Walker: front armored, back full damage
@@ -372,6 +373,40 @@ const zb7 = zAt(T.player.pos.x + 20, T.player.pos.z + 8); zb7.feed = 1e9;
 key('KeyQ', 'keydown'); key('KeyQ', 'keyup'); step(60);
 if (T.inv.bag.length || !zb7.heard || zb7.heard.t <= 0) sfail('bottle did not draw the zombie (heard ' + JSON.stringify(zb7.heard) + ')');
 console.log('v0.7: scarcer loot, scent after', Sh.SCENT_AFTER, 'min, planks board + rebuild, sneak, bottle noise');
+
+// 13) v0.8: daily events, settings, music
+const efail = m => errs.push('v0.8 test: ' + m);
+const Ev = await import('../src/systems/events.js');
+const St = await import('../src/ui/settings.js');
+const { updateMusic } = await import('../src/systems/audio.js');
+clear();
+for (let day = 2; day <= 7; day++) if (!T.G.plan.some(e => Math.floor(e.at / 1440) + 1 === day)) efail('day ' + day + ' has no event');
+if (T.G.plan.some(e => e.kind === 'horde' && Math.floor(e.at / 1440) + 1 < 3)) efail('horde before day 3');
+// airdrop now: crate + loot + map marker, gone the next morning (its loot stays)
+T.G.min = 1440 + 11 * 60; T.G.plan = [{ kind: 'airdrop', at: T.G.min + 1, done: false }]; const nd = T.drops.length; step(20);
+if (!T.G.drop || T.drops.length < nd + 5) efail('airdrop: drop ' + JSON.stringify(T.G.drop) + ', items ' + (T.drops.length - nd));
+const dropAt = T.G.drop && { ...T.G.drop };
+if (dropAt && T.drops.some(d => Math.hypot(d.x - dropAt.x, d.z - dropAt.z) < 3 && d.item.id.endsWith('_p'))) efail('daytime airdrop had Police loot');
+S.saveGame(); els.bAgain.fire('click'); if (T.G.drop) efail('new game kept the airdrop');
+S.loadGame(); if (!T.G.drop || !solids.some(b => Math.abs((b.x0 + b.x1) / 2 - dropAt.x) < .01 && Math.abs((b.z0 + b.z1) / 2 - dropAt.z) < .01)) efail('loading did not bring the crate back');
+T.G.running = true; T.player.inv = 1e9; T.G.min = 2 * 1440 + 6 * 60 + 5; step(3);
+if (T.G.drop) efail('crate still there the next morning');
+// horde: marches along a road and leaves
+clear(); T.G.min = 2 * 1440 + 22 * 60; T.G.phase = 'night'; T.G.plan = [{ kind: 'horde', at: T.G.min, done: false }];
+step(3); const horde = T.agents.filter(a => a.march);
+if (horde.length < 6) efail('horde spawned ' + horde.length);
+const h0 = horde[0] && Math.hypot(horde[0].march.x - horde[0].pos.x, horde[0].march.z - horde[0].pos.z); T.player.pos.x = 999; step(60 * 8); T.player.pos.x = 5.3;
+if (horde[0] && !horde[0].gone && Math.hypot(horde[0].march.x - horde[0].pos.x, horde[0].march.z - horde[0].pos.z) > h0 - 5) efail('horde did not march');
+// blackout
+clear(); T.G.min = 3 * 1440 + 19 * 60 - 1; T.G.phase = 'night'; T.G.plan = [{ kind: 'blackout', at: T.G.min, done: false }]; step(5);
+if (!T.G.blackout) efail('blackout did not start');
+T.G.min = 4 * 1440 + 6 * 60 + 1; step(3); if (T.G.blackout) efail('blackout did not end at dawn');
+// settings are remembered; music runs without WebAudio
+els.optFps.checked = true; els.optFps.fire('change');
+if (!JSON.parse(store.get('ordinary-day.settings')).fps) efail('settings not saved');
+els.optFps.checked = false; els.optFps.fire('change');
+updateMusic({ night: 1, outbreak: true, danger: 1 });
+console.log('v0.8: events plan', T.G.plan.map(e => e.kind[0]).join(''), '| airdrop, horde of', horde.length, ', blackout, settings saved');
 
 console.log(errs.length ? `FAILED: ${errs.length} runtime errors\n` + errs.slice(0, 3).join('\n---\n') : 'PASSED: no runtime errors');
 process.exit(errs.length ? 1 : 0);

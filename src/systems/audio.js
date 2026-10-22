@@ -8,17 +8,26 @@ const PREF_KEY='ordinary-day.sound';
 let ctx=null,master=null,noiseBuf=null,voices=0,muted=false,rotor=null;
 try{muted=localStorage.getItem(PREF_KEY)==='off';}catch(_){}
 
+// master -> speakers; sound effects and music each have their own bus so the settings page can set them apart (v0.8)
+let sfxBus=null,musicBus=null;const vol={master:1,sfx:1,music:.6};
+const masterLevel=()=>muted?0:.55*vol.master;
 function ensure(){
   if(ctx){if(ctx.state==='suspended')ctx.resume();return;}
   const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
-  ctx=new AC();master=ctx.createGain();master.gain.value=muted?0:.55;master.connect(ctx.destination);
+  ctx=new AC();master=ctx.createGain();master.gain.value=masterLevel();master.connect(ctx.destination);
+  sfxBus=ctx.createGain();sfxBus.gain.value=vol.sfx;sfxBus.connect(master);
+  musicBus=ctx.createGain();musicBus.gain.value=vol.music;musicBus.connect(master);
   noiseBuf=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+}
+export function setVolumes(v){
+  Object.assign(vol,v);if(!ctx)return;
+  master.gain.setTargetAtTime(masterLevel(),ctx.currentTime,.05);sfxBus.gain.setTargetAtTime(vol.sfx,ctx.currentTime,.05);musicBus.gain.setTargetAtTime(vol.music,ctx.currentTime,.05);
 }
 export function initAudio(){for(const ev of ['pointerdown','keydown','touchend'])addEventListener(ev,ensure,{capture:true,passive:true});}
 export function isMuted(){return muted;}
 export function toggleMute(){
   muted=!muted;try{localStorage.setItem(PREF_KEY,muted?'off':'on');}catch(_){}
-  if(master)master.gain.setTargetAtTime(muted?0:.55,ctx.currentTime,.05);
+  if(master)master.gain.setTargetAtTime(masterLevel(),ctx.currentTime,.05);
   return muted;
 }
 
@@ -28,7 +37,7 @@ function place(x,z,range){
   const dx=x-player.pos.x,dz=z-player.pos.z,d=Math.hypot(dx,dz);
   return {g:clamp(1-d/range,0,1),pan:clamp((dx-dz)/Math.SQRT2/18,-.8,.8)};
 }
-function out(pan){const p=ctx.createStereoPanner?ctx.createStereoPanner():null;if(!p)return master;p.pan.value=pan;p.connect(master);return p;}
+function out(pan){const p=ctx.createStereoPanner?ctx.createStereoPanner():null;if(!p)return sfxBus;p.pan.value=pan;p.connect(sfxBus);return p;}
 function voice(len){voices++;setTimeout(()=>voices--,len*1000+100);}
 function env(g,t,attack,dur,peak){g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(.0002,peak),t+attack);g.gain.exponentialRampToValueAtTime(.0001,t+attack+dur);}
 function noise(t,dur,o){
@@ -90,3 +99,26 @@ export const sfx={
     if(v<=0){const r=rotor;rotor=null;setTimeout(()=>{r.src.stop();r.lfo.stop();},1500);}
   },
 };
+
+// ---------- music (v0.8) ----------
+// Synthesized, no files: slow pad chords (major before the outbreak, minor after, low and dark at night), a night drone,
+// and a heartbeat that rises with `danger` (0..1, how many zombies are after the player). updateMusic runs every frame
+// and schedules a chord every few seconds; nothing plays while muted or with the music volume at 0.
+const N=f=>440*Math.pow(2,(f-69)/12);   // midi note -> Hz
+const PROG={calm:[[48,52,55],[45,48,52],[41,45,48],[43,47,50]],tense:[[45,48,52],[41,45,48],[38,41,45],[40,44,47]],night:[[33,36,40],[29,33,36],[31,34,38],[28,32,35]]};
+let nextChord=0,chordI=0,drone=null,nextBeat=0;
+export function updateMusic(m){
+  if(!ctx||muted||vol.music<=0||ctx.state!=='running')return;
+  const t=ctx.currentTime;
+  if(!drone){const o=ctx.createOscillator(),f=ctx.createBiquadFilter(),g=ctx.createGain();o.type='sawtooth';o.frequency.value=N(33);f.type='lowpass';f.frequency.value=160;g.gain.value=0;o.connect(f).connect(g).connect(musicBus);o.start();drone={o,g};}
+  drone.g.gain.setTargetAtTime(m.night*.05,t,1.5);
+  if(t>=nextChord){
+    const key=m.night>.5?'night':m.outbreak?'tense':'calm',ch=PROG[key][chordI++%4],len=m.night>.5?7:5.5;
+    for(const n of ch){const o=ctx.createOscillator(),g=ctx.createGain(),f=ctx.createBiquadFilter();o.type='triangle';o.frequency.value=N(n+12);o.detune.value=(Math.random()-.5)*8;
+      f.type='lowpass';f.frequency.value=key==='night'?500:900;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.035,t+1.6);g.gain.exponentialRampToValueAtTime(.0001,t+len);
+      o.connect(f).connect(g).connect(musicBus);o.start(t);o.stop(t+len+.1);}
+    nextChord=t+len-.8;
+  }
+  if(m.danger>0&&t>=nextBeat){for(const k of [0,.22]){const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.setValueAtTime(70,t+k);o.frequency.exponentialRampToValueAtTime(40,t+k+.15);g.gain.setValueAtTime(.0001,t+k);g.gain.exponentialRampToValueAtTime(.25*m.danger,t+k+.02);g.gain.exponentialRampToValueAtTime(.0001,t+k+.2);o.connect(g).connect(musicBus);o.start(t+k);o.stop(t+k+.25);}
+    nextBeat=t+1.1-m.danger*.45;}
+}

@@ -18,7 +18,7 @@ import {reset} from './systems/game.js';
 import {autosave,initSave} from './systems/save.js';
 import {updateShelter} from './systems/doors.js';
 import {updateThrows} from './systems/throw.js';
-import {initAudio} from './systems/audio.js';
+import {initAudio,updateMusic} from './systems/audio.js';
 import {updateGoal} from './systems/goal.js';
 import {updateHUD} from './ui/hud.js';
 import {initInput} from './ui/input.js';
@@ -26,11 +26,13 @@ import {initPause} from './ui/pause.js';
 import {updateTips} from './ui/tips.js';
 import {updateMinimap} from './ui/minimap.js';
 import {VERSION} from './config/version.js';
+import {initSettings,tickFps} from './ui/settings.js';
 import './ui/report.js';   // keeps the last script errors for bug reports
 
 buildCity();
 buildInteriors();   // after the city: its own rng, new loot spots appended
 initInput();
+initSettings();
 $('verLabel').textContent='ORDINARY DAY · PROTOTYPE '+VERSION;
 initPause();
 initSave();
@@ -43,7 +45,7 @@ function loop(now){
   requestAnimationFrame(loop);
   const dt=Math.min(.05,(now-last)/1000);last=now;frame++;
   if(!G.paused){
-    if(G.running){G.min+=dt*RATE*SPEEDS[G.speedIdx];runEvents();updatePlayer(dt);updateShelter();autosave(dt);}
+    if(G.running){G.min+=dt*RATE*SPEEDS[G.speedIdx];runEvents(now);updatePlayer(dt);updateShelter();autosave(dt);}
     for(let i=agents.length-1;i>=0;i--){
       const a=agents[i];
       if(a.state==='human'||a.state==='infected')updateHuman(a,dt);
@@ -62,7 +64,10 @@ function loop(now){
     updateGoal(dt,now);
     updateTips(dt);updateThrows(dt);
   }
-  updateMinimap(dt,now);
+  updateMinimap(dt,now);tickFps(dt);
+  // music mood: night, after the outbreak, and danger = zombies chasing the player (v0.8)
+  let chasing=0;if(G.running&&player.alive)for(const a of agents)if(a.state==='zombie'&&a.seenP&&!a.retreat)chasing++;
+  updateMusic({night:G.night||0,outbreak:G.outbreak,danger:Math.min(1,chasing/4)});
   camTarget.x+=(player.pos.x-camTarget.x)*Math.min(1,dt*5);camTarget.z+=(player.pos.z-camTarget.z)*Math.min(1,dt*5);
   camera.position.copy(camTarget).add(camOffset);camera.lookAt(camTarget);
   ring.position.set(player.pos.x,player.y+.03,player.pos.z);ring.visible=player.alive;

@@ -124,6 +124,12 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 #pause{position:fixed;inset:0;z-index:6;display:grid;place-items:center;background:rgba(8,9,10,.62);padding-block:calc(env(safe-area-inset-top,0px) + 16px) calc(env(safe-area-inset-bottom,0px) + 16px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .sheet.pausesheet{max-width:360px}
 .pacts{display:grid;gap:10px}
+#settings{position:fixed;inset:0;z-index:8;display:grid;place-items:center;background:rgba(8,9,10,.62);padding:16px}
+.setrow{display:grid;gap:6px;font-size:14px}.setrow span{display:flex;justify-content:space-between}.setrow small{color:var(--ink-dim);font-size:12px}
+.setrow input[type=range]{width:100%;accent-color:var(--amber)}.setrow.check{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--ink-dim)}
+.qual{max-width:none}
+.linkbtn{background:none;border:0;color:var(--ink-dim);text-decoration:underline;font:500 13px var(--f-ui);padding:8px 0;cursor:pointer;margin-top:4px}
+#fps{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 6px);transform:translateX(-50%);z-index:4;font:700 11px var(--f-clock);color:var(--ink-dim);text-shadow:0 1px 3px #000;pointer-events:none}
 .reportbox{display:grid;gap:8px}.reportbox label{font-size:12px;color:var(--ink-dim)}
 .reportbox textarea{width:100%;box-sizing:border-box;resize:vertical;background:rgba(0,0,0,.35);color:var(--ink);border:1px solid var(--line);padding:8px;font:14px var(--f-ui)}
 #reportText{font:11px/1.45 ui-monospace,Menlo,Consolas,monospace;color:var(--ink-dim)}
@@ -237,6 +243,8 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 </div>
 <div id="joy" hidden><div id="knob"></div></div>
 
+<div id="fps" hidden></div>
+
 <div id="pause" hidden>
   <div class="sheet pausesheet" role="dialog" aria-label="หยุดเกม">
     <header><h2>หยุดเกม</h2><span id="pauseInfo"></span></header>
@@ -245,6 +253,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
       <button class="go alt" id="bSaveNow">เซฟเกม</button>
       <button class="go alt" id="bSound2">เสียง: เปิด</button>
       <button class="go alt" id="bTips">คำแนะนำ: เปิด</button>
+      <button class="go alt" id="bSettings">ตั้งค่า</button>
       <button class="go alt" id="bReport">แจ้งบั๊ก</button>
       <button class="go alt" id="bToTitle">เซฟแล้วกลับหน้าแรก</button>
     </div>
@@ -264,6 +273,20 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
   </div>
 </div>
 
+<div id="settings" hidden>
+  <div class="sheet pausesheet" role="dialog" aria-label="ตั้งค่า">
+    <header><h2>ตั้งค่า</h2></header>
+    <div class="setrow"><span>คุณภาพกราฟิก</span>
+      <div class="qual diffs" role="radiogroup" aria-label="คุณภาพกราฟิก"><button data-q="high" role="radio">สูง</button><button data-q="medium" role="radio">กลาง</button><button data-q="low" role="radio">ต่ำ</button></div>
+      <small>ต่ำ: ไม่มีเงา ความละเอียดต่ำ เหมาะกับมือถือรุ่นเก่าหรือเครื่องร้อน</small></div>
+    <label class="setrow" for="vol_master"><span>เสียงรวม <b id="volN_master">100</b></span><input type="range" id="vol_master" min="0" max="100"></label>
+    <label class="setrow" for="vol_music"><span>เพลง <b id="volN_music">60</b></span><input type="range" id="vol_music" min="0" max="100"></label>
+    <label class="setrow" for="vol_sfx"><span>เสียงเอฟเฟกต์ <b id="volN_sfx">100</b></span><input type="range" id="vol_sfx" min="0" max="100"></label>
+    <label class="setrow check"><input type="checkbox" id="optFps"> แสดง FPS (ช่วยแจ้งปัญหาเครื่องกระตุก)</label>
+    <button class="go" id="setClose">กลับ</button>
+  </div>
+</div>
+
 <div id="bag" hidden>
   <div class="sheet" role="dialog" aria-label="กระเป๋า">
     <header><h2>กระเป๋า</h2><span id="bagCap">0/6</span><button class="snd" id="bSound" title="เปิดหรือปิดเสียง (M)">เสียง: เปิด</button><button id="bagClose">ปิด</button></header>
@@ -277,7 +300,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 
 <div id="overlay">
   <div class="panel" id="pStart">
-    <div class="eyebrow" id="verLabel">ORDINARY DAY · PROTOTYPE 0.7</div>
+    <div class="eyebrow" id="verLabel">ORDINARY DAY · PROTOTYPE 0.8</div>
     <h1>วันธรรมดา</h1>
     <p class="lede">รอดให้ครบ 7 คืน แล้วไปขึ้นเฮลิคอปเตอร์กู้ภัย กลางวันซอมบี้ยังเชื่องช้า ใช้เวลานี้เก็บอาวุธและยา พอ 18:30 กลางคืนจะมาพร้อมซอมบี้ที่เร็ว หูไว และของระดับ Police กับ Military ให้เสี่ยงออกไปหา ถ้าถูกกัดอาจติดเชื้อ ต้องใช้ Antibiotic</p>
     <div class="keys" id="keys"></div>
@@ -287,6 +310,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
       <button class="go" id="bContinue" hidden>เล่นต่อ <span id="contInfo"></span></button>
       <button class="go" id="bStart">เริ่มวันใหม่</button>
     </div>
+    <button class="linkbtn" id="bSettings2">ตั้งค่ากราฟิกและเสียง</button>
     <p class="savenote" id="saveNote" hidden>เกมบันทึกอัตโนมัติ เริ่มวันใหม่จะลบเซฟเดิม และเซฟจะหายเมื่อตัวละครตาย</p>
   </div>
   <div class="panel" id="pOver" hidden>

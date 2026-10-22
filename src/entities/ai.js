@@ -75,6 +75,7 @@ export function updateZombie(a,dt){
   const sp=C.speed*a.spd;
   if(!tgt){
     if(!day&&a.heard&&a.heard.t>0){a.heard.t-=dt;const dx=a.heard.x-a.pos.x,dz=a.heard.z-a.pos.z;if(Math.hypot(dx,dz)<1.5)a.heard.t=0;else approach(a,a.heard.x,a.heard.z,sp*.85,dt,C);return;}
+    if(a.march){if(Math.hypot(a.march.x-a.pos.x,a.march.z-a.pos.z)<3){a.gone=true;return;}approach(a,a.march.x,a.march.z,sp*.75,dt,C);return;}   // a horde walking through (v0.8)
     wander(a,(day?.6:.8)*a.spd,dt);return;
   }
   td=Math.sqrt(td);

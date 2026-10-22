@@ -14,6 +14,7 @@ import {readSave,loadGame,clearSave} from '../systems/save.js';
 import {chipEls,hhmm,say} from './hud.js';
 import {openBag,closeBag} from './bag.js';
 import {isMuted,toggleMute} from '../systems/audio.js';
+import {isSettingsOpen,closeSettings} from './settings.js';
 import {isPauseOpen,togglePause} from './pause.js';
 
 // ---------- input ----------
@@ -30,7 +31,7 @@ function showSound(){for(const id of ['bSound','bSound2'])$(id).textContent='เ
 export function initInput(){
   addEventListener('keydown',e=>{
     if(e.code==='Tab'||e.code==='KeyI'){e.preventDefault();if(!isPauseOpen())$('bag').hidden?openBag():closeBag();return;}
-    if(e.code==='Escape'||e.code==='KeyP'){if(!$('bag').hidden)closeBag();else togglePause();return;}
+    if(e.code==='Escape'||e.code==='KeyP'){if(isSettingsOpen())closeSettings();else if(!$('bag').hidden)closeBag();else togglePause();return;}
     if(e.code==='KeyM'){toggleMute();showSound();return;}
     if(G.paused)return;
     keys[e.code]=true;

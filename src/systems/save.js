@@ -12,13 +12,14 @@ import {reset} from './game.js';
 import {feed,updateLoadout} from '../ui/hud.js';
 import {applyBroken} from './obstacles.js';
 import {applyDoors} from './doors.js';
+import {applyEvents} from './events.js';
 
 // ---------- save ----------
 // One autosave slot in localStorage, kept per browser. It is deleted when the player dies (survival rules).
 // The city is rebuilt from its seed, so loot spots are stored by index; bump SAVE_VERSION when that or the format changes.
 const SAVE_KEY='ordinary-day.save',SAVE_VERSION=1;
 const AUTOSAVE_EVERY=15;   // real seconds while playing
-const AGENT_KEYS=['state','kind','face','phase','node','prev','jx','jz','walk','panic','tx','tz','wait','vendor','hp','maxHp','feed','atk','spd','stuckT','lost','turnT','heard','fuse','wind','retreat','shrieked'];
+const AGENT_KEYS=['state','kind','face','phase','node','prev','jx','jz','walk','panic','tx','tz','wait','vendor','hp','maxHp','feed','atk','spd','stuckT','lost','turnT','heard','fuse','wind','retreat','shrieked','march'];
 let sinceSave=0,toldPlayer=false;
 
 const validItem=it=>it&&DEF[it.id];
@@ -45,7 +46,7 @@ export function loadGame(){
   while(drops.length)removeDrop(drops[0]);
   Object.assign(G,s.G,{speedIdx:G.speedIdx,diff:s.G.diff||'normal'});
   for(const e of EVENTS)e.done=G.min>=e.t;
-  G.broken=G.broken||[];applyBroken(G.broken);applyDoors(G.doors);   // saves from before v0.6 have no doors: all open
+  G.broken=G.broken||[];applyBroken(G.broken);applyDoors(G.doors);applyEvents();   // saves from before v0.6 have no doors (all open), before v0.8 no events
   Object.assign(inv,{bag:s.inv.bag.filter(validItem),cap:s.inv.cap,eq:{},active:s.inv.active});
   for(const k of ['primary','secondary','melee'])inv.eq[k]=validItem(s.inv.eq[k])?s.inv.eq[k]:null;
   const p=s.player;Object.assign(player.pos,{x:p.x,z:p.z});Object.assign(player,{face:p.face,hp:p.hp,down:p.down,inv:p.inv,infect:p.infect||0,infWarn:p.infWarn||0,food:p.food??100,water:p.water??100,lastHit:performance.now()/1000-p.sinceHit});
