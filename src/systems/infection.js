@@ -15,7 +15,7 @@ export function infectPlayer(p){
 }
 export function cureInfection(p){p.infect=0;p.infWarn=0;}
 export function updateInfection(p,dt){
-  if(!p.alive||!(p.infect>0)||p.down>0)return;
+  if(!p.alive||!(p.infect>0)||p.down>0||p.bleed>0)return;   // paused while down (v0.10)
   const U=uiFor(p);
   p.infect=Math.min(1,p.infect+dt*RATE*SPEEDS[G.speedIdx]/INFECT_MINUTES);
   if(p.infect>=.5&&p.infWarn<1){p.infWarn=1;U.feed('เชื้อลามไปครึ่งทางแล้ว ต้องใช้ Antibiotic','warn');if(p.local)sfx.infect();}

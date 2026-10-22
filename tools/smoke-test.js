@@ -434,7 +434,7 @@ Object.assign(p2.input, { fire: true, fireQ: .2 }); step(4); Object.assign(p2.in
 if (!(p2.gear.eq.secondary.mag < 5) || !(target.hp < 30)) mfail('p2 could not shoot its own pistol (mag ' + p2.gear.eq.secondary.mag + ', target hp ' + target.hp + ')');
 // one player down is not game over; both are
 T.player.inv = 0; T.inv.bag = []; Cb.hurtPlayer(T.player, 9999); step(150);
-if (T.G.over || T.player.alive) mfail('game ended while p2 was still alive');
+if (T.G.over || !T.player.alive || !(T.player.bleed > 0)) mfail('with p2 standing, p1 should be down and waiting for help (alive ' + T.player.alive + ', over ' + T.G.over + ')');
 p2.inv = 0; p2.gear.bag = []; Cb.hurtPlayer(p2, 9999);
 await new Promise(r => setTimeout(r, 1900)); if (!T.G.over) mfail('game did not end with every player dead');
 // save / load keeps both players with their own gear
@@ -456,6 +456,58 @@ clear(); const t0 = T.G.min; for (let i = 0; i < 60; i++) { now += 16.7; raf(now
 const t1 = T.G.min; for (let i = 0; i < 20; i++) { now += 50; raf(now); } const slow = T.G.min - t1;
 if (Math.abs(fast - slow) > .2) mfail('game time per second differs with frame rate: 60 fps ' + fast.toFixed(2) + ' vs 20 fps ' + slow.toFixed(2));
 console.log('v0.9: two players (own gear, bot input, nearest target, own gun, game over when all dead, save v2 + v1 upgrade, rescue waits for both), fixed steps', fast.toFixed(2), '/', slow.toFixed(2), 'min');
+
+// 15) v0.10: downed and helped up, the world scales with the number of players
+const dfail = m => errs.push('v0.10 test: ' + m);
+const Pt = await import('../src/config/party.js');
+// alone: 0 HP is death, as before
+clear(); T.inv.bag = []; Cb.hurtPlayer(T.player, 9999);
+if (T.player.alive || T.player.bleed > 0) dfail('a solo player went down instead of dying');
+// with a teammate: down, cannot act, can crawl, hits shorten the clock
+clear(); let b2 = Game.addPlayer(); T.player.inv = 1e9; b2.inv = 0;
+b2.gear.eq.secondary = Object.assign(T.makeItem('pistol_c'), { mag: 5 }); b2.gear.active = 'secondary';
+Cb.hurtPlayer(b2, 9999);
+if (!b2.alive || b2.bleed !== Pt.BLEED_SECONDS || T.G.over) dfail('p2 did not go down (alive ' + b2.alive + ', bleed ' + b2.bleed + ')');
+const bx = b2.pos.x; Object.assign(b2.input, { mx: 1, mz: 0, mag: 1, fire: true, fireQ: .2 }); step(60); Object.assign(b2.input, { mx: 0, mz: 0, mag: 0, fire: false, fireQ: 0 });
+const crawled = b2.pos.x - bx;
+if (!(crawled > .2 && crawled < Pt.CRAWL_SPEED * 1.2)) dfail('crawl moved ' + crawled.toFixed(2) + ' m in 1 s');
+if (b2.gear.eq.secondary.mag !== 5) dfail('a downed player fired');
+const dd10 = (await import('../src/systems/drops.js')).spawnDrop(T.makeItem('a9'), b2.pos.x, b2.pos.z);
+if (Inv9.pickup(b2, dd10)) dfail('a downed player picked something up');
+Inv9.switchTo(b2, 'melee'); if (b2.gear.active !== 'secondary') dfail('a downed player switched weapons');
+const bl = b2.bleed; Cb.hurtPlayer(b2, 10); if (!(b2.bleed < bl - 3)) dfail('a hit on a downed player did not shorten the clock');
+// helped up: the teammate stands next to them for REVIVE_SECONDS
+Object.assign(T.player.pos, { x: b2.pos.x - 1, z: b2.pos.z }); T.player.inv = 0; step(2);
+if (T.player.nearDown !== b2) dfail('the teammate next to a downed player is not offered to help');
+P.startHelp(T.player, b2); step(Math.round(Pt.REVIVE_SECONDS * 60 / 2));
+if (!(b2.reviveT > .3 && b2.reviveT < .7)) dfail('revive progress ' + b2.reviveT);
+step(Math.round(Pt.REVIVE_SECONDS * 60 / 2) + 5);
+if (b2.bleed > 0 || !b2.alive || Math.round(b2.hp) !== Pt.REVIVE_HP) dfail('not helped up (bleed ' + b2.bleed + ', hp ' + b2.hp + ')');
+// helping stops when the helper walks off
+b2.inv = 0; Cb.hurtPlayer(b2, 9999); P.startHelp(T.player, b2); step(60);
+const { keys } = await import('../src/core/controls.js'); keys.KeyD = true; step(10); keys.KeyD = false;
+if (T.player.helping || b2.reviveT !== 0) dfail('walking off did not stop helping');
+// bleeding out is death; the other player plays on
+step(Math.round(Pt.BLEED_SECONDS * 60) + 10);
+if (b2.alive || T.G.over) dfail('bleed-out: p2 alive ' + b2.alive + ', game over ' + T.G.over);
+// a downed player is saved and loaded as down
+clear(); b2 = Game.addPlayer(); b2.inv = 0; Cb.hurtPlayer(b2, 9999); S.saveGame(); els.bAgain.fire('click'); S.loadGame();
+if (!(P.players[1] && P.players[1].bleed > 0)) dfail('save/load lost the downed state');
+// turning from the infection is never a downed state
+clear(); b2 = Game.addPlayer(); T.player.inv = 1e9; T.player.infect = .9999; step(30);
+if (T.player.alive) dfail('a player who turned went down instead of dying');
+// only one left standing goes down: everyone left is dead and the game ends
+clear(); b2 = Game.addPlayer(); T.inv.bag = []; b2.gear.bag = []; Cb.hurtPlayer(b2, 9999); Cb.hurtPlayer(T.player, 9999);
+if (b2.alive || T.player.alive) dfail('nobody standing, but someone is still down');
+await new Promise(r => setTimeout(r, 1900)); if (!T.G.over) dfail('game did not end when nobody was left standing');
+// party scaling: a horde for two is bigger than for one, solo is unchanged
+const hordeFor = n => { clear(); for (let i = 1; i < n; i++) Game.addPlayer(); for (const p of P.players) p.inv = 1e9;
+  T.G.min = 4 * 1440 + 22 * 60; T.G.phase = 'night'; T.G.plan = [{ kind: 'horde', at: T.G.min, done: false }]; step(2); return T.agents.filter(a => a.march).length; };
+const h1 = hordeFor(1), h2 = hordeFor(2);
+const { HORDE } = await import('../src/config/events.js');
+if (!(h2 > h1) || h1 !== Math.min(HORDE.max, HORDE.base + 5)) dfail('horde: solo ' + h1 + ', two players ' + h2);
+if (Pt.partyOf(1, 'spawn') !== 0 || Pt.partyOf(1, 'loot') !== 1 || Pt.partyOf(1, 'horde') !== 1 || Pt.partyOf(1, 'airdrop') !== 0) dfail('solo is scaled');
+console.log('v0.10: solo death, downed (crawl', crawled.toFixed(2), 'm/s, no actions), helped up, walk-off cancels, bleed-out, save, infection, wipe; horde solo', h1, '/ two', h2);
 
 console.log(errs.length ? `FAILED: ${errs.length} runtime errors\n` + errs.slice(0, 3).join('\n---\n') : 'PASSED: no runtime errors');
 process.exit(errs.length ? 1 : 0);

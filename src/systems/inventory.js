@@ -18,12 +18,15 @@ export function countAmmo(p,t){let s=0;for(const e of p.gear.bag)if(e.id===t)s+=
 export function takeAmmo(p,t,n){const bag=p.gear.bag;let got=0;for(let i=bag.length-1;i>=0&&got<n;i--){const e=bag[i];if(e.id!==t)continue;const k=Math.min(e.n,n-got);e.n-=k;got+=k;if(e.n<=0)bag.splice(i,1);}return got;}
 export function addStack(p,id,n){const g=p.gear,st=DEF[id].stack;for(const e of g.bag){if(e.id===id&&e.n<st){const k=Math.min(st-e.n,n);e.n+=k;n-=k;if(!n)return 0;}}while(n>0&&g.bag.length<g.cap){const k=Math.min(st,n);g.bag.push({id,n:k});n-=k;}return n;}
 export function gradeTag(id){const g=gradeOf(id);return g?' ['+GRADES[g].name+']':'';}
+// a downed player (v0.10) cannot use their gear until helped up
+const cant=p=>!p.alive||p.bleed>0;
 export function switchTo(p,slot){
-  const g=p.gear;if(slot!=='melee'&&!g.eq[slot]){uiFor(p).feedOnce('no'+slot,'ยังไม่มี'+SLOTNAME[slot],'warn');return;}
+  if(cant(p))return;const g=p.gear;if(slot!=='melee'&&!g.eq[slot]){uiFor(p).feedOnce('no'+slot,'ยังไม่มี'+SLOTNAME[slot],'warn');return;}
   if(g.active===slot)return;g.active=slot;p.reloadT=0;p.swing=0;p.cool=.25;uiFor(p).updateLoadout(true);
 }
 // returns false when it did not fit (the item stays on the ground)
 export function pickup(p,d,quiet){
+  if(cant(p))return false;
   const it=d.item,def=DEF[it.id],gc=gradeOf(it.id)||'get',g=p.gear,U=uiFor(p);
   if(def.kind==='weapon'){
     if(!g.eq[def.slot]){g.eq[def.slot]=it;removeDrop(d);U.feed('+ '+def.name+gradeTag(it.id)+' → '+SLOTNAME[def.slot],gc);switchTo(p,def.slot);}
@@ -43,18 +46,18 @@ export function pickup(p,d,quiet){
 }
 const HEAL_ORDER=['bandage','antibiotic','painkiller','firstaid'];
 export function useHeal(p){
-  if(!p.alive)return;const bag=p.gear.bag,U=uiFor(p);
+  if(cant(p))return;const bag=p.gear.bag,U=uiFor(p);
   if(p.infect>0){const i=bag.findIndex(e=>DEF[e.id].cure);if(i>=0){useItemAt(p,i);return;}}   // infected: cure first
   if(p.hp>=p.maxHp){U.feedOnce('fullhp','สุขภาพเต็มแล้ว');return;}
   for(const id of HEAL_ORDER){const i=bag.findIndex(e=>e.id===id);if(i>=0){useItemAt(p,i);return;}}
   U.feedOnce('noheal','ไม่มียารักษา','warn');
 }
-export function useItemAt(p,i){const e=p.gear.bag[i],def=DEF[e.id];if(def.kind!=='heal')return;const amt=Math.round(p.maxHp*def.heal);p.hp=Math.min(p.maxHp,p.hp+amt);e.n--;if(e.n<=0)p.gear.bag.splice(i,1);
+export function useItemAt(p,i){if(cant(p))return;const e=p.gear.bag[i],def=DEF[e.id];if(def.kind!=='heal')return;const amt=Math.round(p.maxHp*def.heal);p.hp=Math.min(p.maxHp,p.hp+amt);e.n--;if(e.n<=0)p.gear.bag.splice(i,1);
   const cured=def.cure&&p.infect>0;if(cured)cureInfection(p);
   const U=uiFor(p);U.feed('ใช้ '+def.name+' +'+Math.round(def.heal*100)+'%'+(cured?' · ฆ่าเชื้อแล้ว':''));if(p.local)sfx.heal();U.updateLoadout(true);}
 // food and water: use whichever fixes the lower bar first
 export function eatBest(p){
-  if(!p.alive)return;const U=uiFor(p);
+  if(cant(p))return;const U=uiFor(p);
   const has=k=>p.gear.bag.findIndex(e=>DEF[e.id][k]);
   const order=100-p.water>=100-p.food?['water','food']:['food','water'];
   for(const k of order){if(p[k]>=95)continue;const i=has(k);if(i>=0){useFoodAt(p,i);return;}}
@@ -62,7 +65,7 @@ export function eatBest(p){
   U.feedOnce('nofood','ไม่มีอาหารหรือน้ำในกระเป๋า','warn');
 }
 export function useFoodAt(p,i){
-  const e=p.gear.bag[i],def=DEF[e.id];if(def.kind!=='food')return;
+  if(cant(p))return;const e=p.gear.bag[i],def=DEF[e.id];if(def.kind!=='food')return;
   if(def.food)p.food=Math.min(100,p.food+def.food);if(def.water)p.water=Math.min(100,p.water+def.water);
   e.n--;if(e.n<=0)p.gear.bag.splice(i,1);
   const U=uiFor(p);U.feed((def.water?'ดื่ม ':'กิน ')+def.name);if(p.local)sfx.eat();U.updateLoadout(true);

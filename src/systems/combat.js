@@ -4,6 +4,7 @@ import {G} from '../core/state.js';
 import {ctl} from '../core/controls.js';
 import {DEF,durPct} from '../config/items.js';
 import {diffOf} from '../config/difficulty.js';
+import {BLEED_SECONDS,BLEED_PER_DMG} from '../config/party.js';
 import {rayWall} from '../world/collision.js';
 import {walledOff} from '../world/interiors.js';
 import {agents} from '../entities/agents.js';
@@ -17,20 +18,35 @@ import {sfx} from './audio.js';
 import {uiFor,gameOver} from '../ui/hud.js';
 
 // ---------- combat ----------
-// returns false when the hit did not land (dead, down, invulnerable). The game ends when no player is left alive.
+// returns false when the hit did not land (dead, knocked back by a Kit, invulnerable). The game ends when no player is left standing.
 export function hurtPlayer(p,n){
   if(!p.alive||p.inv>0||p.down>0)return false;
   const U=uiFor(p);
+  // already down (v0.10): every hit takes time off what is left before they bleed out
+  if(p.bleed>0){p.bleed-=n*diffOf(G).dmg*BLEED_PER_DMG;addBlood(p.pos.x,p.pos.z);if(p.local){$('hurt').style.opacity=.85;sfx.hurt();}if(p.bleed<=0)die(p);return true;}
   p.hp-=n*diffOf(G).dmg;p.lastHit=performance.now()/1000;addBlood(p.pos.x,p.pos.z);
   if(p.local){$('hurt').style.opacity=.85;sfx.hurt();}
   if(p.hp<=0){
     const bag=p.gear.bag,ri=bag.findIndex(e=>e.id==='resurrect');
     if(ri>=0){bag.splice(ri,1);p.hp=0;p.down=1.8;if(p.local)ctl.fireHeld=false;cureInfection(p);p.food=Math.max(p.food,30);p.water=Math.max(p.water,30);p.endCause=null;if(p.local)G.endCause=null;U.say('Resurrection Kit ทำงาน · คุณฟื้นคืนชีพ','',5);U.updateLoadout(true);return true;}
-    p.hp=0;p.alive=false;p.state='dead';p.deadT=0;p.endCause=p.endCause||'hurt';
-    if(p.local){ctl.fireHeld=false;G.endCause=p.endCause;}
-    if(!players.some(q=>q.alive)){clearSave();setTimeout(gameOver,1800);}
+    // a teammate still standing can help them up (v0.10); alone, or when nobody is left standing, it is death
+    if(p.endCause!=='infected'&&players.some(q=>q!==p&&standing(q))){goDown(p);return true;}
+    die(p);
   }
   return true;
+}
+export const standing=q=>q.alive&&!(q.bleed>0);
+function goDown(p){
+  p.hp=0;p.bleed=BLEED_SECONDS;p.reviveT=0;p.helping=null;p.swing=0;p.reloadT=0;p.sneak=false;p.endCause=null;if(p.local)ctl.fireHeld=false;
+  uiFor(p).say('คุณล้มลง! รอเพื่อนมาช่วยพยุงภายใน '+BLEED_SECONDS+' วินาที คลานหนีได้ช้า ๆ','alarm',6);
+  for(const q of players)if(q!==p)uiFor(q).say('เพื่อนล้มลง! ไปยืนข้าง ๆ แล้วกด ช่วย ก่อนหมดเวลา','alarm',6);
+}
+export function die(p){
+  p.hp=0;p.bleed=0;p.helping=null;p.alive=false;p.state='dead';p.deadT=0;p.endCause=p.endCause||'hurt';
+  if(p.local){ctl.fireHeld=false;G.endCause=p.endCause;}
+  // nobody left standing: those still down cannot be helped any more
+  if(!players.some(standing))for(const q of players)if(q.alive){q.endCause=q.endCause||'hurt';die(q);return;}
+  if(!players.some(q=>q.alive)){clearSave();setTimeout(gameOver,1800);}
 }
 // turns the player toward the best zombie in front, unless they aim with a mouse
 export function aimAssist(p,def){
@@ -42,7 +58,7 @@ export function aimAssist(p,def){
   if(best)p.face=Math.atan2(best.pos.x-p.pos.x,best.pos.z-p.pos.z);
 }
 export function startReload(p){
-  const w=curWeapon(p),def=DEF[w.id];if(!def.gun||p.reloadT>0)return;
+  const w=curWeapon(p),def=DEF[w.id];if(!def.gun||p.reloadT>0||!p.alive||p.bleed>0)return;
   if(w.mag>=def.mag)return;
   if(countAmmo(p,def.ammo)<=0){uiFor(p).feedOnce('noammo','ไม่มีกระสุน '+DEF[def.ammo].name+' ในกระเป๋า','warn');return;}
   p.reloadT=def.reload;p.reloadFor=w;if(p.local)sfx.reload();

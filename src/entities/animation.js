@@ -17,7 +17,11 @@ export function animate(a,dt){
     p.head.rotation.z=a.kind==='walker'?.35:.2;p.body.rotation.z=Math.sin(a.phase*.5)*(a.kind==='walker'?.09:.05);p.body.rotation.x=a.kind==='sprinter'?.35:.12;
   }
   else if(a.state==='player'){
-    const def=DEF[curWeapon(a).id];p.armL.rotation.z=0;p.body.rotation.x=a.sneak?.4:0;   // crouch while sneaking
+    const def=DEF[curWeapon(a).id];p.armL.rotation.z=0;p.body.rotation.x=a.sneak?.4:0;p.body.position.y=0;   // crouch while sneaking
+    // on the ground: the Resurrection Kit knock-down (falls and gets up in 1.8 s) or downed (v0.10), arms reaching out
+    const lie=a.bleed>0?1:a.down>0?-Math.sin(Math.min(1,1-a.down/1.8)*Math.PI):0;   // face down to crawl forward; the Kit throws them on their back
+    if(lie){p.body.rotation.x=lie*Math.PI/2;p.body.position.y=Math.abs(lie)*.16;p.armL.rotation.x=-2.9+s*.5;p.armR.rotation.x=-2.9-s*.5;p.legL.rotation.x=s*.3;p.legR.rotation.x=-s*.3;p.root.visible=true;
+      a.y+=(groundY(a.pos.x,a.pos.z)-a.y)*Math.min(1,dt*12);p.root.position.set(a.pos.x,a.y,a.pos.z);p.root.rotation.y=a.face;return;}
     if(def.gun){
       const rec=a.recoil*.22;
       if(a.reloadT>0){p.armR.rotation.x=-.9;p.armL.rotation.x=-.6+Math.sin(a.reloadT*14)*.25;}
