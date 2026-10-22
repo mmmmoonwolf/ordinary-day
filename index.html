@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="th">
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Ordinary Day</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Chakra+Petch:wght@400;500;700&display=swap">
@@ -102,7 +102,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 #joy{position:fixed;width:124px;height:124px;margin:-62px 0 0 -62px;border-radius:50%;border:1.5px solid var(--line);background:rgba(0,0,0,.2);pointer-events:none}
 #knob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:rgba(235,231,221,.55)}
 .hint{position:absolute;left:max(16px,calc(env(safe-area-inset-left,0px) + 12px));bottom:calc(env(safe-area-inset-bottom,0px) + 14px);font-size:12px;line-height:1.5;color:var(--ink-dim);max-width:min(560px,50vw);text-shadow:0 1px 3px rgba(0,0,0,.8)}
-#overlay{position:fixed;inset:0;z-index:5;display:grid;place-items:center;background:linear-gradient(180deg,rgba(10,12,14,.6),rgba(10,12,14,.86) 70%);padding-block:24px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));overflow:auto}
+#overlay{position:fixed;inset:0;z-index:5;display:grid;place-items:center;touch-action:pan-x pan-y;background:linear-gradient(180deg,rgba(10,12,14,.6),rgba(10,12,14,.86) 70%);padding-block:24px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));overflow:auto}
 .panel{width:100%;max-width:460px}
 .eyebrow{font-family:var(--f-clock);font-weight:700;letter-spacing:.26em;font-size:14px;color:var(--amber)}
 .panel h1{font-size:clamp(46px,12vw,76px);font-weight:700;line-height:1.05;margin:4px 0 14px;text-wrap:balance}
@@ -139,7 +139,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 #reportText{font:11px/1.45 ui-monospace,Menlo,Consolas,monospace;color:var(--ink-dim)}
 #bPause{font-size:12px;letter-spacing:-.1em}
 #bag{position:fixed;inset:0;z-index:6;display:grid;place-items:center;background:rgba(8,9,10,.62);padding-block:calc(env(safe-area-inset-top,0px) + 16px) calc(env(safe-area-inset-bottom,0px) + 16px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.sheet{box-sizing:border-box;width:100%;max-width:540px;max-height:100%;overflow:auto;background:var(--sheet);border:1px solid var(--line);padding:16px 16px 18px;display:grid;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.sheet{box-sizing:border-box;width:100%;max-width:540px;max-height:100%;overflow:auto;touch-action:pan-x pan-y;background:var(--sheet);border:1px solid var(--line);padding:16px 16px 18px;display:grid;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
 .sheet header{display:flex;align-items:baseline;gap:10px}
 .sheet h2{margin:0;font-size:22px}
 .sheet header span{font-family:var(--f-clock);font-size:20px;color:var(--ink-dim);font-variant-numeric:tabular-nums}
@@ -187,6 +187,45 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 @media (min-width:641px){
   #msg{width:min(560px,calc(100vw - 360px))}
   #tip{width:min(420px,calc(100vw - 400px))}   /* + padding and border, so it clears the minimap column */
+}
+/* phones held sideways (v0.13.1): wider than 640 px but only ~400 px tall, so the desktop HUD covered half the city.
+   Everything smaller and pushed to the edges: vitals + map top-left, clock top-centre, the loadout as one row at the bottom
+   between the thumbs, pick / fix prompts above the attack button */
+@media (max-height:500px) and (orientation:landscape){
+  .vitals{width:150px;gap:4px;top:calc(env(safe-area-inset-top,0px) + 8px)}
+  .hp-label{font-size:10px}
+  .needs{font-size:9px;line-height:10px;gap:4px}
+  .counts{display:flex;gap:2px 8px;font-size:10px;flex-wrap:wrap}.counts span{white-space:nowrap}
+  .counts b{font-size:14px;min-width:0;margin-right:2px}
+  #minimap{width:88px;height:88px}
+  .clock{top:calc(env(safe-area-inset-top,0px) + 4px);display:flex;flex-wrap:wrap;justify-content:center;gap:3px 6px;width:220px}
+  #clock,#dayline{flex-basis:100%}   /* phase and the LZ arrow share a row */
+  #clock{font-size:34px}
+  #dayline{font-size:10px;letter-spacing:.1em}#dayline .wd{display:none}
+  #phase,#lz{height:20px;font-size:11px;padding:0 8px}
+  .tools{top:calc(env(safe-area-inset-top,0px) + 8px);gap:4px}.tools button{height:34px;min-width:34px;padding:0 6px;font-size:12px}
+  #bSpeed{min-width:40px;font-size:15px}
+  #boss{top:calc(env(safe-area-inset-top,0px) + 78px);width:min(240px,40vw)}
+  #msg,#tip{width:min(440px,calc(100vw - 2*(env(safe-area-inset-left,0px) + 180px)))}
+  #msg{top:calc(env(safe-area-inset-top,0px) + 106px);font-size:15px}
+  #tip{top:calc(env(safe-area-inset-top,0px) + 168px);font-size:12px;padding:6px 10px;line-height:1.4}
+  .hint{display:none}
+  #bAtk{width:72px;height:72px;font-size:18px;right:max(18px,calc(env(safe-area-inset-right,0px) + 14px));bottom:calc(env(safe-area-inset-bottom,0px) + 12px)}
+  #bAtk small,#bReload small{font-size:9px;margin-top:2px}
+  #bReload{width:50px;height:50px;font-size:17px;right:max(100px,calc(env(safe-area-inset-right,0px) + 96px));bottom:calc(env(safe-area-inset-bottom,0px) + 14px)}
+  #bThrow{width:44px;height:44px;font-size:16px;right:max(103px,calc(env(safe-area-inset-right,0px) + 99px));bottom:calc(env(safe-area-inset-bottom,0px) + 72px)}
+  #bPick,#bFix{right:max(18px,calc(env(safe-area-inset-right,0px) + 14px));max-width:min(240px,34vw)}
+  #bPick{bottom:calc(env(safe-area-inset-bottom,0px) + 124px);height:38px;font-size:13px;padding:0 12px}
+  #bFix{bottom:calc(env(safe-area-inset-bottom,0px) + 168px);height:36px;font-size:12px;padding:0 12px}
+  .loadout{right:max(162px,calc(env(safe-area-inset-right,0px) + 158px));bottom:calc(env(safe-area-inset-bottom,0px) + 12px);width:auto;display:flex;align-items:center;gap:8px;padding:5px 8px}
+  .wrow{gap:6px}#wGrade{display:none}   /* the border colour still shows the grade */
+  #wName{font-size:13px;max-width:96px}#wAmmo{font-size:19px}#wAmmo small{font-size:12px}
+  .chips{display:flex;gap:3px}.chips button{height:30px;font-size:10px;padding:0 4px;gap:2px}.chips button i{font-size:13px}#bHeal{font-size:12px;padding:0 6px}#bEat{font-size:11px;padding:0 5px}
+  #feed{bottom:calc(env(safe-area-inset-bottom,0px) + 64px);font-size:12px;max-width:30vw}
+}
+@media (pointer:coarse){
+  .hint{display:none}   /* keyboard help; touch players get theirs on the start screen */
+  .reportbox textarea{font-size:16px}   /* under 16 px iOS zooms the page in when the box is focused */
 }
 @media (max-width:400px){
   .vitals{width:118px}
