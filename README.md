@@ -125,6 +125,7 @@
 - โค้ดเกมเป็น ES modules ใน `src/` (`index.html` มีแค่ HTML + CSS) texture ทั้งหมดวาดด้วยโค้ด ไม่มีไฟล์ภาพหรือเสียง
 - ฟอนต์ Chakra Petch และ Big Shoulders Display จาก Google Fonts
 - ตัวละคร: Quaternius Ultimate Modular Men / Women Pack (CC0) แปลงเป็น `.glb` ใน `assets/characters/` ด้วย `tools/build-characters.mjs` โหลด GLTFLoader และ SkeletonUtils ของ Three.js r128 จาก jsDelivr
+- ปืน ของ และรถ (v0.14): แพ็ก Guns, Survival, Foods และ Cars ของ Quaternius (CC0, FBX) รวมเป็น `assets/props/props.glb` ด้วย `tools/build-props.mjs`
 - PeerJS 1.5.4 (โหลดจาก jsDelivr ตอนเปิดหรือเข้าห้องครั้งแรกเท่านั้น) ใช้เซิร์ฟเวอร์กลางฟรีของ PeerJS แนะนำให้รู้จักกัน แล้วเครื่องคุยกันตรงด้วย WebRTC
 - GitHub Actions รัน smoke test และ net test ทุก pull request และทุกครั้งที่ push เข้า `main` (`.github/workflows/smoke-test.yml`)
 
@@ -133,6 +134,7 @@
 ```
 index.html                     HTML + CSS ของ HUD แล้วโหลด src/main.js
 assets/characters/             โมเดลตัวละคร 16 แบบ + ท่าทาง (anims.glb) จาก Quaternius
+assets/props/props.glb         โมเดลปืน ของ และรถ 20 ชิ้นจาก Quaternius (v0.14)
 src/main.js                    จุดเริ่ม: สร้างเมือง ผูก input เริ่มเกม และวน loop
 src/core/                      util (rng, $), renderer (scene กล้อง แสง), state (G), controls (สถานะปุ่ม), bus (สิ่งที่ส่งไปเครื่องอื่น)
 src/config/                    ตารางค่าเกม: time, world, items, loot, zombies, goal, needs, difficulty, shelter, stealth, events, version
@@ -148,12 +150,14 @@ tools/smoke-test.js            ทดสอบตรรกะเกมแบบ�
 tools/net-test.js              ทดสอบเล่นออนไลน์: host กับเพื่อนเป็น 2 process คุยกันแทน WebRTC (npm test รันทั้งสองไฟล์)
 tools/headless.js              stub ของ THREE และ DOM ที่เทสต์ทั้งสองใช้
 tools/build-characters.mjs     แปลงตัวละครจากแพ็ก Quaternius เป็น assets/characters/ (ไม่ได้ใช้ตอนเล่นหรือเทสต์)
+tools/build-props.mjs          แปลงปืน ของ และรถจากแพ็ก Quaternius (FBX) เป็น assets/props/props.glb (ไม่ได้ใช้ตอนเล่นหรือเทสต์)
 .github/workflows/             CI รัน smoke test ทุก PR
 ```
 
 ## เครดิต
 
 - ตัวละคร: [Quaternius](https://quaternius.com) — Ultimate Modular Men Pack และ Ultimate Modular Women Pack (CC0)
+- ปืน ของ และรถ: [Quaternius](https://quaternius.com) — Guns, Survival, Food และ Cars (CC0)
 
 ## เอกสาร
 
@@ -164,6 +168,7 @@ tools/build-characters.mjs     แปลงตัวละครจากแพ�
 
 | เวอร์ชัน | สิ่งที่เพิ่ม |
 | --- | --- |
+| v0.14 | **อาหารหาง่ายขึ้นในตึก**: ตึกที่เข้าได้ทุกหลังมีตู้กับข้าวที่เกิดแต่อาหารกระป๋องกับน้ำ และของในตึกเป็นอาหารบ่อยขึ้นเท่าตัว · **ปืน ของ และรถเป็นโมเดลใหม่** จาก Quaternius (ปืนทุกแบบ มีด ขวาน อาหาร น้ำ ยา กระเป๋าเป้ ขวด รถทั่วไป แท็กซี่ รถสปอร์ต รถตำรวจ) · กราฟิก "ต่ำ" ใช้แบบเดิม |
 | v0.13.1 | มือถือ: จอแนวนอนไม่รกแล้ว (นาฬิกา แผนที่ และแผงอาวุธเล็กลงและชิดขอบ แผงอาวุธเป็นแถวเดียวด้านล่าง ปุ่มเก็บของอยู่เหนือปุ่มโจมตี ไม่มีคำอธิบายปุ่มคีย์บอร์ด) · กันหน้าเว็บซูมค้างจากการแตะสองครั้งหรือถ่างนิ้ว |
 | v0.13 | **ตัวละครใหม่**: ผู้เล่น ประชาชน และซอมบี้ใช้โมเดล 3D มีท่าทางจริง (เดิน วิ่ง ยิง ฟาด ตาย) จาก Quaternius ซอมบี้คือคนในเมืองที่กลายร่าง (ผิวเขียว เสื้อผ้าหม่น แขนยื่น) Armor Walker เป็นตำรวจ SWAT · กราฟิก "ต่ำ" ใช้ตัวละครแบบเรียบเหมือนเดิม |
 | v0.12 | **เล่นออนไลน์ได้แล้ว (เฟส 4)**: เปิดห้องจากเมนูหยุดเกม ได้รหัส 5 ตัว เพื่อนกรอกรหัสที่หน้าแรกแล้วเข้ามาเล่นด้วยได้สูงสุด 4 คน เข้ากลางเกมได้ หลุดแล้วกลับมาได้ตัวละครเดิม คนเปิดห้องเซฟเกมรวมตัวละครของเพื่อน |

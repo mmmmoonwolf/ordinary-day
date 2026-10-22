@@ -129,7 +129,7 @@ const { freeAt } = await import('../src/world/collision.js');
 els.bAgain.fire('click'); T.G.running = true; T.player.inv = 1e9;
 const amb = lootSpots.filter(sp => sp.zone === 'ambulance');
 if (amb.length !== 1 || !amb[0].drop || amb[0].drop.item.id !== 'resurrect') afail('no Resurrection Kit at the ambulance at the start');
-if (lootSpots.indexOf(amb[0]) !== 80 || lootSpots.slice(81).some(s => s.zone !== 'indoor')) afail('ambulance spot should stay at index 80, with only v0.6 indoor spots after it');
+if (lootSpots.indexOf(amb[0]) !== 80 || lootSpots.slice(81, 103).some(s => s.zone !== 'indoor') || lootSpots.slice(103).some(s => s.zone !== 'pantry')) afail('ambulance spot should stay at index 80, then the v0.6 indoor spots, then the v0.14 pantries');
 if (!freeAt(amb[0].x, amb[0].z, 0.4)) afail('ambulance kit sits inside a solid');
 T.player.pos.x = amb[0].x; T.player.pos.z = amb[0].z; step(5);
 if (!T.inv.bag.some(e => e.id === 'resurrect') || amb[0].drop) afail('walking onto the kit did not pick it up');
@@ -510,6 +510,20 @@ if (Math.hypot(R.camTarget.x - c2.pos.x, R.camTarget.z - c2.pos.z) > 3) cfail('c
 // alone the bag still stops the game
 clear(); T.openBag(); w0 = T.G.min; step(10); if (!T.G.paused || T.G.min !== w0) cfail('solo bag no longer pauses'); T.closeBag();
 console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed with two players, no friendly fire, Kit revives a dead teammate, spectate');
+
+// 17) v0.14: food indoors, pantries
+{
+  const vfail = m => errs.push('v0.14 food test: ' + m);
+  const Dr = await import('../src/systems/drops.js'); const { roomAt, rooms } = await import('../src/world/interiors.js');
+  const pans = lootSpots.filter(sp => sp.zone === 'pantry');
+  if (pans.length !== rooms.length || pans.some(sp => roomAt(sp.x, sp.z) < 0 || !freeAt(sp.x, sp.z, .4))) vfail(pans.length + ' pantries for ' + rooms.length + ' rooms, or one outside its room / in furniture');
+  for (const sp of pans) if (sp.drop) Dr.removeDrop(sp.drop);
+  Dr.fillDay(0, 1); Dr.fillNight(0, 1);
+  if (pans.some(sp => !sp.drop || !/^(canned|water)$/.test(sp.drop.item.id))) vfail('a pantry holds something other than food: ' + pans.map(sp => sp.drop && sp.drop.item.id).join(','));
+  let fi = 0, fo = 0; for (let i = 0; i < 4000; i++) { if (/^(canned|water)$/.test(Dr.rollLoot('day', 'indoor').id)) fi++; if (/^(canned|water)$/.test(Dr.rollLoot('day', 'city').id)) fo++; }
+  if (!(fi > fo * 1.6)) vfail('indoor spots are not richer in food: ' + fi + ' vs ' + fo);
+  console.log('v0.14: ' + pans.length + ' pantries (food only), food in indoor rolls ' + (fi / 40).toFixed(0) + '% vs outdoor ' + (fo / 40).toFixed(0) + '%');
+}
 
 console.log(errs.length ? `FAILED: ${errs.length} runtime errors\n` + errs.slice(0, 3).join('\n---\n') : 'PASSED: no runtime errors');
 process.exit(errs.length ? 1 : 0);

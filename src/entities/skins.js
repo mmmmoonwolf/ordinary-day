@@ -1,5 +1,6 @@
 import {clamp} from '../core/util.js';
 import {camera} from '../core/renderer.js';
+import {loadGltf} from '../core/gltf.js';
 import {DEF} from '../config/items.js';
 import {ZC} from '../config/zombies.js';
 import {curWeapon} from '../systems/inventory.js';
@@ -13,7 +14,6 @@ import {players} from './player.js';
 // own clothes. Until the models have loaded, on "low" graphics, or if they fail to load, everyone keeps the old
 // blocky body (a.b), which also stays underneath, hidden, for the animation code that still writes to it.
 // The game logic never reads any of this: the model only follows the agent's state (a.sk).
-const LIBS=['https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js','https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js'];
 const BASE='assets/characters/';
 const CIVS=['m_casual','m_hoodie','m_beach','m_suit','m_worker','m_farmer','m_punk','f_casual','f_formal','f_suit','f_worker','f_punk'];
 const PLAYERS=['m_adventurer','f_adventurer','m_adventurer','f_adventurer'];
@@ -22,12 +22,10 @@ const MODELS=[...new Set([...CIVS,...PLAYERS,'m_swat','f_soldier'])];
 const HEIGHT=1.85;   // m, like the blocky bodies
 export const skins={ready:false,failed:false,loaded:0,total:MODELS.length+1,on:true};
 const tpl={};let clips={};
-function script(src){return new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>no(new Error(src));document.head.appendChild(s);});}
 export async function loadSkins(onProgress){
   if(skins.ready||!document.head||!window.WebGLRenderingContext)return;
   try{
-    for(const s of LIBS)if(!(s.includes('GLTF')?THREE.GLTFLoader:THREE.SkeletonUtils))await script(s);
-    const gl=new THREE.GLTFLoader(),load=u=>new Promise((ok,no)=>gl.load(BASE+u+'.glb',ok,undefined,no));
+    const load=u=>loadGltf(BASE+u+'.glb');
     const step=()=>{skins.loaded++;if(onProgress)onProgress(skins);};
     const an=await load('anims');for(const c of an.animations)clips[c.name]=c;step();
     await Promise.all(MODELS.map(async id=>{const g=await load(id);tpl[id]=prepare(g.scene);step();}));

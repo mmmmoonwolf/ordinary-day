@@ -1,9 +1,19 @@
 import {DEF} from '../config/items.js';
 import {S,part,gripMat,bladeMat,batMat,pipeMat,blackMat,gunMetal,oliveMat,whiteMat,woodMat} from './materials.js';
+import {hasProp,propModel} from './prop-models.js';
 
 // ---------- item models ----------
 const mcache={};const cm=c=>mcache[c]||(mcache[c]=S({color:c,roughness:.6}));
+// prop models (v0.14), sized like the box models they replace. Guns: the source points its barrel along +x, so it is turned
+// to +z; [length, where the hand is from the back]. Knife and axe stand along +y, laid down along +z.
+const GUN={pistol:[.32,.12],smg:[.55,.2],rifle:[1.05,.33],shotgun:[1.12,.3],sniper:[1.4,.3],lmg:[1.2,.33]};
+const MELEE={knife:.36,axe:.98};
 export function weaponModel(model){
+  if(hasProp(model)){
+    const turn=(g,ax,a)=>{g.rotation[ax]=a;const o=new THREE.Group();o.add(g);return o;};
+    if(GUN[model]){const [len,hand]=GUN[model];return turn(propModel(model,0,len,[hand,.55,.5]),'y',-Math.PI/2);}
+    if(MELEE[model])return turn(propModel(model,1,MELEE[model],[.5,.18,.5]),'x',Math.PI/2);
+  }
   const g=new THREE.Group(),add=(m,w,h,d,x,y,z)=>g.add(part(m,w,h,d,x,y,z));
   switch(model){
     case 'knife':add(gripMat,.05,.05,.14,0,0,.04);add(bladeMat,.02,.05,.28,0,0,.25);break;
@@ -20,8 +30,12 @@ export function weaponModel(model){
   }
   return g;
 }
+// items on the ground with a prop model: [height, or width when `w`]
+const ITEM={canned:[.3],water:[.42],bandage:[.18],firstaid:[.42,'w'],backpack:[.55],bottle:[.36]};
 export function itemModel(id){
-  const d=DEF[id];if(d.kind==='weapon'){const m=weaponModel(d.model);m.position.y=d.gun?.2:.07;return m;}
+  const d=DEF[id];
+  if(d.kind==='weapon'){const m=weaponModel(d.model);if(hasProp(d.model)){m.rotation.z=Math.PI/2;m.position.y=.06;}else m.position.y=d.gun?.2:.07;return m;}   // a prop gun lies on its side
+  if(ITEM[id]&&hasProp(id)){const [s,w]=ITEM[id];return propModel(id,w?0:1,s,[.5,0,.5]);}
   const g=new THREE.Group();
   if(d.kind==='ammo'){g.add(part(cm(d.color),.32,.18,.24,0,.09,0));g.add(part(cm(d.color),.22,.14,.18,.12,.07,.22));}
   else if(id==='bandage'){g.add(part(whiteMat,.3,.12,.2,0,.06,0));g.add(part(whiteMat,.18,.1,.18,.2,.05,.18));}

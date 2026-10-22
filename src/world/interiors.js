@@ -89,6 +89,10 @@ export function buildInteriors(){
     for(const b of buildings){if(blockOf(b.cx)!==i||blockOf(b.cz)!==j||b.w<6.8||b.d<6.8)continue;const s=doorSide(b,bcx,bcz);if(s&&b.w*b.d>area){area=b.w*b.d;pick=b;side=s;}}
     if(pick)rooms.push(makeRoom(pick,side,rng));
   }
+  // a pantry spot in a free corner of each room (v0.14): food and water only (systems/drops.js). Again appended after every
+  // existing spot, so saves from v0.13 keep their spot indices
+  for(const r of rooms)for(const [px,pz] of [[r.x0+1,r.z0+1],[r.x1-1,r.z1-1],[r.x1-1,r.z0+1],[r.x0+1,r.z1-1]])
+    if(freeAt(px,pz,.5)&&!lootSpots.some(s=>Math.hypot(s.x-px,s.z-pz)<1.6)){lootSpots.push({x:px,z:pz,zone:'pantry',drop:null});break;}
 }
 
 // index of the room containing (x,z), or -1; pad grows the room (the cutaway also covers the doorway)
