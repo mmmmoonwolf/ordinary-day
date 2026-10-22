@@ -41,7 +41,19 @@ export function pollInput(p){
   I.fire=ctl.fireHeld;if(ctl.fireQ>0){I.fireQ=ctl.fireQ;ctl.fireQ=0;}
 }
 function showSound(){for(const id of ['bSound','bSound2'])$(id).textContent='เสียง: '+(isMuted()?'ปิด':'เปิด');}
+// the page must never zoom (v0.13.1): iOS Safari ignores user-scalable=no, so a pinch or double tap on the start screen
+// or a sheet zoomed the whole game in, and the game screen (touch-action:none) gave no way to pinch back out
+function noZoom(){
+  for(const ev of ['gesturestart','gesturechange','gestureend'])document.addEventListener(ev,e=>e.preventDefault(),{passive:false});
+  document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+  document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
+  // already zoomed in anyway (an older page, the keyboard): rewriting the viewport tag makes iOS snap back to 1
+  const vv=globalThis.visualViewport;if(!vv)return;const meta=document.querySelector('meta[name=viewport]');if(!meta)return;
+  const base=meta.content;let t=0;
+  vv.addEventListener('resize',()=>{clearTimeout(t);t=setTimeout(()=>{if(vv.scale>1.01){meta.content=base+', minimum-scale=1';setTimeout(()=>{meta.content=base;},50);}},400);});
+}
 export function initInput(){
+  noZoom();
   addEventListener('keydown',e=>{
     if(e.code==='Tab'||e.code==='KeyI'){e.preventDefault();if(!isPauseOpen())$('bag').hidden?openBag():closeBag();return;}
     if(e.code==='Escape'||e.code==='KeyP'){if(isSettingsOpen())closeSettings();else if(!$('bag').hidden)closeBag();else togglePause();return;}
