@@ -7,7 +7,7 @@ import {d2} from '../entities/movement.js';
 import {players,nearestPlayerDist,partySize} from '../entities/player.js';
 import {partyOf} from '../config/party.js';
 import {fillDay,fillNight,takeByOthers} from './drops.js';
-import {REFILL,refillScale} from '../config/loot.js';
+import {REFILL,refillScale,PANTRY} from '../config/loot.js';
 import {sfx} from './audio.js';
 import {diffOf} from '../config/difficulty.js';
 import {say,feed} from '../ui/hud.js';
@@ -38,7 +38,7 @@ function onNight(){
   G.armorNight=Math.random()<.6;G.armorNext=G.min+30;G.armorAnnounced=false;G.armorCount=0;
   G.tyrantPending=Math.random()<.4;G.tyrantAt=G.min-(G.min%1440)+1440;
   G.nightSpawnNext=G.min+15;
-  fillNight(Math.min(1,REFILL.night*refillScale(Math.floor(G.min/1440)+1)*partyOf(partySize(),'loot')));feed('ของระดับ Police และ Military เกิดขึ้นทั่วเมือง','pol');
+  fillNight(Math.min(1,REFILL.night*refillScale(Math.floor(G.min/1440)+1)*partyOf(partySize(),'loot')),Math.min(1,PANTRY.night*partyOf(partySize(),'loot')));feed('ของระดับ Police และ Military เกิดขึ้นทั่วเมือง','pol');
 }
 function onDay(){
   G.phase='day';sfx.dawn();
@@ -50,7 +50,7 @@ function onDay(){
   for(let i=0;i<walkers.length-18;i++)walkers[i].retreat=true;
   G.armorNight=false;G.tyrantPending=false;G.nightSpawnNext=1e9;
   if(takeByOthers(players)>0)feed('ของที่ทิ้งไว้ไกล ๆ บางส่วนถูกผู้รอดชีวิตคนอื่นเก็บไปแล้ว','warn');
-  fillDay(Math.min(1,REFILL.day*refillScale(day)*partyOf(partySize(),'loot')));
+  fillDay(Math.min(1,REFILL.day*refillScale(day)*partyOf(partySize(),'loot')),Math.min(1,PANTRY.day*partyOf(partySize(),'loot')));
 }
 function nightMix(){const day=Math.floor(G.min/1440)+1;return {zombie:Math.max(40,65-(day-1)*5),sprinter:20+(day-1)*3,boomer:15+(day-1)*2};}
 export function runEvents(now){

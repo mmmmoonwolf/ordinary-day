@@ -11,7 +11,7 @@ import {updateHuman,updateZombie,updateDead} from './entities/ai.js';
 import {player,players,updatePlayer,syncHeld,isSolo,viewed} from './entities/player.js';
 import {animate,separate} from './entities/animation.js';
 import {ring,alertRing,blast,tracers} from './systems/effects.js';
-import {drops,ringMats} from './systems/drops.js';
+import {drops,ringMats,refreshItems} from './systems/drops.js';
 import {runEvents} from './systems/phases.js';
 import {updateSky} from './systems/weather.js';
 import {reset} from './systems/game.js';
@@ -33,6 +33,7 @@ import {hostFrame} from './net/host.js';
 import {clientStep} from './net/client.js';
 import {initOnline} from './ui/online.js';
 import {loadSkins,beginSkins} from './entities/skins.js';
+import {loadProps,props} from './world/prop-models.js';
 import './ui/report.js';   // keeps the last script errors for bug reports
 
 buildCity();
@@ -65,6 +66,8 @@ function simStep(dt,now){
 reset();
 // character models load in the background; until then everyone is blocky (v0.13)
 loadSkins(s=>{const n=$('skinNote');n.hidden=s.ready;n.textContent=s.failed?'โหลดตัวละครไม่ได้ ใช้ตัวละครแบบเรียบแทน':'กำลังโหลดตัวละคร '+s.loaded+'/'+s.total;});
+// guns, items and cars too (v0.14)
+loadProps().then(()=>{if(props.ready)refreshItems();});
 let last=performance.now(),frame=0,acc=0;
 function loop(now){
   requestAnimationFrame(loop);

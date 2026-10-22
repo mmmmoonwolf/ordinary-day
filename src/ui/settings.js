@@ -1,6 +1,8 @@
 import {$,isTouch} from '../core/util.js';
 import {QUALITY,setQuality} from '../core/renderer.js';
 import {setSkinsOn} from '../entities/skins.js';
+import {setPropsOn} from '../world/prop-models.js';
+import {refreshItems} from '../systems/drops.js';
 import {setVolumes} from '../systems/audio.js';
 
 // ---------- settings (v0.8) ----------
@@ -12,6 +14,7 @@ try{Object.assign(settings,JSON.parse(localStorage.getItem(KEY)||'{}'));}catch(_
 if(!QUALITY[settings.quality])settings.quality='medium';
 function store(){try{localStorage.setItem(KEY,JSON.stringify(settings));}catch(_){}}
 function apply(){setQuality(settings.quality);setSkinsOn(settings.quality!=='low');   // low: the old blocky people (v0.13)
+  if(setPropsOn(settings.quality!=='low'))refreshItems();   // and the old box guns, items and cars (v0.14)
   setVolumes({master:settings.master,music:settings.music,sfx:settings.sfx});$('fps').hidden=!settings.fps;}
 function show(){
   for(const b of document.querySelectorAll('.qual button')){const on=b.dataset.q===settings.quality;b.classList.toggle('on',on);b.setAttribute('aria-checked',on);}

@@ -40,6 +40,7 @@ export function car(x,z,alongX,police){
   box(S({color:'#1d2226',roughness:.2,metalness:.6}),alongX?2.2:1.7,.7,alongX?1.7:2.2,x+(alongX?-.2:0),1.45,z+(alongX?0:-.2));
   for(const s of [-1,1])for(const t of [-1,1]){const wx=alongX?s*1.35:t*.95,wz=alongX?t*.95:s*1.35;box(darkMetal,alongX?.6:.25,.6,alongX?.25:.6,x+wx,.3,z+wz,false);}
   solid(x,z,w/2,d/2);breakable('car',n0,x,z);
+  const b=breakables[breakables.length-1];b.car={alongX,police:!!police,paint:'#'+m.color.getHexString(),boxes:[...b.meshes],model:null};   // the model goes on top (prop-models.js, v0.14)
 }
 // abandoned ambulance (no rand(): it is placed after the seeded city is built)
 export function ambulance(x,z,alongX){
