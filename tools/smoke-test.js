@@ -509,5 +509,54 @@ if (!(h2 > h1) || h1 !== Math.min(HORDE.max, HORDE.base + 5)) dfail('horde: solo
 if (Pt.partyOf(1, 'spawn') !== 0 || Pt.partyOf(1, 'loot') !== 1 || Pt.partyOf(1, 'horde') !== 1 || Pt.partyOf(1, 'airdrop') !== 0) dfail('solo is scaled');
 console.log('v0.10: solo death, downed (crawl', crawled.toFixed(2), 'm/s, no actions), helped up, walk-off cancels, bleed-out, save, infection, wipe; horde solo', h1, '/ two', h2);
 
+// 16) v0.11: getting ready for online play
+const cfail = m => errs.push('v0.11 test: ' + m);
+const { bus } = await import('../src/core/bus.js');
+const Hud = await import('../src/ui/hud.js');
+const Au = await import('../src/systems/audio.js');
+const Fx = await import('../src/systems/effects.js');
+// the bus: off by default; on, messages for everyone and for one other player are queued, the local player's are not
+clear(); let c2 = Game.addPlayer(); c2.inv = T.player.inv = 1e9;
+Hud.say('x'); if (bus.out.length) cfail('bus queued while off');
+bus.on = true; bus.out.length = 0;
+Hud.say('ทดสอบ', 'radio', 3); Hud.uiFor(c2).feed('ถึง p2'); Hud.uiFor(T.player).feed('ในเครื่อง'); Hud.uiFor(c2).hurt();
+Au.sfx.thud(1, 2); Au.sfxFor(c2).reload(); Au.sfxFor(T.player).reload(); Fx.addBlood(3, 4); Fx.tracer(0, 0, 1, 1); Fx.boom(0, 1, 0, .3, 5);
+const kinds = bus.out.map(m => m.to + ':' + m.kind + (m.kind === 'sfx' || m.kind === 'fx' ? '.' + m.args[0] : '')).join(' ');
+const want = ['*:say', c2.id + ':feed', c2.id + ':hurt', '*:sfx.thud', c2.id + ':sfx.reload', '*:fx.blood', '*:fx.tracer', '*:fx.boom'];
+if (want.some(w => !kinds.split(' ').includes(w)) || bus.out.length !== want.length) cfail('bus queue: ' + kinds);
+const got = bus.out.splice(0); bus.on = false;
+for (const m of got) Hud.receive(m);   // what another device (its bus is off) does with them
+// with two players the bag and the pause menu do not stop the world, and there is no ×2 / ×4
+T.G.speedIdx = 2; step(2); if (T.G.speedIdx !== 0) cfail('speed not reset with two players');
+let w0 = T.G.min; T.openBag(); step(30); if (T.G.paused || !(T.G.min > w0)) cfail('bag stopped the world with two players');
+T.player.input.mag = 1; step(1); if (T.player.input.mag !== 0) cfail('the player kept moving with the bag open'); T.closeBag();
+const Pz = await import('../src/ui/pause.js'); w0 = T.G.min; Pz.openPause(); step(30); if (T.G.paused || !(T.G.min > w0)) cfail('pause menu stopped the world with two players'); Pz.closePause();
+// no friendly fire: p1 shoots straight through p2
+Object.assign(T.player.pos, { x: 0, z: 14 }); Object.assign(c2.pos, { x: 0, z: 16 }); c2.inv = 0; c2.hp = 100; T.player.face = 0;
+T.inv.eq.secondary = Object.assign(T.makeItem('pistol_c'), { mag: 5 }); T.inv.active = 'secondary';
+keys.Space = false; T.player.input.aim = true; Cb.fireGun(T.player, T.inv.eq.secondary, (await import('../src/config/items.js')).DEF.pistol_c);
+if (c2.hp !== 100) cfail('a bullet hurt a teammate');
+// a dead teammate: no Kit, no luck; with one, back with full HP
+c2.gear.bag = []; Cb.hurtPlayer(c2, 9999); T.player.hp = 100; Cb.hurtPlayer(c2, 9999);
+if (c2.alive) { c2.inv = 0; T.player.bleed = 0; }
+c2.alive && Cb.die(c2);
+if (c2.alive) cfail('could not kill p2 for the Kit test');
+if (P.viewed() !== T.player) cfail('the camera left a living player');
+Object.assign(c2.pos, { x: T.player.pos.x + 1, z: T.player.pos.z }); step(2);
+if (T.player.nearDown !== c2) cfail('a dead teammate next to the player is not offered');
+T.inv.bag = []; if (P.startHelp(T.player, c2)) cfail('helped a dead teammate up without a Kit');
+T.inv.bag.push({ id: 'resurrect', n: 1 }); if (!P.startHelp(T.player, c2)) cfail('could not start using the Kit on a dead teammate');
+step(Math.round(Pt.REVIVE_SECONDS * 60) + 5);
+if (!c2.alive || c2.hp !== c2.maxHp || c2.state !== 'player' || T.inv.bag.some(e => e.id === 'resurrect')) cfail('Kit revive: alive ' + c2.alive + ', hp ' + c2.hp + ', kit left ' + T.inv.bag.some(e => e.id === 'resurrect'));
+// dead, the camera follows a teammate still alive
+T.inv.bag = []; T.player.inv = 0; c2.inv = 1e9; Cb.hurtPlayer(c2, 1); Cb.die(T.player);
+if (P.viewed() !== c2) cfail('a dead player does not watch the teammate');
+Object.assign(c2.pos, { x: -20, z: -20 }); step(120);
+const R = await import('../src/core/renderer.js');
+if (Math.hypot(R.camTarget.x - c2.pos.x, R.camTarget.z - c2.pos.z) > 3) cfail('camera did not follow the teammate (' + R.camTarget.x.toFixed(1) + ',' + R.camTarget.z.toFixed(1) + ')');
+// alone the bag still stops the game
+clear(); T.openBag(); w0 = T.G.min; step(10); if (!T.G.paused || T.G.min !== w0) cfail('solo bag no longer pauses'); T.closeBag();
+console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed with two players, no friendly fire, Kit revives a dead teammate, spectate');
+
 console.log(errs.length ? `FAILED: ${errs.length} runtime errors\n` + errs.slice(0, 3).join('\n---\n') : 'PASSED: no runtime errors');
 process.exit(errs.length ? 1 : 0);

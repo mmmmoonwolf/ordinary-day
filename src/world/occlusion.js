@@ -1,12 +1,12 @@
 import {camera} from '../core/renderer.js';
 import {buildings,occluders} from './city.js';
-import {player} from '../entities/player.js';
+import {viewed} from '../entities/player.js';
 import {rooms,shownRoom} from './interiors.js';
 
 // ---------- occlusion ----------
 const ray=new THREE.Raycaster(),rayDir=new THREE.Vector3(),chest=new THREE.Vector3();
 export function updateOcclusion(){
-  chest.set(player.pos.x,1.2,player.pos.z);rayDir.copy(chest).sub(camera.position);const dist=rayDir.length();rayDir.normalize();
+  const v=viewed();chest.set(v.pos.x,1.2,v.pos.z);rayDir.copy(chest).sub(camera.position);const dist=rayDir.length();rayDir.normalize();
   ray.set(camera.position,rayDir);ray.far=dist-.3;
   const hit=new Set();for(const h of ray.intersectObjects(occluders,false))hit.add(h.object.userData.b);
   const inside=shownRoom()>=0?rooms[shownRoom()].b:null;   // the building the player is in is cut away, not faded

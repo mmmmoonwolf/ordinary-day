@@ -4,7 +4,7 @@ import {DOOR_HP,PLANK_HP,DOOR_MAX,REBUILD_PLANKS,REBUILT_HP,HAMMER_NOISE,SCENT_A
 import {solids} from '../world/collision.js';
 import {rooms,roomAt,showRoom,setDoorLook,doorDist} from '../world/interiors.js';
 import {agents} from '../entities/agents.js';
-import {player,players} from '../entities/player.js';
+import {players,viewed} from '../entities/player.js';
 import {makeNoise} from '../entities/ai.js';
 import {sfx} from './audio.js';
 import {uiFor} from '../ui/hud.js';
@@ -63,19 +63,18 @@ export function fixDoor(p,k){
   if(p.local&&!$('bag').hidden)renderBag();
   return true;
 }
-let warnAt=-99;
 export function damageDoor(k,dmg){
   const st=G.doors[k];if(!st||st.open)return;
   const r=rooms[k];st.hp-=dmg;sfx.thud(r.dx,r.dz);
   r.cutDoor.position.x+=(Math.random()-.5)*.06;r.cutDoor.position.z+=(Math.random()-.5)*.06;   // rattles
   const now=performance.now()/1000;
-  if(player.room===k&&now-warnAt>8){warnAt=now;uiFor(player).say('มีซอมบี้กำลังพังประตู! ประตู '+Math.max(0,Math.round(st.hp/DOOR_HP*100))+'%','alarm',4);}
+  for(const p of players)if(p.room===k&&now-(p.doorWarn||0)>8){p.doorWarn=now;uiFor(p).say('มีซอมบี้กำลังพังประตู! ประตู '+Math.max(0,Math.round(st.hp/DOOR_HP*100))+'%','alarm',4);}
   if(st.hp<=0){st.hp=0;st.broken=true;st.open=true;sync(k);markMapDirty();sfx.crack();makeNoise(r.dx,r.dz,20);for(const p of players)if(p.room===k)uiFor(p).feed('ประตูพังแล้ว','warn');}
 }
 // once a step: which room each player is in, their scent, and the cutaway for the player on this device
 export function updateShelter(){
   for(const p of players){p.room=p.alive?roomAt(p.pos.x,p.pos.z):-1;updateScent(p);}
-  if(player)showRoom(roomAt(player.pos.x,player.pos.z,.45));   // a little wider, so the cutaway is already on in the doorway
+  const v=viewed();if(v)showRoom(roomAt(v.pos.x,v.pos.z,.45));   // a little wider, so the cutaway is already on in the doorway
 }
 // ---------- scent (v0.7) ----------
 // p.stay = {room, since, next, warned}: how long player p has been in one building (in-game minutes, saved).

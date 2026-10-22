@@ -2,7 +2,7 @@ import {$,isTouch} from '../core/util.js';
 import {G} from '../core/state.js';
 import {ctl,joy} from '../core/controls.js';
 import {DEF,STACKS,GRADES,SLOTNAME,itemColor,durPct} from '../config/items.js';
-import {player} from '../entities/player.js';
+import {player,isSolo} from '../entities/player.js';
 import {useItemAt,useFoodAt,dropItem} from '../systems/inventory.js';
 import {feedOnce,updateLoadout} from './hud.js';
 
@@ -62,5 +62,6 @@ export function renderBag(){
   }
   det.appendChild(acts);
 }
-export function openBag(){if(!G.running||!player.alive||player.bleed>0||!$('pause').hidden)return;sel=null;renderBag();$('bag').hidden=false;G.paused=true;ctl.fireHeld=false;joy.id=null;$('joy').hidden=true;$('bagClose').focus();}
+export function openBag(){if(!G.running||!player.alive||player.bleed>0||!$('pause').hidden)return;sel=null;renderBag();$('bag').hidden=false;G.paused=isSolo();   // with others in the game the world keeps going (v0.11)
+  ctl.fireHeld=false;joy.id=null;$('joy').hidden=true;$('bagClose').focus();}
 export function closeBag(){if($('bag').hidden)return;$('bag').hidden=true;G.paused=false;updateLoadout(true);}

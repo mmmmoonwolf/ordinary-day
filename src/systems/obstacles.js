@@ -1,8 +1,7 @@
 import {G} from '../core/state.js';
-import {boomLight} from '../core/renderer.js';
 import {solids} from '../world/collision.js';
 import {breakables} from '../world/props.js';
-import {blast} from './effects.js';
+import {boom} from './effects.js';
 import {sfx} from './audio.js';
 import {makeNoise} from '../entities/ai.js';
 import {feed} from '../ui/hud.js';
@@ -22,7 +21,7 @@ function smash(b,fx){
   b.broken=true;const i=solids.indexOf(b.box);if(i>=0)solids.splice(i,1);flatten(b,true);markMapDirty();
   if(!fx)return;
   G.broken.push(breakables.indexOf(b));
-  blast.position.set(b.x,.6,b.z);blast.userData.t=.4;boomLight.position.set(b.x,2,b.z);boomLight.intensity=6;
+  boom(b.x,.6,b.z,.4,6);
   sfx.crack();sfx.explode(b.x,b.z);makeNoise(b.x,b.z,30);
   feed('Tyrant ทุบ'+(NAME[b.kind]||'สิ่งกีดขวาง')+'พัง','warn');
 }

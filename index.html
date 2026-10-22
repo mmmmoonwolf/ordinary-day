@@ -177,7 +177,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
   #tip{font-size:12.5px;padding:7px 10px;line-height:1.45}
   .hint{display:none}
   .loadout{width:220px}
-  #feed{bottom:calc(env(safe-area-inset-bottom,0px) + 240px)}   /* above the loadout panel, which covers the left half on narrow screens */
+  #feed{bottom:calc(env(safe-area-inset-bottom,0px) + 240px);max-width:44vw}   /* above the loadout panel, which covers the left half on narrow screens; clear of the pick button */
   .chips{gap:3px}.chips button{padding:0 3px;gap:3px}#bHeal{padding:0 5px}#bEat{padding:0 4px}
 }
 @media (min-width:641px){

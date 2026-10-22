@@ -1,5 +1,4 @@
 import {rnd,pick,clamp,wpick} from '../core/util.js';
-import {boomLight} from '../core/renderer.js';
 import {G} from '../core/state.js';
 import {LIM} from '../config/world.js';
 import {ZC} from '../config/zombies.js';
@@ -12,7 +11,7 @@ import {nearestNode} from '../world/sidewalk.js';
 import {agents,becomeZombie} from './agents.js';
 import {lerpAng,moveAgent,wander,d2} from './movement.js';
 import {players,targets} from './player.js';
-import {addBlood,warnRing,blast} from '../systems/effects.js';
+import {addBlood,warnRing,boom} from '../systems/effects.js';
 import {makeItem,spawnDrop,dropGuaranteed} from '../systems/drops.js';
 import {hurtPlayer} from '../systems/combat.js';
 import {infectPlayer} from '../systems/infection.js';
@@ -34,7 +33,7 @@ export function updateHuman(a,dt){
 }
 function explode(a){
   const R0=4.2;a.state='dead';a.deadT=0;a.b.root.visible=false;a.deadT=24;
-  blast.position.set(a.pos.x,1,a.pos.z);blast.userData.t=.4;boomLight.position.set(a.pos.x,2,a.pos.z);boomLight.intensity=9;sfx.explode(a.pos.x,a.pos.z);
+  boom(a.pos.x,1,a.pos.z,.4,9);sfx.explode(a.pos.x,a.pos.z);
   for(let i=0;i<6;i++)addBlood(a.pos.x+rnd(-2,2),a.pos.z+rnd(-2,2));
   for(const p of players){const dp=Math.hypot(p.pos.x-a.pos.x,p.pos.z-a.pos.z);if(dp<R0&&!walledOff(a.pos.x,a.pos.z,p.pos.x,p.pos.z))hurtPlayer(p,Math.round(45*(1-dp/R0*.5)));}
   for(let k=0;k<rooms.length;k++)if(doorDist(k,a.pos.x,a.pos.z)<R0)damageDoor(k,60);   // PLACEHOLDER blast damage to a closed door
@@ -44,7 +43,7 @@ function explode(a){
   makeNoise(a.pos.x,a.pos.z,30);
 }
 function slam(a){
-  const R0=3.2;warnRing.material.opacity=0;blast.position.set(a.pos.x,.4,a.pos.z);blast.userData.t=.3;sfx.thud(a.pos.x,a.pos.z);
+  const R0=3.2;warnRing.material.opacity=0;boom(a.pos.x,.4,a.pos.z,.3);sfx.thud(a.pos.x,a.pos.z);
   for(const p of players){const dx=p.pos.x-a.pos.x,dz=p.pos.z-a.pos.z,d=Math.hypot(dx,dz);
     if(d<R0&&p.alive&&!walledOff(a.pos.x,a.pos.z,p.pos.x,p.pos.z)){hurtPlayer(p,ZC.tyrant.dmg);p.pos.x+=dx/(d||1)*2.4;p.pos.z+=dz/(d||1)*2.4;collide(p.pos,.34);}}
   a.feed=.9;

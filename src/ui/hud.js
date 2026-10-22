@@ -5,24 +5,42 @@ import {DEF,GRADES,durPct} from '../config/items.js';
 import {diffOf} from '../config/difficulty.js';
 import {agents} from '../entities/agents.js';
 import {d2} from '../entities/movement.js';
-import {player} from '../entities/player.js';
+import {player,isSolo} from '../entities/player.js';
 import {curWeapon,countAmmo,gradeTag} from '../systems/inventory.js';
 import {closeBag} from './bag.js';
 import {ZC} from '../config/zombies.js';
 import {GOAL_NIGHTS,nightsSurvived} from '../config/goal.js';
 import {recordRun} from '../systems/records.js';
-import {sfx} from '../systems/audio.js';
+import {playLocal} from '../systems/audio.js';
+import {send} from '../core/bus.js';
+import {FX} from '../systems/effects.js';
 import {clearTip} from './tips.js';
 
 // ---------- messages ----------
 let msgTimer=0;
-export function say(text,cls,dur){if(cls==='radio')sfx.radio();const m=$('msg');m.textContent=text;m.className='show '+(cls||'');msgTimer=dur||6;}
-export function feed(text,cls){const f=$('feed');const el=document.createElement('div');el.textContent=text;el.className=cls||'get';f.appendChild(el);while(f.children.length>4)f.removeChild(f.firstChild);setTimeout(()=>el.remove(),3000);}
-const once={};export function feedOnce(key,text,cls,gap){const t=performance.now();if(once[key]&&t-once[key]<(gap||2500))return;once[key]=t;feed(text,cls);}
-// messages meant for one player: shown when it is the player on this device, dropped for anyone else (v0.9)
-const LOCAL={say:(...a)=>say(...a),feed:(...a)=>feed(...a),feedOnce:(...a)=>feedOnce(...a),updateLoadout:f=>updateLoadout(f)};
-const QUIET={say(){},feed(){},feedOnce(){},updateLoadout(){}};
-export function uiFor(p){return p===player?LOCAL:QUIET;}
+// say() / feed() are for everyone (night, radio, a Tyrant): shown here and sent to the other devices (v0.11)
+function showSay(text,cls,dur){if(cls==='radio')playLocal('radio');const m=$('msg');m.textContent=text;m.className='show '+(cls||'');msgTimer=dur||6;}
+export function say(...a){showSay(...a);send('*','say',a);}
+export function feed(...a){showFeed(...a);send('*','feed',a);}
+function showFeed(text,cls){const f=$('feed');const el=document.createElement('div');el.textContent=text;el.className=cls||'get';f.appendChild(el);while(f.children.length>4)f.removeChild(f.firstChild);setTimeout(()=>el.remove(),3000);}
+const once={};export function feedOnce(key,text,cls,gap){const t=performance.now();if(once[key]&&t-once[key]<(gap||2500))return;once[key]=t;showFeed(text,cls);}
+function hurtFlash(){$('hurt').style.opacity=.85;playLocal('hurt');}
+// messages meant for one player: shown when it is the player on this device, otherwise sent to theirs (v0.11;
+// nothing goes anywhere while nobody plays online)
+const LOCAL={say:showSay,feed:showFeed,feedOnce,updateLoadout:f=>updateLoadout(f),hurt:hurtFlash};
+const away={};
+function remote(id){
+  const onceAt={};
+  return {say:(...a)=>send(id,'say',a),feed:(...a)=>send(id,'feed',a),updateLoadout:()=>send(id,'loadout'),hurt:()=>send(id,'hurt'),
+    feedOnce(key,text,cls,gap){const t=performance.now();if(onceAt[key]&&t-onceAt[key]<(gap||2500))return;onceAt[key]=t;send(id,'feed',[text,cls]);}};
+}
+export function uiFor(p){return p===player?LOCAL:away[p.id]||(away[p.id]=remote(p.id));}
+// on another device: what the host sent ({kind, args} from core/bus.js) is shown and played here
+export function receive(m){
+  const a=m.args||[];
+  if(m.kind==='say')showSay(...a);else if(m.kind==='feed')showFeed(...a);else if(m.kind==='hurt')hurtFlash();
+  else if(m.kind==='loadout')updateLoadout(true);else if(m.kind==='sfx')playLocal(...a);else if(m.kind==='fx'&&FX[a[0]])FX[a[0]](...a.slice(1));
+}
 
 // ---------- HUD ----------
 const DAYS=['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
@@ -52,7 +70,9 @@ export function updateLoadout(force){
   $('atkLabel').textContent=def.verb;
 }
 function fmtReal(s){s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+pad(s%60);}
+let soloShown=true;
 export function updateHUD(dt){
+  const solo=isSolo();if(solo!==soloShown){soloShown=solo;$('bSpeed').hidden=!solo;$('bSpeed').textContent='×'+SPEEDS[G.speedIdx];}   // ×2 / ×4 only alone (v0.11)
   const m=Math.floor(G.min),tod=m%1440,day=Math.floor(m/1440)+1;
   if(m!==G.lastMinShown){G.lastMinShown=m;$('clock').textContent=hhmm(m);$('dayline').innerHTML='วันที่ '+day+'<span class="wd"> · '+DAYS[(2+day-1)%7]+'</span> · รอด '+Math.min(nightsSurvived(m),GOAL_NIGHTS)+'/'+GOAL_NIGHTS+' คืน';}
   const night=isNightTod(tod),left=night?(tod>=NIGHT_START?1440-tod+DAY_START:DAY_START-tod):NIGHT_START-tod;
