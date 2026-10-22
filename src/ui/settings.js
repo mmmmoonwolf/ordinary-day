@@ -1,5 +1,6 @@
 import {$,isTouch} from '../core/util.js';
 import {QUALITY,setQuality} from '../core/renderer.js';
+import {setSkinsOn} from '../entities/skins.js';
 import {setVolumes} from '../systems/audio.js';
 
 // ---------- settings (v0.8) ----------
@@ -10,7 +11,8 @@ export const settings={quality:isTouch?'medium':'high',master:1,music:.6,sfx:1,f
 try{Object.assign(settings,JSON.parse(localStorage.getItem(KEY)||'{}'));}catch(_){}
 if(!QUALITY[settings.quality])settings.quality='medium';
 function store(){try{localStorage.setItem(KEY,JSON.stringify(settings));}catch(_){}}
-function apply(){setQuality(settings.quality);setVolumes({master:settings.master,music:settings.music,sfx:settings.sfx});$('fps').hidden=!settings.fps;}
+function apply(){setQuality(settings.quality);setSkinsOn(settings.quality!=='low');   // low: the old blocky people (v0.13)
+  setVolumes({master:settings.master,music:settings.music,sfx:settings.sfx});$('fps').hidden=!settings.fps;}
 function show(){
   for(const b of document.querySelectorAll('.qual button')){const on=b.dataset.q===settings.quality;b.classList.toggle('on',on);b.setAttribute('aria-checked',on);}
   for(const k of ['master','music','sfx']){$('vol_'+k).value=Math.round(settings[k]*100);$('volN_'+k).textContent=Math.round(settings[k]*100);}

@@ -8,6 +8,7 @@ import {S,part,eyeMat,vestMat} from '../world/materials.js';
 import {nodeXZ,nearestNode,randomNode} from '../world/sidewalk.js';
 import {vendorSpots} from '../world/city.js';
 import {nearestPlayerDist} from './player.js';
+import {zombify,undress} from './skins.js';
 
 // ---------- characters ----------
 const SHIRTS=['#5f7a8c','#8c4a3e','#c9c2b0','#3f4a3a','#7a6a8a','#a88a4a','#2f3b4f','#9a5a6a','#6b6b6b','#d0c8b8','#476b6b','#b07a52'];
@@ -37,7 +38,7 @@ export function makeAgent(x,z,look){
     jx:rnd(-.35,.35),jz:rnd(-.35,.35),walk:rnd(1.1,1.6),panic:0,tx:0,tz:0,wait:0,vendor:false,hp:100,feed:0,atk:0,spd:rnd(.9,1.1),
     stuckT:0,lost:0,turnT:0,deadT:0,hitT:0,heard:null,fuse:0,wind:0,retreat:false};
 }
-export function removeAgent(a){scene.remove(a.b.root);for(const m of a.b.mats)m.dispose();}
+export function removeAgent(a){undress(a);scene.remove(a.b.root);for(const m of a.b.mats)m.dispose();}
 
 // ---------- zombie classes ----------
 export function styleZombie(a){
@@ -51,6 +52,7 @@ export function styleZombie(a){
   a.b.eyes.visible=a.kind!=='walker';
   if(a.kind==='armor'&&!a.b.extra){const g=new THREE.Group();g.add(part(vestMat,.58,.5,.36,0,1.2,0));g.add(part(vestMat,.36,.14,.36,0,1.86,0));a.b.body.add(g);a.b.extra=g;}
   if(a.kind==='tyrant'){a.b.armR.scale.set(1.5,1.25,1.5);a.b.head.scale.set(.26,.26,.26);}
+  zombify(a);   // the character model, if it wears one (v0.13)
 }
 export function becomeZombie(a,kind){
   a.state='zombie';a.kind=kind||(isNightTod(G.min%1440)?'zombie':'walker');a.hp=ZC[a.kind].hp;a.maxHp=a.hp;
