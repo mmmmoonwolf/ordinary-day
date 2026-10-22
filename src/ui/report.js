@@ -6,6 +6,8 @@ import {diffOf} from '../config/difficulty.js';
 import {agents} from '../entities/agents.js';
 import {player,players} from '../entities/player.js';
 import {hhmm} from './hud.js';
+import {bus} from '../core/bus.js';
+import {room} from '../net/host.js';
 import {settings,fps} from './settings.js';
 
 // ---------- bug report ----------
@@ -23,7 +25,7 @@ export function reportInfo(){
     'ในเกม: วันที่ '+(Math.floor(G.min/1440)+1)+' '+hhmm(G.min)+' · '+(G.phase==='night'?'NIGHT':'DAY')+' · '+diffOf(G).name+' · ×'+SPEEDS[G.speedIdx],
     'ผู้เล่น: HP '+Math.round(p.hp)+' · อาหาร '+Math.round(p.food)+' · น้ำ '+Math.round(p.water)+' · ติดเชื้อ '+Math.round((p.infect||0)*100)+'%'+(p.room>=0?' · อยู่ในตึก '+p.room:''),
     'กระเป๋า: '+g.bag.length+'/'+g.cap+' · ถือ '+(g.eq[g.active]?g.eq[g.active].id:'fist')+' · '+g.bag.map(e=>e.id+(e.n?'×'+e.n:'')).join(', '),
-    'ผู้เล่น: '+players.length+' คน'+(players.length>1?' ('+players.map(q=>!q.alive?'x':q.bleed>0?'ล้ม':Math.round(q.hp)).join('/')+')':''),
+    'ผู้เล่น: '+players.length+' คน'+(players.length>1?' ('+players.map(q=>!q.alive?'x':q.bleed>0?'ล้ม':q.away?'หลุด':Math.round(q.hp)).join('/')+')':'')+' · ออนไลน์: '+(bus.role==='off'?'ไม่ได้ต่อ':bus.role==='host'?'เปิดห้อง '+room.conns.length+' คนเชื่อมต่อ':'อยู่ในห้องเพื่อน'),
     'โลก: ซอมบี้ '+zs.length+' ('+[...new Set(zs.map(z=>z.kind))].join(',')+') · ประชาชน '+ppl+' · ประตู '+(G.doors||[]).map(d=>d.broken?'x':d.open?'o':'c').join(''),
     'อุปกรณ์: '+(isTouch?'จอสัมผัส':'เมาส์/คีย์บอร์ด')+' · จอ '+innerWidth+'×'+innerHeight+' @'+(devicePixelRatio||1)+' · กราฟิก '+settings.quality+' · '+fps+' FPS · '+navigator.userAgent,
     'error ล่าสุด: '+(errors.length?'\n  '+errors.join('\n  '):'ไม่มี'),

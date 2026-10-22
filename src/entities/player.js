@@ -30,15 +30,15 @@ const LOOKS=[{shirt:'#c4612a',pants:'#24272c',skin:'#d8a882',hair:'#15130f'},{sh
 export const freshInput=()=>({mx:0,mz:0,mag:0,run:false,sneak:false,slow:false,aim:false,face:null,aimDist:0,fire:false,fireQ:0});
 export function makePlayer(i=0){
   const p=makeAgent(OFF+i*1.3,OFF,LOOKS[i%LOOKS.length]);
-  Object.assign(p,{state:'player',id:i,name:'ผู้เล่น '+(i+1),local:false,hp:100,maxHp:100,alive:true,swing:0,swingDur:.4,hitDone:true,lastHit:-99,face:Math.PI*1.25,cool:0,reloadT:0,recoil:0,aimT:0,held:null,heldId:'fist',down:0,inv:0,
+  Object.assign(p,{state:'player',id:i,name:'ผู้เล่น '+(i+1),local:false,away:false,token:null,hp:100,maxHp:100,alive:true,swing:0,swingDur:.4,hitDone:true,lastHit:-99,face:Math.PI*1.25,cool:0,reloadT:0,recoil:0,aimT:0,held:null,heldId:'fist',down:0,inv:0,
     infect:0,infWarn:0,food:100,water:100,needWarn:0,starving:false,room:-1,nearDoor:-1,bleed:0,reviveT:0,helping:null,helpT:0,nearDown:null,fixDoor:-1,near:null,full:null,sneak:false,runNoise:0,stay:null,endCause:null,gear:freshGear(),input:freshInput()});
   return p;
 }
-// players that zombies can go after
-export const targets=()=>players.filter(p=>p.alive&&p.down<=0);
+// players that zombies can go after (v0.12: not one whose device has dropped out of the game, p.away)
+export const targets=()=>players.filter(p=>p.alive&&p.down<=0&&!p.away);
 export const isDown=p=>p.alive&&p.bleed>0;
 // more than one player in the game: the bag and the pause menu no longer stop the world, no ×2 / ×4 (v0.11)
-export const isSolo=()=>players.length<2;
+export const isSolo=()=>players.filter(p=>!p.away).length<2;
 // who the camera, sounds and cutaway follow: the player on this device, or once they are dead a teammate still alive
 export function viewed(){
   if(!player||player.alive)return player;
@@ -46,7 +46,7 @@ export function viewed(){
 }
 const hasKit=p=>p.gear.bag.some(e=>e.id==='resurrect');
 // how many are still in the game (down counts); the world scales with it (config/party.js, v0.10)
-export const partySize=()=>Math.max(1,players.filter(p=>p.alive).length);
+export const partySize=()=>Math.max(1,players.filter(p=>p.alive&&!p.away).length);
 export function nearestPlayerDist(x,z){let d=1e9;for(const p of players)if(p.alive)d=Math.min(d,Math.hypot(p.pos.x-x,p.pos.z-z));return d;}
 function nearestPickable(p){let best=null,bd=1.6;for(const d of drops){const k=DEF[d.item.id].kind;if(k!=='weapon'&&k!=='bag')continue;const dist=Math.hypot(d.x-p.pos.x,d.z-p.pos.z);if(dist<bd){bd=dist;best=d;}}return best;}
 export function updatePlayer(p,dt){

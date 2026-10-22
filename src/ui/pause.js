@@ -9,6 +9,8 @@ import {showContinue} from './input.js';
 import {tipsOff,setTipsOff} from './tips.js';
 import {diffOf} from '../config/difficulty.js';
 import {initReport,closeReport} from './report.js';
+import {refreshOnline,leaveOnline} from './online.js';
+import {isClient} from '../core/bus.js';
 
 // ---------- pause menu ----------
 // Stops the game like the bag does (G.paused). Opens by itself when the page goes to the background,
@@ -21,7 +23,7 @@ export function openPause(){
   closeBag();
   $('pause').hidden=false;G.paused=isSolo();ctl.fireHeld=false;joy.id=null;$('joy').hidden=true;
   $('pauseInfo').textContent=when();$('saveMsg').textContent='เกมบันทึกอัตโนมัติทุก 15 วินาทีอยู่แล้ว';
-  closeReport();$('bResume').focus();
+  closeReport();refreshOnline();$('bResume').focus();
 }
 export function closePause(){if(!isPauseOpen())return;$('pause').hidden=true;G.paused=false;updateLoadout(true);}
 export function togglePause(){isPauseOpen()?closePause():openPause();}
@@ -34,7 +36,8 @@ export function initPause(){
     $('saveMsg').textContent=saveGame()?'บันทึกแล้ว · '+when():'บันทึกไม่ได้ เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูล (เช่น โหมดไม่ระบุตัวตน)';
   });
   $('bToTitle').addEventListener('click',()=>{
-    saveGame();$('pause').hidden=true;G.paused=false;G.running=false;
+    if(isClient()){leaveOnline();return;}   // a client leaves the room (v0.12); the title screen comes from net/client.js
+    leaveOnline();saveGame();$('pause').hidden=true;G.paused=false;G.running=false;
     showContinue();$('pStart').hidden=false;$('pOver').hidden=true;$('overlay').hidden=false;
   });
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')openPause();});

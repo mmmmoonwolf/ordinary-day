@@ -97,6 +97,18 @@
 
 มีรถพยาบาลจอดทิ้งไว้ฝั่งตะวันตกของตลาด หลังรถมี Resurrection Kit 1 ชุดทุกเกม (ไม่เติมใหม่ระหว่างเกม) โอกาสดรอป 1% ของ Resurrection Kit ในตารางยายังเหมือนเดิมตามที่ยืนยันไว้
 
+## เล่นกับเพื่อน (v0.12)
+
+เล่นด้วยกันได้สูงสุด 4 คน ผ่านอินเทอร์เน็ต ไม่ต้องสมัครหรือติดตั้งอะไร
+
+1. **คนเปิดห้อง (host):** เริ่มเกมตามปกติ (เกมใหม่หรือเล่นต่อจากเซฟ) กดหยุดเกม แล้วกด **เปิดห้องให้เพื่อนเข้า** จะได้รหัสห้อง 5 ตัว เช่น `C5GQE`
+2. **เพื่อน:** เปิดเกมจากลิงก์เดียวกัน กรอกรหัสในช่องหน้าแรกแล้วกด **เข้าห้องเพื่อน** เพื่อนเข้าได้ทุกเมื่อระหว่างเกม
+3. เกมทั้งหมดรันบนเครื่องของคนเปิดห้อง เครื่องเพื่อนส่งการกดปุ่มไป และรับภาพโลกกลับมา **คนเปิดห้องต้องเปิดเกมค้างไว้ที่หน้าจอ** ถ้าสลับแอปหรือพับจอ เกมของทุกคนจะหยุด
+4. หลุดหรือรีเฟรชหน้าเว็บ กรอกรหัสเดิมแล้วจะได้ตัวละครเดิมพร้อมของในกระเป๋าคืน ระหว่างที่หลุด ตัวละครยืนนิ่งและซอมบี้ไม่สนใจ
+5. คนเปิดห้องเป็นคนเซฟเกม (เก็บตัวละครของเพื่อนไว้ด้วย) เปิดห้องจากเซฟนั้นอีกครั้ง เพื่อนก็ได้ตัวละครเดิมคืน
+
+เล่นหลายคนแล้วเปิดกระเป๋าหรือเมนูหยุดเกม เกมไม่หยุด ไม่มีปุ่ม ×2 / ×4 ยิงไม่โดนเพื่อน เพื่อนล้มช่วยพยุงได้ เพื่อนตายใช้ Resurrection Kit ชุบได้ ใช้ PeerJS (WebRTC) ถ้าเครือข่ายบางแห่ง (เช่น 4G บางเครือข่ายหรือ Wi-Fi บริษัท) ต่อกันไม่ได้ ให้ลองสลับไปใช้เครือข่ายอื่น
+
 ## หยุดเกม
 
 กดปุ่ม ❚❚ มุมขวาบน หรือกด P / Esc เพื่อหยุดเกม ในหน้าหยุดเกมมีปุ่มเล่นต่อ เซฟเกม (บอกวันและเวลาที่บันทึก) เปิดปิดเสียง แจ้งบั๊ก และเซฟแล้วกลับหน้าแรก เกมจะหยุดเองเมื่อสลับแอปหรือพับหน้าเว็บ กลับมาจึงเจอหน้าหยุดเกมแทนการโดนรุม
@@ -112,23 +124,27 @@
 - Three.js r128 (โหลดจาก cdnjs) JavaScript ล้วน ไม่มีขั้นตอน build
 - โค้ดเกมเป็น ES modules ใน `src/` (`index.html` มีแค่ HTML + CSS) texture ทั้งหมดวาดด้วยโค้ด ไม่มีไฟล์ภาพหรือเสียง
 - ฟอนต์ Chakra Petch และ Big Shoulders Display จาก Google Fonts
-- GitHub Actions รัน smoke test ทุก pull request และทุกครั้งที่ push เข้า `main` (`.github/workflows/smoke-test.yml`)
+- PeerJS 1.5.4 (โหลดจาก jsDelivr ตอนเปิดหรือเข้าห้องครั้งแรกเท่านั้น) ใช้เซิร์ฟเวอร์กลางฟรีของ PeerJS แนะนำให้รู้จักกัน แล้วเครื่องคุยกันตรงด้วย WebRTC
+- GitHub Actions รัน smoke test และ net test ทุก pull request และทุกครั้งที่ push เข้า `main` (`.github/workflows/smoke-test.yml`)
 
 ## โครงสร้าง repo
 
 ```
 index.html                     HTML + CSS ของ HUD แล้วโหลด src/main.js
 src/main.js                    จุดเริ่ม: สร้างเมือง ผูก input เริ่มเกม และวน loop
-src/core/                      util (rng, $), renderer (scene กล้อง แสง), state (G), controls (สถานะปุ่ม)
+src/core/                      util (rng, $), renderer (scene กล้อง แสง), state (G), controls (สถานะปุ่ม), bus (สิ่งที่ส่งไปเครื่องอื่น)
 src/config/                    ตารางค่าเกม: time, world, items, loot, zombies, goal, needs, difficulty, shelter, stealth, events, version
 src/world/                     textures, materials, collision, sidewalk, props, city, interiors, item-models, occlusion
 src/entities/                  agents, movement, ai, player, animation
-src/systems/                   drops, inventory, combat, phases, weather, effects, game (reset), save, audio, infection, goal, records, needs, obstacles, doors, throw, events
-src/ui/                        hud, bag, input, pause, tips, minimap, report (แจ้งบั๊ก), settings, prompts
+src/systems/                   drops, inventory, combat, phases, weather, effects, game (reset), save, audio, infection, goal, records, needs, obstacles, doors, throw, events, actions (คำสั่งของผู้เล่น)
+src/net/                       เล่นออนไลน์: link (PeerJS), host, client, snapshot
+src/ui/                        hud, bag, input, pause, tips, minimap, report (แจ้งบั๊ก), settings, prompts, online (ปุ่มเปิดห้อง / เข้าห้อง)
 CLAUDE.md                      กติกาสำหรับ Claude Code และ AI ที่ช่วยพัฒนา
 docs/project-summary.md        เอกสารสรุประบบทั้งหมด + Decision Log
 docs/design-draft-01.md        Game System Design Draft 01 จากทีม
-tools/smoke-test.js            ทดสอบตรรกะเกมแบบไม่มีหน้าจอ: node tools/smoke-test.js (หรือ npm test)
+tools/smoke-test.js            ทดสอบตรรกะเกมแบบไม่มีหน้าจอ: node tools/smoke-test.js
+tools/net-test.js              ทดสอบเล่นออนไลน์: host กับเพื่อนเป็น 2 process คุยกันแทน WebRTC (npm test รันทั้งสองไฟล์)
+tools/headless.js              stub ของ THREE และ DOM ที่เทสต์ทั้งสองใช้
 .github/workflows/             CI รัน smoke test ทุก PR
 ```
 
@@ -141,6 +157,7 @@ tools/smoke-test.js            ทดสอบตรรกะเกมแบบ�
 
 | เวอร์ชัน | สิ่งที่เพิ่ม |
 | --- | --- |
+| v0.12 | **เล่นออนไลน์ได้แล้ว (เฟส 4)**: เปิดห้องจากเมนูหยุดเกม ได้รหัส 5 ตัว เพื่อนกรอกรหัสที่หน้าแรกแล้วเข้ามาเล่นด้วยได้สูงสุด 4 คน เข้ากลางเกมได้ หลุดแล้วกลับมาได้ตัวละครเดิม คนเปิดห้องเซฟเกมรวมตัวละครของเพื่อน |
 | v0.11 | เตรียมเล่นออนไลน์ (เฟส 4 ขั้นแรก): เล่นหลายคนแล้วกระเป๋าและเมนูหยุดไม่หยุดโลก ไม่มี ×2 / ×4 ยิงไม่โดนเพื่อน ใช้ Resurrection Kit ชุบเพื่อนที่ตายแล้วได้ ตายแล้วกล้องตามเพื่อนที่ยังรอด ข้อความ เสียง และเอฟเฟกต์ที่ต้องส่งไปเครื่องอื่นเข้าคิวรอระบบออนไลน์ · เล่นคนเดียวเหมือนเดิม (เสียงปืนของคนอื่นเบาลงตามระยะ) |
 | v0.10 | เตรียมเล่นด้วยกัน (เฟส 3 ข้อ 13–14): HP หมดตอนมีเพื่อนยืนอยู่จะล้มรอให้ช่วย 45 วินาที เพื่อนยืนข้าง ๆ แล้วกด ช่วย 4 วินาทีจะลุกด้วย HP 30 · ซอมบี้กลางคืน ฝูงซอมบี้ ของที่เกิด และเสบียงทิ้งจากฟ้าเพิ่มตามจำนวนผู้เล่น · เล่นคนเดียวเหมือนเดิม และท่าล้มของ Resurrection Kit กลับมาแสดงแล้ว |
 | v0.9 | ปรับโครงสร้างให้รองรับหลายผู้เล่น (เฟส 2): ผู้เล่นทุกคนอยู่ใน `players` มีกระเป๋า HP หิว ติดเชื้อของตัวเอง ซอมบี้ไล่คนที่ใกล้ที่สุด จำลองเกมเป็นจังหวะคงที่ 60 ครั้งต่อวินาที เซฟเก็บผู้เล่นทุกคน (เซฟเก่ายังโหลดได้) · เล่นคนเดียวเหมือนเดิมทุกอย่าง |

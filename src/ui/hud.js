@@ -12,7 +12,7 @@ import {ZC} from '../config/zombies.js';
 import {GOAL_NIGHTS,nightsSurvived} from '../config/goal.js';
 import {recordRun} from '../systems/records.js';
 import {playLocal} from '../systems/audio.js';
-import {send} from '../core/bus.js';
+import {send,isClient} from '../core/bus.js';
 import {FX} from '../systems/effects.js';
 import {clearTip} from './tips.js';
 
@@ -107,5 +107,7 @@ export function gameOver(){
   $('sKillsBy').innerHTML=Object.keys(ZC).map(k=>'<span>'+ZC[k].name+'<b>'+(G.killsBy[k]||0)+'</b></span>').join('');
   const {best,isNew}=recordRun({nights,kills:G.kills,won:G.endCause==='won',diff:G.diff});
   $('sBest').innerHTML=(isNew?'<span class="new">สถิติใหม่! </span>':'')+'สถิติดีสุด ('+diffOf(G).name+'): รอด '+best.nights+' คืน · กำจัด '+best.kills+' ตัว'+(best.wins?' · รอดสำเร็จ '+best.wins+' ครั้ง':'');
+  // in a friend's room only the host starts the next day (v0.12)
+  $('bAgain').hidden=isClient();$('overNote').textContent=isClient()?'รอเจ้าของห้องเริ่มวันใหม่ หรือกลับหน้าแรก':'';$('bOverTitle').hidden=!isClient();
   $('pStart').hidden=true;$('pOver').hidden=false;$('overlay').hidden=false;$('bAgain').focus();
 }

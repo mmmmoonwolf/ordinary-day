@@ -6,6 +6,7 @@ import {GOAL_NIGHTS,LZ,RESCUE_FROM,RESCUE_UNTIL,RESCUE_RADIUS,nightsSurvived} fr
 import {S,part,whiteMat,blackMat} from '../world/materials.js';
 import {player,players} from '../entities/player.js';
 import {clearSave} from './save.js';
+import {isClient} from '../core/bus.js';
 import {sfx} from './audio.js';
 import {say,gameOver} from '../ui/hud.js';
 
@@ -43,14 +44,14 @@ export function updateGoal(dt,now){
     $('lzArrow').style.transform='rotate('+Math.atan2(sx,sy).toFixed(2)+'rad)';
     $('lzDist').textContent=(h===0?'เฮลิคอปเตอร์ ':'จุดลงจอด ')+Math.round(dist)+' ม.';
   }
-  if(!G.running||!ready)return;
+  if(!G.running||!ready||isClient())return;   // in a friend's room the host decides the rescue (v0.12)
   const stage=tod>=DAY_START&&tod<RESCUE_FROM?'coming':t>=0&&up<0?'landed':up>=0?'left':'';
   if(stage&&G.rescueSaid!==day+':'+stage){G.rescueSaid=day+':'+stage;
     if(stage==='coming')say((day===GOAL_NIGHTS+1?'รอดครบ '+GOAL_NIGHTS+' คืนแล้ว! ':'')+'วิทยุ: เฮลิคอปเตอร์กู้ภัยจะลงจอดที่สี่แยกข้างสวนตอน 08:00 และรอถึง 12:00 ตามลูกศรไป','radio',9);
     else if(stage==='landed')say('เฮลิคอปเตอร์มาถึงแล้ว! ไปให้ถึงก่อน 12:00','alarm',7);
     else say('เฮลิคอปเตอร์บินออกไปแล้ว จะกลับมาอีกพรุ่งนี้ 08:00','alarm',7);}
   // everyone still alive has to be on board (v0.9: one or more players)
-  const alive=players.filter(p=>p.alive);
+  const alive=players.filter(p=>p.alive&&!p.away);   // v0.12: not those whose device dropped out
   if(h===0&&alive.length&&alive.every(p=>p.down<=0&&!(p.bleed>0)&&Math.hypot(LZ.x-p.pos.x,LZ.z-p.pos.z)<RESCUE_RADIUS)){
     G.endCause='won';clearSave();sfx.rotor(0);sfx.win();say('ขึ้นเฮลิคอปเตอร์ได้แล้ว คุณรอด!','',6);gameOver();
   }

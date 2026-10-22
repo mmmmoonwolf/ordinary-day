@@ -52,7 +52,7 @@ export function useHeal(p){
   for(const id of HEAL_ORDER){const i=bag.findIndex(e=>e.id===id);if(i>=0){useItemAt(p,i);return;}}
   U.feedOnce('noheal','ไม่มียารักษา','warn');
 }
-export function useItemAt(p,i){if(cant(p))return;const e=p.gear.bag[i],def=DEF[e.id];if(def.kind!=='heal')return;const amt=Math.round(p.maxHp*def.heal);p.hp=Math.min(p.maxHp,p.hp+amt);e.n--;if(e.n<=0)p.gear.bag.splice(i,1);
+export function useItemAt(p,i){if(cant(p)||!p.gear.bag[i])return;const e=p.gear.bag[i],def=DEF[e.id];if(def.kind!=='heal')return;const amt=Math.round(p.maxHp*def.heal);p.hp=Math.min(p.maxHp,p.hp+amt);e.n--;if(e.n<=0)p.gear.bag.splice(i,1);
   const cured=def.cure&&p.infect>0;if(cured)cureInfection(p);
   const U=uiFor(p);U.feed('ใช้ '+def.name+' +'+Math.round(def.heal*100)+'%'+(cured?' · ฆ่าเชื้อแล้ว':''));sfxFor(p).heal();U.updateLoadout(true);}
 // food and water: use whichever fixes the lower bar first
@@ -65,7 +65,7 @@ export function eatBest(p){
   U.feedOnce('nofood','ไม่มีอาหารหรือน้ำในกระเป๋า','warn');
 }
 export function useFoodAt(p,i){
-  if(cant(p))return;const e=p.gear.bag[i],def=DEF[e.id];if(def.kind!=='food')return;
+  if(cant(p)||!p.gear.bag[i])return;const e=p.gear.bag[i],def=DEF[e.id];if(def.kind!=='food')return;
   if(def.food)p.food=Math.min(100,p.food+def.food);if(def.water)p.water=Math.min(100,p.water+def.water);
   e.n--;if(e.n<=0)p.gear.bag.splice(i,1);
   const U=uiFor(p);U.feed((def.water?'ดื่ม ':'กิน ')+def.name);sfxFor(p).eat();U.updateLoadout(true);
@@ -77,3 +77,19 @@ export function dropItem(p,it){
   for(const da of [0,.6,-.6,1.2,-1.2,1.9,-1.9,2.6,-2.6,Math.PI]){const a=p.face+da,qx=q.x+Math.sin(a)*1.15,qz=q.z+Math.cos(a)*1.15;if(freeAt(qx,qz,.3)&&!walledOff(q.x,q.z,qx,qz)){x=qx;z=qz;break;}}
   Object.assign(spawnDrop(it,x,z),{hold:true,mine:true});   // mine: other survivors never take it (v0.7)
 }
+// ---------- bag actions (v0.12) ----------
+// What the bag screen does, as functions of the player, so a player on another device can ask the host for them.
+const okI=(p,i)=>Number.isInteger(i)&&i>=0&&i<p.gear.bag.length;
+const SLOTS=['primary','secondary','melee'];
+export function equipFromBag(p,i){
+  if(cant(p)||!okI(p,i))return;const g=p.gear,it=g.bag[i],d=DEF[it.id];if(d.kind!=='weapon')return;
+  const old=g.eq[d.slot];g.eq[d.slot]=it;if(old)g.bag[i]=old;else g.bag.splice(i,1);g.active=d.slot;p.reloadT=0;uiFor(p).updateLoadout(true);
+}
+export function holdSlot(p,s){if(cant(p)||!SLOTS.includes(s)||!p.gear.eq[s])return;p.gear.active=s;p.reloadT=0;uiFor(p).updateLoadout(true);}
+export function unequip(p,s){
+  if(cant(p)||!SLOTS.includes(s))return;const g=p.gear,it=g.eq[s];if(!it)return;
+  if(g.bag.length>=g.cap){uiFor(p).feedOnce('full','กระเป๋าเต็ม','warn');return;}
+  g.bag.push(it);g.eq[s]=null;uiFor(p).updateLoadout(true);
+}
+export function dropFromBag(p,i){if(!p.alive||!okI(p,i))return;const it=p.gear.bag.splice(i,1)[0];dropItem(p,it);uiFor(p).updateLoadout(true);}
+export function dropEquipped(p,s){if(!p.alive||!SLOTS.includes(s))return;const it=p.gear.eq[s];if(!it)return;p.gear.eq[s]=null;dropItem(p,it);uiFor(p).updateLoadout(true);}

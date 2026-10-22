@@ -3,8 +3,8 @@ import {G} from '../core/state.js';
 import {ctl,joy} from '../core/controls.js';
 import {DEF,STACKS,GRADES,SLOTNAME,itemColor,durPct} from '../config/items.js';
 import {player,isSolo} from '../entities/player.js';
-import {useItemAt,useFoodAt,dropItem} from '../systems/inventory.js';
-import {feedOnce,updateLoadout} from './hud.js';
+import {act} from '../systems/actions.js';
+import {updateLoadout} from './hud.js';
 
 // ---------- bag UI ----------
 let sel=null;
@@ -51,14 +51,15 @@ export function renderBag(){
   const acts=document.createElement('div');acts.className='acts';
   const btn=(label,fn,pri,dis)=>{const b=document.createElement('button');b.textContent=label;if(pri)b.className='pri';if(dis)b.disabled=true;b.onclick=()=>{fn();updateLoadout(true);renderBag();};acts.appendChild(b);};
   if(sel.where==='bag'){
-    if(d.kind==='weapon')btn(inv.eq[d.slot]?'สลับกับ '+DEF[inv.eq[d.slot].id].name:'ติดตั้ง',()=>{const old=inv.eq[d.slot];inv.eq[d.slot]=it;if(old)inv.bag[sel.i]=old;else inv.bag.splice(sel.i,1);inv.active=d.slot;player.reloadT=0;sel={where:'eq',slot:d.slot};},true);
-    if(d.kind==='food')btn(d.water?'ดื่ม':'กิน',()=>{useFoodAt(player,sel.i);if(inv.bag[sel.i]!==it)sel=null;},true);
-    if(d.kind==='heal')btn('ใช้',()=>{useItemAt(player,sel.i);if(inv.bag[sel.i]!==it)sel=null;},true,player.hp>=player.maxHp&&!(d.cure&&player.infect>0));
-    btn('ทิ้ง',()=>{inv.bag.splice(sel.i,1);dropItem(player,it);sel=null;});
+    // each button is an action (v0.12): run here, or sent to the host when playing in someone else's game
+    if(d.kind==='weapon')btn(inv.eq[d.slot]?'สลับกับ '+DEF[inv.eq[d.slot].id].name:'ติดตั้ง',()=>{act('equip',sel.i);sel={where:'eq',slot:d.slot};},true);
+    if(d.kind==='food')btn(d.water?'ดื่ม':'กิน',()=>{act('foodAt',sel.i);if(inv.bag[sel.i]!==it)sel=null;},true);
+    if(d.kind==='heal')btn('ใช้',()=>{act('useAt',sel.i);if(inv.bag[sel.i]!==it)sel=null;},true,player.hp>=player.maxHp&&!(d.cure&&player.infect>0));
+    btn('ทิ้ง',()=>{act('dropBag',sel.i);sel=null;});
   } else {
-    if(inv.active!==sel.slot)btn('ถือ',()=>{inv.active=sel.slot;player.reloadT=0;},true);
-    btn('ถอดเก็บเข้ากระเป๋า',()=>{if(inv.bag.length>=inv.cap){feedOnce('full','กระเป๋าเต็ม','warn');return;}inv.bag.push(it);inv.eq[sel.slot]=null;sel=null;});
-    btn('ทิ้ง',()=>{inv.eq[sel.slot]=null;dropItem(player,it);sel=null;});
+    if(inv.active!==sel.slot)btn('ถือ',()=>act('hold',sel.slot),true);
+    btn('ถอดเก็บเข้ากระเป๋า',()=>{act('unequip',sel.slot);sel=null;});
+    btn('ทิ้ง',()=>{act('dropEq',sel.slot);sel=null;});
   }
   det.appendChild(acts);
 }

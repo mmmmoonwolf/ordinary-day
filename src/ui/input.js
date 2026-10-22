@@ -3,12 +3,9 @@ import {cv,zoom,camera} from '../core/renderer.js';
 import {G} from '../core/state.js';
 import {keys,ctl,mouse,joy} from '../core/controls.js';
 import {SPEEDS} from '../config/time.js';
-import {player,startHelp,isSolo} from '../entities/player.js';
-import {switchTo,pickup,useHeal,eatBest} from '../systems/inventory.js';
-import {toggleDoor,fixDoor} from '../systems/doors.js';
-import {throwBottle} from '../systems/throw.js';
+import {player,isSolo} from '../entities/player.js';
+import {act} from '../systems/actions.js';
 import {DIFFS} from '../config/difficulty.js';
-import {startReload} from '../systems/combat.js';
 import {reset} from '../systems/game.js';
 import {readSave,loadGame,clearSave} from '../systems/save.js';
 import {chipEls,hhmm,say} from './hud.js';
@@ -25,8 +22,8 @@ export function showContinue(){
   $('bContinue').hidden=!has;$('bStart').classList.toggle('alt',has);$('saveNote').hidden=!has;
   if(has)$('contInfo').textContent='วันที่ '+(Math.floor(s.G.min/1440)+1)+' · '+hhmm(s.G.min);
 }
-// E / the pick button: help a downed teammate up, take the item, open the bag when it is full, or work a door
-function usePick(){if(player.nearDown)startHelp(player,player.nearDown);else if(player.near)pickup(player,player.near);else if(player.full)openBag();else if(player.nearDoor>=0)toggleDoor(player,player.nearDoor);}
+// E / the pick button: open the bag when only a full-bag item is in reach, otherwise the 'use' action (systems/actions.js)
+function usePick(){if(player.full&&!player.near&&!player.nearDown)openBag();else act('use');}
 // keyboard / mouse / stick -> the local player's input, once per simulation step (v0.9: the player reads only p.input)
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),mray=new THREE.Raycaster();
 export function pollInput(p){
@@ -52,11 +49,11 @@ export function initInput(){
     if(G.paused)return;
     keys[e.code]=true;
     if(e.code==='Space'){e.preventDefault();if(!e.repeat){ctl.fireHeld=true;ctl.fireQ=.2;}}
-    if(e.code==='Digit1')switchTo(player,'primary');if(e.code==='Digit2')switchTo(player,'secondary');if(e.code==='Digit3')switchTo(player,'melee');
-    if(e.code==='KeyR')startReload(player);if(e.code==='KeyH')useHeal(player);if(e.code==='KeyG')eatBest(player);
+    if(e.code==='Digit1')act('slot','primary');if(e.code==='Digit2')act('slot','secondary');if(e.code==='Digit3')act('slot','melee');
+    if(e.code==='KeyR')act('reload');if(e.code==='KeyH')act('heal');if(e.code==='KeyG')act('eat');
     if(e.code==='KeyE'||e.code==='KeyF')usePick();
-    if(e.code==='KeyB'&&player.fixDoor>=0)fixDoor(player,player.fixDoor);
-    if(e.code==='KeyQ'&&!e.repeat)throwBottle(player);
+    if(e.code==='KeyB')act('fix');
+    if(e.code==='KeyQ'&&!e.repeat)act('throw');
   });
   addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Space')ctl.fireHeld=false;});
   addEventListener('blur',()=>{for(const k in keys)keys[k]=false;ctl.fireHeld=false;});
@@ -83,18 +80,18 @@ export function initInput(){
   const atk=$('bAtk');
   atk.addEventListener('pointerdown',e=>{e.preventDefault();mouse.active=e.pointerType==='mouse'&&mouse.active;ctl.fireHeld=true;ctl.fireQ=.2;try{atk.setPointerCapture(e.pointerId);}catch(_){}});
   for(const ev of ['pointerup','pointercancel','lostpointercapture'])atk.addEventListener(ev,()=>{ctl.fireHeld=false;});
-  $('bReload').addEventListener('click',()=>startReload(player));
-  $('bHeal').addEventListener('click',()=>useHeal(player));
-  $('bEat').addEventListener('click',()=>eatBest(player));
+  $('bReload').addEventListener('click',()=>act('reload'));
+  $('bHeal').addEventListener('click',()=>act('heal'));
+  $('bEat').addEventListener('click',()=>act('eat'));
   // difficulty for new games, remembered in this browser; a continued save keeps its own
   let pref='normal';try{pref=localStorage.getItem('ordinary-day.diff')||'normal';}catch(_){}
   const pickDiff=k=>{if(!DIFFS[k])k='normal';G.diff=k;for(const b of document.querySelectorAll('.diffs button')){b.classList.toggle('on',b.dataset.diff===k);b.setAttribute('aria-checked',b.dataset.diff===k);}$('diffNote').textContent=DIFFS[k].desc;try{localStorage.setItem('ordinary-day.diff',k);}catch(_){}};
   for(const b of document.querySelectorAll('.diffs button'))b.addEventListener('click',()=>pickDiff(b.dataset.diff));
   pickDiff(pref);
   $('bPick').addEventListener('click',usePick);
-  $('bFix').addEventListener('click',()=>{if(player.fixDoor>=0)fixDoor(player,player.fixDoor);});
-  $('bThrow').addEventListener('click',()=>throwBottle(player));
-  for(const c of chipEls)c.addEventListener('click',()=>switchTo(player,c.dataset.slot));
+  $('bFix').addEventListener('click',()=>act('fix'));
+  $('bThrow').addEventListener('click',()=>act('throw'));
+  for(const c of chipEls)c.addEventListener('click',()=>act('slot',c.dataset.slot));
   $('bStart').addEventListener('click',()=>{clearSave();reset();$('overlay').hidden=true;G.running=true;});
   $('bContinue').addEventListener('click',()=>{if(!loadGame()){showContinue();return;}$('overlay').hidden=true;G.running=true;say('เล่นต่อจากเซฟ · '+$('contInfo').textContent,'',4);});
   showContinue();

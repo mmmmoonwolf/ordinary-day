@@ -32,13 +32,15 @@ export function reachableSpot(x,z){
   for(let r=.3;r<=2.4;r+=.3)for(let a=0;a<12;a++){const px=x+Math.sin(a*Math.PI/6)*r,pz=z+Math.cos(a*Math.PI/6)*r;if(freeAt(px,pz,.3)&&!walledOff(x,z,px,pz))return [px,pz];}
   return [x,z];
 }
-export function spawnDrop(item,x,z,sp){
+// nid names the same drop on every device (v0.12); a client passes the host's
+let nextNid=1;
+export function spawnDrop(item,x,z,sp,nid){
   if(!sp)[x,z]=reachableSpot(x,z);
   const g=new THREE.Group();const m=itemModel(item.id);m.rotation.y=Math.random()*6.28;g.add(m);
   const r=new THREE.Mesh(ringGeo,ringMat(itemColor(item.id)));r.position.y=.015;g.add(r);
   if(gradeOf(item.id)==='mil'){const r2=new THREE.Mesh(ringGeo,ringMat(itemColor(item.id)));r2.scale.setScalar(1.45);r2.position.y=.016;g.add(r2);}
   g.position.set(x,groundY(x,z)+.01,z);scene.add(g);
-  const d={item,g,m,x,z,spot:sp||null};drops.push(d);if(sp)sp.drop=d;return d;
+  const d={nid:nid||nextNid++,item,g,m,x,z,spot:sp||null};drops.push(d);if(sp)sp.drop=d;return d;
 }
 export function removeDrop(d){scene.remove(d.g);const i=drops.indexOf(d);if(i>=0)drops.splice(i,1);if(d.spot)d.spot.drop=null;}
 export function fillDay(chance){for(const s of lootSpots){if(s.drop||s.zone==='police'||s.zone==='military'||s.zone==='ambulance')continue;if(Math.random()<chance)spawnDrop(rollLoot('day',s.zone),s.x,s.z,s);}}
