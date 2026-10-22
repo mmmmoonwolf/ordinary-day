@@ -7,6 +7,7 @@ import {agents} from '../entities/agents.js';
 import {player} from '../entities/player.js';
 import {inv} from '../systems/inventory.js';
 import {hhmm} from './hud.js';
+import {settings,fps} from './settings.js';
 
 // ---------- bug report ----------
 // "แจ้งบั๊ก" in the pause menu: the player writes what happened, sees exactly what gets attached (version, game
@@ -24,7 +25,7 @@ export function reportInfo(){
     'ผู้เล่น: HP '+Math.round(p.hp)+' · อาหาร '+Math.round(p.food)+' · น้ำ '+Math.round(p.water)+' · ติดเชื้อ '+Math.round((p.infect||0)*100)+'%'+(p.room>=0?' · อยู่ในตึก '+p.room:''),
     'กระเป๋า: '+inv.bag.length+'/'+inv.cap+' · ถือ '+(inv.eq[inv.active]?inv.eq[inv.active].id:'fist')+' · '+inv.bag.map(e=>e.id+(e.n?'×'+e.n:'')).join(', '),
     'โลก: ซอมบี้ '+zs.length+' ('+[...new Set(zs.map(z=>z.kind))].join(',')+') · ประชาชน '+ppl+' · ประตู '+(G.doors||[]).map(d=>d.broken?'x':d.open?'o':'c').join(''),
-    'อุปกรณ์: '+(isTouch?'จอสัมผัส':'เมาส์/คีย์บอร์ด')+' · จอ '+innerWidth+'×'+innerHeight+' @'+(devicePixelRatio||1)+' · '+navigator.userAgent,
+    'อุปกรณ์: '+(isTouch?'จอสัมผัส':'เมาส์/คีย์บอร์ด')+' · จอ '+innerWidth+'×'+innerHeight+' @'+(devicePixelRatio||1)+' · กราฟิก '+settings.quality+' · '+fps+' FPS · '+navigator.userAgent,
     'error ล่าสุด: '+(errors.length?'\n  '+errors.join('\n  '):'ไม่มี'),
   ].join('\n');
 }

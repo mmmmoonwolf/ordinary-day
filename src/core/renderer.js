@@ -27,4 +27,11 @@ export function resize(){
   const s=Math.max(30,viewH*Math.max(1,asp)*0.95);const sc=sun.shadow.camera;sc.left=-s;sc.right=s;sc.top=s;sc.bottom=-s;sc.updateProjectionMatrix();
 }
 addEventListener('resize',resize);resize();
+// graphics quality from the settings page (v0.8): pixel ratio cap, sun shadows and their map size
+export const QUALITY={high:{ratio:2,shadow:true,map:2048,name:'สูง'},medium:{ratio:1.6,shadow:true,map:1024,name:'กลาง'},low:{ratio:1,shadow:false,map:512,name:'ต่ำ'}};
+export function setQuality(k){
+  const q=QUALITY[k]||QUALITY.medium;renderer.setPixelRatio(Math.min(devicePixelRatio||1,q.ratio));
+  sun.castShadow=q.shadow;if(sun.shadow.mapSize.x!==q.map){sun.shadow.mapSize.set(q.map,q.map);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null;}}
+  resize();
+}
 export function zoom(f){viewH=clamp(viewH*f,14,60);resize();}

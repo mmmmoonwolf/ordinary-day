@@ -43,8 +43,10 @@ function draw(now){
   }
   const tod=G.min%1440;
   if(nightsSurvived(G.min)>=GOAL_NIGHTS&&tod>=DAY_START&&tod<RESCUE_UNTIL){const [u,v]=xy(LZ.x,LZ.z);g.beginPath();g.arc(u,v,(4+Math.sin(now/250))*s,0,Math.PI*2);g.lineWidth=1.6*s;g.strokeStyle='#e2a64a';g.stroke();}
+  if(G.drop){const [u,v]=xy(G.drop.x,G.drop.z),r=(2.4+.6*Math.sin(now/180))*s;g.fillStyle='#7fd16a';g.fillRect(u-r,v-r,r*2,r*2);g.lineWidth=dpr;g.strokeStyle='#16130d';g.strokeRect(u-r,v-r,r*2,r*2);}   // airdrop crate (v0.8)
   for(const a of agents){
     if(a.state!=='zombie'||a.retreat)continue;
+    if(a.march){dot(a.pos.x,a.pos.z,1.5*s,'#ff6a4a');continue;}   // a horde shows at any distance
     if(a.kind==='tyrant')dot(a.pos.x,a.pos.z,(3+.8*Math.sin(now/160))*s,'#ff4a3a','#16130d');
     else if(Math.hypot(a.pos.x-player.pos.x,a.pos.z-player.pos.z)<HEAR)dot(a.pos.x,a.pos.z,1.3*s,'#c9473a');
   }

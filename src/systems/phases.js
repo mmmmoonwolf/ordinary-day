@@ -10,6 +10,7 @@ import {REFILL,refillScale} from '../config/loot.js';
 import {sfx} from './audio.js';
 import {diffOf} from '../config/difficulty.js';
 import {say,feed} from '../ui/hud.js';
+import {updateEvents} from './events.js';
 
 // ---------- story + phases ----------
 function startOutbreak(){
@@ -51,7 +52,7 @@ function onDay(){
   fillDay(REFILL.day*refillScale(day));
 }
 function nightMix(){const day=Math.floor(G.min/1440)+1;return {zombie:Math.max(40,65-(day-1)*5),sprinter:20+(day-1)*3,boomer:15+(day-1)*2};}
-export function runEvents(){
+export function runEvents(now){
   for(const e of EVENTS){if(!e.done&&G.min>=e.t){e.done=true;if(e.fn)e.fn();if(e.text)say(e.text,e.cls);}}
   const tod=G.min%1440,day=Math.floor(G.min/1440)+1;
   const ph=isNightTod(tod)?'night':'day';
@@ -64,4 +65,5 @@ export function runEvents(){
     if(G.tyrantPending&&G.min>=G.tyrantAt){G.tyrantPending=false;const t=spawnEdge('tyrant');if(t)sfx.roar(t.pos.x,t.pos.z);if(t)say('ได้ยินเสียงคำรามจากที่ไกล… Tyrant ออกล่าแล้ว','alarm',7);}
   }
   if(G.min>=G.nextWeather){G.nextWeather+=90;if(Math.random()<.35)G.rainTarget=G.rainTarget?0:1;}
+  updateEvents(now||0);
 }

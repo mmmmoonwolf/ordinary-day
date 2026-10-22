@@ -25,11 +25,11 @@ export function updateSky(dt,now){
   sun.position.copy(camTarget).addScaledVector(sunDir,110);sun.target.position.copy(camTarget);
   sun.intensity=day*(2.4-G.rain*1.2)+G.night*.32;sun.color.copy(C.moon).lerp(C.sunDay,day).lerp(C.sunLow,dusk*.7);
   hemi.intensity=.22+day*(.5-G.rain*.1);hemi.color.copy(C.hemiNight).lerp(C.hemiDay,day);
-  const lampsOn=clamp((G.night-.3)/.3,0,1);
-  for(const m of wallMats)m.emissiveIntensity=G.night*1.15;
+  const lampsOn=G.blackout?0:clamp((G.night-.3)/.3,0,1);   // blackout night (v0.8): no street lights or windows
+  for(const m of wallMats)m.emissiveIntensity=G.night*(G.blackout?.08:1.15);
   lampHeadMat.emissiveIntensity=lampsOn*2.2;glowMat.opacity=lampsOn*.6;
   const sir=G.phase==='night'?1:0,blinkA=Math.sin(now/180)>0;sirenR.emissiveIntensity=sir*(blinkA?2.4:.2);sirenB.emissiveIntensity=sir*(blinkA?.2:2.4);
-  flash.intensity=(player&&player.alive)?lampsOn*2.6:0;
+  flash.intensity=(player&&player.alive)?(G.blackout?clamp((G.night-.3)/.3,0,1):lampsOn)*2.6:0;
   roadMat.roughness=.92-G.wet*.55;roadMat.metalness=G.wet*.15;roadMat.color.copy(roadBase).lerp(roadWet,G.wet);
   puddleMat.opacity=G.wet*.85;rainMat.opacity=G.rain*.5;
   if(G.rain>.02){for(let i=0;i<RN;i++){ry[i]-=dt*30;if(ry[i]<0)ry[i]+=40;const o=i*6;rainArr[o]=rx[i];rainArr[o+1]=ry[i];rainArr[o+2]=rz[i];rainArr[o+3]=rx[i]+.12;rainArr[o+4]=ry[i]-1.1;rainArr[o+5]=rz[i]+.12;}rainGeo.attributes.position.needsUpdate=true;rainLines.position.set(camTarget.x,0,camTarget.z);}
