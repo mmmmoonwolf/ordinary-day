@@ -2,11 +2,12 @@ import {isTouch,rnd,clamp} from '../core/util.js';
 import {scene,sun,hemi,flash,camTarget} from '../core/renderer.js';
 import {G} from '../core/state.js';
 import {roadMat,puddleMat,lampHeadMat,glowMat,wallMats} from '../world/materials.js';
-import {sirenR,sirenB} from '../world/props.js';
+import {sirenR,sirenB,flickers} from '../world/props.js';
 import {player} from '../entities/player.js';
 
 // ---------- sky / weather ----------
-const C={night:new THREE.Color('#0d1522'),day:new THREE.Color('#aab6bc'),dusk:new THREE.Color('#c48a62'),rain:new THREE.Color('#6d767d'),sunDay:new THREE.Color('#fff2dd'),sunLow:new THREE.Color('#ffb070'),moon:new THREE.Color('#7f95c4'),hemiDay:new THREE.Color('#cdd7de'),hemiNight:new THREE.Color('#33415e')};
+// v0.16: a greyer, tired palette (overcast day, washed-out dusk) and a low morning haze
+const C={night:new THREE.Color('#0c121b'),day:new THREE.Color('#a3aaab'),dusk:new THREE.Color('#ad8466'),rain:new THREE.Color('#686f73'),sunDay:new THREE.Color('#f3eadb'),sunLow:new THREE.Color('#f0a874'),moon:new THREE.Color('#7787ab'),hemiDay:new THREE.Color('#c3c8c6'),hemiNight:new THREE.Color('#2e394f')};
 const tmpC=new THREE.Color(),sunDir=new THREE.Vector3(),moonDir=new THREE.Vector3(-.5,.9,.35).normalize();
 const RN=isTouch?900:1600,rainArr=new Float32Array(RN*6),rx=[],ry=[],rz=[];
 for(let i=0;i<RN;i++){rx.push(rnd(-48,48));ry.push(rnd(0,40));rz.push(rnd(-48,48));}
@@ -21,13 +22,16 @@ export function updateSky(dt,now){
   G.rain+=(G.rainTarget-G.rain)*Math.min(1,dt*.35);G.wet=clamp(G.wet+(G.rain>.3?.12:-.015)*dt,0,1);
   tmpC.copy(C.night).lerp(C.day,day).lerp(C.dusk,dusk*.55).lerp(C.rain,G.rain*.55*day);
   scene.background.copy(tmpC);scene.fog.color.copy(tmpC);
+  const haze=tod>300&&tod<600?clamp(1-Math.abs(tod-420)/180,0,1):0;scene.fog.near=118-haze*22-G.rain*10;scene.fog.far=235-haze*45-G.rain*25;   // morning haze, rain
   sunDir.set(Math.cos(a)*.85,Math.max(sunH,.1)+.12,.45).normalize().lerp(moonDir,G.night).normalize();
   sun.position.copy(camTarget).addScaledVector(sunDir,110);sun.target.position.copy(camTarget);
-  sun.intensity=day*(2.4-G.rain*1.2)+G.night*.32;sun.color.copy(C.moon).lerp(C.sunDay,day).lerp(C.sunLow,dusk*.7);
+  sun.intensity=day*(2.25-G.rain*1.2-haze*.35)+G.night*.32;sun.color.copy(C.moon).lerp(C.sunDay,day).lerp(C.sunLow,dusk*.7);
   hemi.intensity=.22+day*(.5-G.rain*.1);hemi.color.copy(C.hemiNight).lerp(C.hemiDay,day);
   const lampsOn=G.blackout?0:clamp((G.night-.3)/.3,0,1);   // blackout night (v0.8): no street lights or windows
   for(const m of wallMats)m.emissiveIntensity=G.night*(G.blackout?.08:1.15);
   lampHeadMat.emissiveIntensity=lampsOn*2.2;glowMat.opacity=lampsOn*.6;
+  // failing street lights (v0.16): mostly on, with bursts of stutter and short blackouts
+  for(const f of flickers){const t=now/1000+f.ph,burst=Math.sin(t*.7)>.55,k=burst?(Math.sin(t*37)*Math.sin(t*11.3)>0?1:.08):(t%9<.35?.1:1);f.head.emissiveIntensity=lampHeadMat.emissiveIntensity*k;f.glow.opacity=glowMat.opacity*k;}
   const sir=G.phase==='night'?1:0,blinkA=Math.sin(now/180)>0;sirenR.emissiveIntensity=sir*(blinkA?2.4:.2);sirenB.emissiveIntensity=sir*(blinkA?.2:2.4);
   flash.intensity=(player&&player.alive)?(G.blackout?clamp((G.night-.3)/.3,0,1):lampsOn)*2.6:0;
   roadMat.roughness=.92-G.wet*.55;roadMat.metalness=G.wet*.15;roadMat.color.copy(roadBase).lerp(roadWet,G.wet);

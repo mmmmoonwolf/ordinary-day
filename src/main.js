@@ -5,6 +5,7 @@ import {$} from './core/util.js';
 import {RATE,SPEEDS} from './config/time.js';
 import {buildCity} from './world/city.js';
 import {buildInteriors} from './world/interiors.js';
+import {buildDecor} from './world/decor.js';
 import {updateOcclusion} from './world/occlusion.js';
 import {agents,removeAgent} from './entities/agents.js';
 import {updateHuman,updateZombie,updateDead} from './entities/ai.js';
@@ -38,6 +39,7 @@ import './ui/report.js';   // keeps the last script errors for bug reports
 
 buildCity();
 buildInteriors();   // after the city: its own rng, new loot spots appended
+buildDecor();   // v0.16: weeds, signs and stains, own rng, after everything else
 initInput();
 initSettings();
 $('verLabel').textContent='ORDINARY DAY · PROTOTYPE '+VERSION;
