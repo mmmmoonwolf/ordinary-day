@@ -35,7 +35,7 @@ export function hurtPlayer(p,n){
   }
   return true;
 }
-export const standing=q=>q.alive&&!(q.bleed>0);
+export const standing=q=>q.alive&&!(q.bleed>0)&&!q.away;
 function goDown(p){
   p.hp=0;p.bleed=BLEED_SECONDS;p.reviveT=0;p.helping=null;p.swing=0;p.reloadT=0;p.sneak=false;p.endCause=null;if(p.local)ctl.fireHeld=false;
   uiFor(p).say('คุณล้มลง! รอเพื่อนมาช่วยพยุงภายใน '+BLEED_SECONDS+' วินาที คลานหนีได้ช้า ๆ','alarm',6);

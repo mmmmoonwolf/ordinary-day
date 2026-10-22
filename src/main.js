@@ -28,6 +28,10 @@ import {updatePrompts} from './ui/prompts.js';
 import {updateMinimap} from './ui/minimap.js';
 import {VERSION} from './config/version.js';
 import {initSettings,tickFps} from './ui/settings.js';
+import {bus} from './core/bus.js';
+import {hostFrame} from './net/host.js';
+import {clientStep} from './net/client.js';
+import {initOnline} from './ui/online.js';
 import './ui/report.js';   // keeps the last script errors for bug reports
 
 buildCity();
@@ -38,14 +42,16 @@ $('verLabel').textContent='ORDINARY DAY · PROTOTYPE '+VERSION;
 initPause();
 initSave();
 initAudio();
+initOnline();
 
 // ---------- loop ----------
 // The game state moves in fixed steps of 1/60 s (v0.9), however fast the screen draws, so every device (and later
 // every player online) runs the same simulation; drawing, animation and the HUD still run once per frame.
 const STEP=1/60,MAX_STEPS=5;
 function simStep(dt,now){
+  if(bus.role==='client'){if(G.running){pollInput(player);clientStep(dt);}return;}   // in a friend's room the host runs the game (v0.12)
   if(!isSolo())G.speedIdx=0;   // no ×2 / ×4 with more than one player (v0.11)
-  if(G.running){G.min+=dt*RATE*SPEEDS[G.speedIdx];runEvents(now);pollInput(player);for(const p of players)updatePlayer(p,dt);updateShelter();autosave(dt);}
+  if(G.running){G.min+=dt*RATE*SPEEDS[G.speedIdx];runEvents(now);pollInput(player);for(const p of players)if(!p.away)updatePlayer(p,dt);updateShelter();autosave(dt);}
   for(let i=agents.length-1;i>=0;i--){
     const a=agents[i];
     if(a.state==='human'||a.state==='infected')updateHuman(a,dt);
@@ -73,6 +79,7 @@ function loop(now){
     updateGoal(dt,now);
     updateTips(dt);
   }
+  if(bus.role==='host')hostFrame(real);   // friends in this room: messages and the world, also while paused (v0.12)
   updatePrompts();
   updateMinimap(dt,now);tickFps(dt);
   // music mood: night, after the outbreak, and danger = zombies chasing the player (v0.8)

@@ -1,4 +1,4 @@
-# Runs the headless smoke test (tools/smoke-test.js) on every pull request and every push to main.
+# Runs the headless tests (tools/smoke-test.js, tools/net-test.js) on every pull request and every push to main.
 # It checks game logic only; open the game in a browser for anything visual (see CLAUDE.md).
 name: smoke-test
 on:
