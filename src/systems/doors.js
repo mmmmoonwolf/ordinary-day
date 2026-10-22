@@ -26,7 +26,7 @@ export function applyDoors(list){G.doors=rooms.map((_,k)=>Object.assign(fresh(),
 export function restoreDoors(){applyDoors(null);}
 // the door player p can open or close from where they stand, or -1
 export function nearDoor(p){
-  if(!p||!p.alive)return -1;
+  if(!p||!p.alive||p.bleed>0)return -1;
   let best=-1,bd=1.7;for(let k=0;k<rooms.length;k++){const d=doorDist(k,p.pos.x,p.pos.z);if(d<bd&&!G.doors[k].broken){bd=d;best=k;}}
   return best;
 }
@@ -34,7 +34,7 @@ const inBox=(q,r,b)=>q.x>b.x0-r&&q.x<b.x1+r&&q.z>b.z0-r&&q.z<b.z1+r;
 // anyone (players included) standing in the doorway; tells player p
 const blocked=(p,k)=>{const b=rooms[k].doorBox;if(players.some(q=>q.alive&&inBox(q.pos,.3,b))||agents.some(a=>a.state!=='dead'&&inBox(a.pos,(a.rad||.34)*.9,b))){uiFor(p).feed('มีบางอย่างขวางประตูอยู่','warn');return true;}return false;};
 export function toggleDoor(p,k){
-  const st=G.doors[k];if(!st||st.broken)return false;
+  const st=G.doors[k];if(!st||st.broken||!p.alive||p.bleed>0)return false;
   if(st.open&&blocked(p,k))return false;
   st.open=!st.open;sync(k);markMapDirty();sfx.door(rooms[k].dx,rooms[k].dz);
   return true;
@@ -44,12 +44,12 @@ export function toggleDoor(p,k){
 export function fixAction(k){const st=G.doors[k];return st.broken?'rebuild':st.open?'open':st.hp>=DOOR_MAX?'full':'board';}
 // the nearest door (broken ones too) player p could work on with planks, or -1
 export function nearFixDoor(p){
-  if(!p||!p.alive)return -1;
+  if(!p||!p.alive||p.bleed>0)return -1;
   let best=-1,bd=1.7;for(let k=0;k<rooms.length;k++){const d=doorDist(k,p.pos.x,p.pos.z);if(d<bd){bd=d;best=k;}}
   return best;
 }
 export function fixDoor(p,k){
-  const st=G.doors[k];if(!st)return false;const act=fixAction(k),have=countOf(p,'planks'),r=rooms[k],U=uiFor(p);
+  const st=G.doors[k];if(!st||!p.alive||p.bleed>0)return false;const act=fixAction(k),have=countOf(p,'planks'),r=rooms[k],U=uiFor(p);
   if(act==='open'){U.feed('ปิดประตูก่อนแล้วค่อยตอกไม้','warn');return false;}
   if(act==='full'){U.feed('ตอกไม้แน่นเต็มที่แล้ว','warn');return false;}
   const need=act==='rebuild'?REBUILD_PLANKS:1;

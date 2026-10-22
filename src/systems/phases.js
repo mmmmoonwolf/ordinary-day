@@ -4,7 +4,8 @@ import {DAY_START,DUSK_WARN,isNightTod} from '../config/time.js';
 import {isSpecial} from '../config/zombies.js';
 import {agents,becomeZombie,setKind,zombies,spawnEdge} from '../entities/agents.js';
 import {d2} from '../entities/movement.js';
-import {players,nearestPlayerDist} from '../entities/player.js';
+import {players,nearestPlayerDist,partySize} from '../entities/player.js';
+import {partyOf} from '../config/party.js';
 import {fillDay,fillNight,takeByOthers} from './drops.js';
 import {REFILL,refillScale} from '../config/loot.js';
 import {sfx} from './audio.js';
@@ -37,7 +38,7 @@ function onNight(){
   G.armorNight=Math.random()<.6;G.armorNext=G.min+30;G.armorAnnounced=false;G.armorCount=0;
   G.tyrantPending=Math.random()<.4;G.tyrantAt=G.min-(G.min%1440)+1440;
   G.nightSpawnNext=G.min+15;
-  fillNight(REFILL.night*refillScale(Math.floor(G.min/1440)+1));feed('ของระดับ Police และ Military เกิดขึ้นทั่วเมือง','pol');
+  fillNight(Math.min(1,REFILL.night*refillScale(Math.floor(G.min/1440)+1)*partyOf(partySize(),'loot')));feed('ของระดับ Police และ Military เกิดขึ้นทั่วเมือง','pol');
 }
 function onDay(){
   G.phase='day';sfx.dawn();
@@ -49,7 +50,7 @@ function onDay(){
   for(let i=0;i<walkers.length-18;i++)walkers[i].retreat=true;
   G.armorNight=false;G.tyrantPending=false;G.nightSpawnNext=1e9;
   if(takeByOthers(players)>0)feed('ของที่ทิ้งไว้ไกล ๆ บางส่วนถูกผู้รอดชีวิตคนอื่นเก็บไปแล้ว','warn');
-  fillDay(REFILL.day*refillScale(day));
+  fillDay(Math.min(1,REFILL.day*refillScale(day)*partyOf(partySize(),'loot')));
 }
 function nightMix(){const day=Math.floor(G.min/1440)+1;return {zombie:Math.max(40,65-(day-1)*5),sprinter:20+(day-1)*3,boomer:15+(day-1)*2};}
 export function runEvents(now){
@@ -59,7 +60,7 @@ export function runEvents(now){
   if(ph!==G.phase){if(ph==='night')onNight();else onDay();}
   if(ph==='day'&&tod>=DUSK_WARN&&G.duskDay!==day){G.duskDay=day;sfx.alarm();say('NIGHT INCOMING · อีกไม่นานจะมืด เตรียมอาวุธ กระสุน และยา','alarm',7);}
   if(ph==='night'&&G.outbreak){
-    if(G.min>=G.nightSpawnNext){G.nightSpawnNext+=45;const n=Math.max(1,Math.min(4,2+Math.floor((day-1)/2))+diffOf(G).spawn);const mix=nightMix();for(let k=0;k<n;k++)spawnEdge(wpick(mix));}
+    if(G.min>=G.nightSpawnNext){G.nightSpawnNext+=45;const n=Math.max(1,Math.min(4,2+Math.floor((day-1)/2))+diffOf(G).spawn+partyOf(partySize(),'spawn'));const mix=nightMix();for(let k=0;k<n;k++)spawnEdge(wpick(mix));}
     if(G.armorNight&&G.min>=G.armorNext&&!(tod>=300&&tod<DAY_START)){G.armorNext+=60;
       if(G.armorCount<6){const a=spawnEdge('armor');if(a){G.armorCount++;if(!G.armorAnnounced){G.armorAnnounced=true;say('วิทยุ: พบเจ้าหน้าที่ตำรวจติดเชื้อ สวมเกราะกันกระสุน','radio',6);}}}}   // Q05: at most 6 per night
     if(G.tyrantPending&&G.min>=G.tyrantAt){G.tyrantPending=false;const t=spawnEdge('tyrant');if(t)sfx.roar(t.pos.x,t.pos.z);if(t)say('ได้ยินเสียงคำรามจากที่ไกล… Tyrant ออกล่าแล้ว','alarm',7);}

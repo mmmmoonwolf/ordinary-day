@@ -8,7 +8,8 @@ import {EVENT_CHANCE,AIRDROP_ITEMS,HORDE} from '../config/events.js';
 import {S,part} from '../world/materials.js';
 import {solids,freeAt} from '../world/collision.js';
 import {agents,makeAgent,becomeZombie} from '../entities/agents.js';
-import {nearestPlayerDist} from '../entities/player.js';
+import {nearestPlayerDist,partySize} from '../entities/player.js';
+import {partyOf} from '../config/party.js';
 import {makeItem,spawnDrop,reachableSpot} from './drops.js';
 import {sfx} from './audio.js';
 import {hhmm,say} from '../ui/hud.js';
@@ -46,13 +47,14 @@ function airdrop(){
   const [x,z]=pick(spots);makeCrate(x,z);G.drop={x,z,day:Math.floor(G.min/1440)+1};
   // daytime loot only: Police / Military grades stay night-only (confirmed rule)
   const items=[makeItem(pick(POOLS.civ.weapons)),makeItem(pick(POOLS.civ.ammo)),makeItem(pick(POOLS.civ.ammo)),makeItem(wpick(MED_W.day)),makeItem('canned'),makeItem('water')].slice(0,AIRDROP_ITEMS);
+  for(let k=partyOf(partySize(),'airdrop');k>0;k--)items.push(makeItem(pick([pick(POOLS.civ.ammo),wpick(MED_W.day),'canned','water'])));   // more players, more supplies (v0.10)
   items.forEach((it,k)=>{const a=k/items.length*Math.PI*2,[px,pz]=reachableSpot(x+Math.sin(a)*1.5,z+Math.cos(a)*1.5);spawnDrop(it,px,pz);});
   for(let k=0;k<3;k++){const a=rnd(0,6.28),r=rnd(7,10),wx=x+Math.sin(a)*r,wz=z+Math.cos(a)*r;if(!freeAt(wx,wz,.5))continue;const w=makeAgent(wx,wz);becomeZombie(w,'walker');agents.push(w);}
   sfx.radio();say('วิทยุ: เครื่องบินทิ้งเสบียงลงกลางถนน ดูจุดเขียวบนแผนที่ แต่ระวัง ซอมบี้ก็ได้ยินเสียงร่ม','radio',8);
 }
 // ---------- horde ----------
 function horde(){
-  const day=Math.floor(G.min/1440)+1,n=Math.min(HORDE.max,HORDE.base+day),ri=1+Math.floor(Math.random()*3),alongX=Math.random()<.5,s=Math.random()<.5?1:-1;
+  const day=Math.floor(G.min/1440)+1,k2=partyOf(partySize(),'horde'),n=Math.round(Math.min(HORDE.max,HORDE.base+day)*k2),ri=1+Math.floor(Math.random()*3),alongX=Math.random()<.5,s=Math.random()<.5?1:-1;
   for(let k=0;k<n&&agents.length<HORDE.cap;k++){
     const back=LIM-2-(k>>1)*1.6,side=(k&1?1.4:-1.4);
     const x=alongX?-s*back:RC[ri]+side,z=alongX?RC[ri]+side:-s*back;

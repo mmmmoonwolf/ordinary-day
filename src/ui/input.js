@@ -3,7 +3,7 @@ import {cv,zoom,camera} from '../core/renderer.js';
 import {G} from '../core/state.js';
 import {keys,ctl,mouse,joy} from '../core/controls.js';
 import {SPEEDS} from '../config/time.js';
-import {player} from '../entities/player.js';
+import {player,startHelp} from '../entities/player.js';
 import {switchTo,pickup,useHeal,eatBest} from '../systems/inventory.js';
 import {toggleDoor,fixDoor} from '../systems/doors.js';
 import {throwBottle} from '../systems/throw.js';
@@ -25,8 +25,8 @@ export function showContinue(){
   $('bContinue').hidden=!has;$('bStart').classList.toggle('alt',has);$('saveNote').hidden=!has;
   if(has)$('contInfo').textContent='วันที่ '+(Math.floor(s.G.min/1440)+1)+' · '+hhmm(s.G.min);
 }
-// E / the pick button: take the item, open the bag when it is full, or work a door
-function usePick(){if(player.near)pickup(player,player.near);else if(player.full)openBag();else if(player.nearDoor>=0)toggleDoor(player,player.nearDoor);}
+// E / the pick button: help a downed teammate up, take the item, open the bag when it is full, or work a door
+function usePick(){if(player.nearDown)startHelp(player,player.nearDown);else if(player.near)pickup(player,player.near);else if(player.full)openBag();else if(player.nearDoor>=0)toggleDoor(player,player.nearDoor);}
 // keyboard / mouse / stick -> the local player's input, once per simulation step (v0.9: the player reads only p.input)
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),mray=new THREE.Raycaster();
 export function pollInput(p){

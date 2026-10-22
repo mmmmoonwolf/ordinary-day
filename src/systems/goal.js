@@ -51,7 +51,7 @@ export function updateGoal(dt,now){
     else say('เฮลิคอปเตอร์บินออกไปแล้ว จะกลับมาอีกพรุ่งนี้ 08:00','alarm',7);}
   // everyone still alive has to be on board (v0.9: one or more players)
   const alive=players.filter(p=>p.alive);
-  if(h===0&&alive.length&&alive.every(p=>p.down<=0&&Math.hypot(LZ.x-p.pos.x,LZ.z-p.pos.z)<RESCUE_RADIUS)){
+  if(h===0&&alive.length&&alive.every(p=>p.down<=0&&!(p.bleed>0)&&Math.hypot(LZ.x-p.pos.x,LZ.z-p.pos.z)<RESCUE_RADIUS)){
     G.endCause='won';clearSave();sfx.rotor(0);sfx.win();say('ขึ้นเฮลิคอปเตอร์ได้แล้ว คุณรอด!','',6);gameOver();
   }
 }

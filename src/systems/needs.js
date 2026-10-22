@@ -10,7 +10,7 @@ import {uiFor} from '../ui/hud.js';
 // Below LOW_NEED HP stops regenerating; at 0 the player loses HP until they eat or drink.
 export function updateNeeds(p,dt){
   const U=uiFor(p);
-  if(!p.alive||p.down>0)return;
+  if(!p.alive||p.down>0||p.bleed>0)return;
   const min=dt*RATE*SPEEDS[G.speedIdx]*diffOf(G).needs,running=p.moving>4;
   p.food=Math.max(0,p.food-min*100/FOOD_MINUTES);
   p.water=Math.max(0,p.water-min*100/WATER_MINUTES*(running?RUN_THIRST:1));

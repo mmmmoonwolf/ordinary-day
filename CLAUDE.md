@@ -37,6 +37,7 @@
 | `config/loot.js` | `POOLS`, `GRADE_W`, `MED_W`, `CAT_W`, `FOOD_W`, `REFILL` / `refillScale()` / `TAKEN` (ของหายากตามวัน) |
 | `config/zombies.js` | `ZC` (HP ความเร็ว ระยะมอง ดาเมจ โอกาสติดเชื้อ), `INFECT_MINUTES`, `isSpecial()` |
 | `config/goal.js` | `GOAL_NIGHTS = 7`, `LZ`, `RESCUE_FROM` / `RESCUE_UNTIL`, `nightsSurvived()` |
+| `config/party.js` | ล้มรอเพื่อนช่วย (`BLEED_SECONDS`, `REVIVE_SECONDS` ฯลฯ) และ `PARTY` สเกลตามจำนวนผู้เล่น (PLACEHOLDER), `partyOf()` |
 | `config/shelter.js` | ค่าผนัง ประตู การได้ยินผ่านผนัง ไม้กระดาน และกลิ่น (PLACEHOLDER) |
 | `config/stealth.js` | ย่องและขวด (PLACEHOLDER) |
 | `config/events.js` | โอกาสเกิดเหตุการณ์ประจำวัน ขนาดฝูง (PLACEHOLDER) |
@@ -49,9 +50,9 @@
 | `world/item-models.js` · `occlusion.js` | โมเดลอาวุธและไอเท็ม · ทำตึกที่บังผู้เล่นให้โปร่งใส |
 | `entities/agents.js` | ร่างตัวละคร, `agents`, `makeAgent()`, `styleZombie()`, `becomeZombie()`, `setKind()`, `spawnEdge()` |
 | `entities/movement.js` · `ai.js` | `moveAgent()`, `followNodes()`, `wander()` (ออกจากตึกก่อน) · `updateHuman()`, `updateZombie()`, `hurtZombie()`, `makeNoise()` |
-| `entities/player.js` · `animation.js` | `players` (ทุกคน), `player` (คนในเครื่องนี้), `makePlayer(i)`, `updatePlayer(p,dt)`, `syncHeld(p)`, `targets()`, `nearestPlayerDist()`, `freshInput()` · `animate()`, `separate()` |
+| `entities/player.js` · `animation.js` | `players` (ทุกคน), `player` (คนในเครื่องนี้), `makePlayer(i)`, `updatePlayer(p,dt)`, `syncHeld(p)`, `targets()`, `nearestPlayerDist()`, `freshInput()`, `isDown()`, `startHelp(p,q)`, `partySize()` · `animate()`, `separate()` |
 | `systems/drops.js` | `makeItem()`, `rollLoot()`, `drops`, `spawnDrop()`, `fillDay()`, `fillNight()`, `takeByOthers()`, `dropGuaranteed()`, `reachableSpot()` |
-| `systems/inventory.js` · `combat.js` | `p.gear` ต่อคน, `freshGear()`, `pickup(p,d)`, `useHeal(p)`, `addStack(p,…)`, `takeAmmo(p,…)` · `fireGun(p,…)`, `meleeHit(p,def)`, `aimAssist(p,def)`, `hurtPlayer(p,n)` |
+| `systems/inventory.js` · `combat.js` | `p.gear` ต่อคน, `freshGear()`, `pickup(p,d)`, `useHeal(p)`, `addStack(p,…)`, `takeAmmo(p,…)` · `fireGun(p,…)`, `meleeHit(p,def)`, `aimAssist(p,def)`, `hurtPlayer(p,n)` (Kit → ล้มถ้ามีเพื่อนยืน → ตาย), `die(p)`, `standing(q)` |
 | `systems/phases.js` · `weather.js` | `EVENTS`, `runEvents()` (DAY/NIGHT, spawn กลางคืน) · `updateSky()` ฝน แสง ไฟถนน |
 | `systems/effects.js` · `game.js` | เลือด วงแหวน tracer ระเบิด · `reset()` เริ่มเกมใหม่ (ผู้เล่นในเครื่อง 1 คน), `addPlayer()` เพิ่มผู้เล่น |
 | `systems/audio.js` · `records.js` | เสียงสังเคราะห์ `sfx.*` (no-op ถ้าไม่มี WebAudio), `toggleMute()`, `setVolumes()`, เพลง `updateMusic()` · `recordRun()` สถิติดีสุด |
@@ -88,7 +89,7 @@
 - GitHub Actions รัน `npm test` ทุก PR และทุก push เข้า `main` (`.github/workflows/smoke-test.yml`) อย่า merge ถ้าแดง
 - `node tools/smoke-test.js` (หรือ `npm test`) จำลองเกม 2 วันเต็มแบบไม่มีหน้าจอ (THREE ถูกแทนด้วย stub) โดย import โมดูลใน `src/` แล้วรายงาน error ใช้จับบั๊กตรรกะเท่านั้น ไม่ได้ตรวจภาพ
 - ต้องเปิดผ่าน dev server (`npx serve .`) แล้วทดสอบทั้งจอคอมและจอมือถือ (DevTools device mode) ก่อน commit
-- ทดสอบด้วยตาทุกครั้ง: เริ่มเกม 07:30, การระบาด 09:30, เปลี่ยนเป็นกลางคืน 18:30, รุ่งเช้า 06:00, ยิงปืนทุกแบบ, เปิดกระเป๋า, ตายแล้วเล่นใหม่, รีเฟรชหน้าแล้วกดเล่นต่อ, ติดเชื้อแล้วใช้ Antibiotic, เปิดปิดเสียง, หยุดเกมแล้วเซฟเองและกลับหน้าแรก, เก็บ Resurrection Kit ที่รถพยาบาล, คำแนะนำไม่บังตัวละครบนจอแคบ, แผนที่ไม่ทับ HUD ตอนติดเชื้อและมีข้อความยาว (จอ 360 / 412 / 700 / 1280), ดู HUD ที่จอกว้าง 360 px, เช้าวันที่ 8 ตามลูกศรไปขึ้นเฮลิคอปเตอร์, เลือกระดับความยากแล้วเริ่มเกม, กินและดื่มด้วยปุ่ม 🍴, ตีจนอาวุธประชิดพัง, ยิง Armor Walker จากด้านหลัง, Tyrant ทุบรถแล้วรีเฟรชหน้าเล่นต่อ, เข้าตึกแล้วปิดประตู (คอมกด E มือถือแตะปุ่มประตู) ดูหลังคาหายและเห็นข้างใน, ซอมบี้มาพังประตูตอนกลางคืน, ทิ้งกระสุนจากกระเป๋าแล้วไม่เด้งกลับ, กระเป๋าเต็มแล้วเหยียบกระสุนเห็นปุ่มกระเป๋าเต็ม, แจ้งบั๊กจากหน้าหยุดเกมแล้วกดคัดลอก, ตอกไม้ประตูและซ่อมประตูที่พัง, ย่องผ่านซอมบี้, ขว้างขวดล่อซอมบี้ตอนกลางคืน, หลบตึกเดิมทั้งคืนแล้วซอมบี้มาพังประตู, เปลี่ยนคุณภาพกราฟิกและเสียงในหน้าตั้งค่า, เพลงเปลี่ยนตอนกลางคืนและตอนโดนไล่, เสบียงทิ้งจากฟ้า ฝูงซอมบี้ และไฟดับ
+- ทดสอบด้วยตาทุกครั้ง: เริ่มเกม 07:30, การระบาด 09:30, เปลี่ยนเป็นกลางคืน 18:30, รุ่งเช้า 06:00, ยิงปืนทุกแบบ, เปิดกระเป๋า, ตายแล้วเล่นใหม่, รีเฟรชหน้าแล้วกดเล่นต่อ, ติดเชื้อแล้วใช้ Antibiotic, เปิดปิดเสียง, หยุดเกมแล้วเซฟเองและกลับหน้าแรก, เก็บ Resurrection Kit ที่รถพยาบาล, คำแนะนำไม่บังตัวละครบนจอแคบ, แผนที่ไม่ทับ HUD ตอนติดเชื้อและมีข้อความยาว (จอ 360 / 412 / 700 / 1280), ดู HUD ที่จอกว้าง 360 px, เช้าวันที่ 8 ตามลูกศรไปขึ้นเฮลิคอปเตอร์, เลือกระดับความยากแล้วเริ่มเกม, กินและดื่มด้วยปุ่ม 🍴, ตีจนอาวุธประชิดพัง, ยิง Armor Walker จากด้านหลัง, Tyrant ทุบรถแล้วรีเฟรชหน้าเล่นต่อ, เข้าตึกแล้วปิดประตู (คอมกด E มือถือแตะปุ่มประตู) ดูหลังคาหายและเห็นข้างใน, ซอมบี้มาพังประตูตอนกลางคืน, ทิ้งกระสุนจากกระเป๋าแล้วไม่เด้งกลับ, กระเป๋าเต็มแล้วเหยียบกระสุนเห็นปุ่มกระเป๋าเต็ม, แจ้งบั๊กจากหน้าหยุดเกมแล้วกดคัดลอก, เพิ่มผู้เล่นคนที่ 2 จาก console (`addPlayer()`) ให้ล้มแล้วกดช่วยเพื่อนลุก และให้ตัวเองล้มแล้วดูปุ่มนับถอยหลัง, ตอกไม้ประตูและซ่อมประตูที่พัง, ย่องผ่านซอมบี้, ขว้างขวดล่อซอมบี้ตอนกลางคืน, หลบตึกเดิมทั้งคืนแล้วซอมบี้มาพังประตู, เปลี่ยนคุณภาพกราฟิกและเสียงในหน้าตั้งค่า, เพลงเปลี่ยนตอนกลางคืนและตอนโดนไล่, เสบียงทิ้งจากฟ้า ฝูงซอมบี้ และไฟดับ
 
 ## การสรุปงาน
 

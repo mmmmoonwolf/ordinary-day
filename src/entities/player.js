@@ -8,13 +8,15 @@ import {moveAgent} from './movement.js';
 import {updateDead,makeNoise} from './ai.js';
 import {drops} from '../systems/drops.js';
 import {curWeapon,pickup,freshGear} from '../systems/inventory.js';
-import {aimAssist,finishReload,fireGun,meleeHit} from '../systems/combat.js';
+import {aimAssist,finishReload,fireGun,meleeHit,die} from '../systems/combat.js';
 import {updateInfection} from '../systems/infection.js';
 import {updateNeeds} from '../systems/needs.js';
 import {LOW_NEED} from '../config/needs.js';
 import {SNEAK_SPEED} from '../config/stealth.js';
 import {sfx} from '../systems/audio.js';
 import {nearDoor,nearFixDoor} from '../systems/doors.js';
+import {CRAWL_SPEED,REVIVE_SECONDS,REVIVE_RANGE,REVIVE_HP} from '../config/party.js';
+import {uiFor} from '../ui/hud.js';
 
 // ---------- players (v0.9) ----------
 // `players` holds everyone in the game; `player` is the one on this device (camera, HUD, keyboard and touch).
@@ -29,19 +31,23 @@ export const freshInput=()=>({mx:0,mz:0,mag:0,run:false,sneak:false,slow:false,a
 export function makePlayer(i=0){
   const p=makeAgent(OFF+i*1.3,OFF,LOOKS[i%LOOKS.length]);
   Object.assign(p,{state:'player',id:i,local:false,hp:100,maxHp:100,alive:true,swing:0,swingDur:.4,hitDone:true,lastHit:-99,face:Math.PI*1.25,cool:0,reloadT:0,recoil:0,aimT:0,held:null,heldId:'fist',down:0,inv:0,
-    infect:0,infWarn:0,food:100,water:100,needWarn:0,starving:false,room:-1,nearDoor:-1,fixDoor:-1,near:null,full:null,sneak:false,runNoise:0,stay:null,endCause:null,gear:freshGear(),input:freshInput()});
+    infect:0,infWarn:0,food:100,water:100,needWarn:0,starving:false,room:-1,nearDoor:-1,bleed:0,reviveT:0,helping:null,helpT:0,nearDown:null,fixDoor:-1,near:null,full:null,sneak:false,runNoise:0,stay:null,endCause:null,gear:freshGear(),input:freshInput()});
   return p;
 }
 // players that zombies can go after
 export const targets=()=>players.filter(p=>p.alive&&p.down<=0);
+export const isDown=p=>p.alive&&p.bleed>0;
+// how many are still in the game (down counts); the world scales with it (config/party.js, v0.10)
+export const partySize=()=>Math.max(1,players.filter(p=>p.alive).length);
 export function nearestPlayerDist(x,z){let d=1e9;for(const p of players)if(p.alive)d=Math.min(d,Math.hypot(p.pos.x-x,p.pos.z-z));return d;}
 function nearestPickable(p){let best=null,bd=1.6;for(const d of drops){const k=DEF[d.item.id].kind;if(k!=='weapon'&&k!=='bag')continue;const dist=Math.hypot(d.x-p.pos.x,d.z-p.pos.z);if(dist<bd){bd=dist;best=d;}}return best;}
 export function updatePlayer(p,dt){
   if(!p.alive){updateDead(p,dt);return;}
   if(p.inv>0)p.inv-=dt;
-  if(p.down>0){p.down-=dt;p.moving=0;const k=1-p.down/1.8;p.b.body.rotation.x=-Math.sin(Math.min(1,k)*Math.PI)*Math.PI/2;
-    if(p.down<=0){p.b.body.rotation.x=0;p.hp=p.maxHp;p.inv=3;for(const z of agents){if(z.state!=='zombie')continue;const dx=z.pos.x-p.pos.x,dz=z.pos.z-p.pos.z,d=Math.hypot(dx,dz);if(d<4&&d>1e-3){z.pos.x+=dx/d*3;z.pos.z+=dz/d*3;collide(z.pos,z.rad);z.feed=1;}}}
+  if(p.down>0){p.down-=dt;p.moving=0;   // the Resurrection Kit knock-down (pose in animation.js)
+    if(p.down<=0){p.hp=p.maxHp;p.inv=3;for(const z of agents){if(z.state!=='zombie')continue;const dx=z.pos.x-p.pos.x,dz=z.pos.z-p.pos.z,d=Math.hypot(dx,dz);if(d<4&&d>1e-3){z.pos.x+=dx/d*3;z.pos.z+=dz/d*3;collide(z.pos,z.rad);z.feed=1;}}}
     return;}
+  if(p.bleed>0){updateDowned(p,dt);return;}
   const I=p.input,mag=I.mag;
   // sneak (v0.7): hold C, or on touch push the stick only a little (it is already that slow)
   p.sneak=!I.run&&(I.slow||I.sneak);
@@ -55,21 +61,49 @@ export function updatePlayer(p,dt){
   if(p.cool>0)p.cool-=dt;
   if(p.reloadT>0){p.reloadT-=dt;if(p.reloadT<=0)finishReload(p);}
   if(I.fireQ>0)I.fireQ-=dt;
+  if(p.helping&&!keepHelping(p,dt)){if(isDown(p.helping))p.helping.reviveT=0;p.helping=null;}
   if((I.fire||I.fireQ>0)&&p.cool<=0&&p.reloadT<=0){
     if(def.gun){if(def.auto||I.fireQ>0){I.fireQ=0;aimAssist(p,def);fireGun(p,w,def);}}
     else{I.fireQ=0;aimAssist(p,def);if(p.local)sfx.swing();p.swing=p.swingDur=def.cd;p.hitDone=false;p.cool=def.cd;p.aimT=.3;}
   }
-  if(p.swing>0){p.swing-=dt;if(!p.hitDone&&p.swing<p.swingDur*.55){p.hitDone=true;meleeHit(p,def);}}
+  if(p.swing>0){p.swing-=dt;if(!p.hitDone&&p.swing<p.swingDur*.55){p.hitDone=true;if(!def.gun)meleeHit(p,def);}}
   p.recoil=Math.max(0,p.recoil-dt*8);
   // walk-over pickups; what is in reach for E / the pick button (ui/prompts.js shows it for the local player)
   let full=null;   // an item underfoot that does not fit in the bag
   for(let i=drops.length-1;i>=0;i--){const d=drops[i];if(!STACKS.has(DEF[d.item.id].kind))continue;
     const dist=Math.hypot(d.x-p.pos.x,d.z-p.pos.z);if(d.hold){if(dist>1.4)d.hold=false;continue;}   // just dropped: wait until the player walks away
     if(dist<.9&&!pickup(p,d,true))full=d;}
+  p.nearDown=nearestDowned(p);
   const np=nearestPickable(p);p.full=!np&&full?full:null;p.near=p.full?null:np;
   p.nearDoor=p.full||np?-1:nearDoor(p);p.fixDoor=nearFixDoor(p);
   if(performance.now()/1000-p.lastHit>6&&p.hp<p.maxHp&&!(p.infect>0)&&p.food>=LOW_NEED&&p.water>=LOW_NEED)p.hp=Math.min(p.maxHp,p.hp+1.5*dt);
   updateInfection(p,dt);updateNeeds(p,dt);
+}
+// ---------- downed and helping up (v0.10) ----------
+// A downed player can only crawl; the clock runs down (hits take more off, see hurtPlayer) and at 0 they die.
+function updateDowned(p,dt){
+  const I=p.input;I.fireQ=0;p.near=p.full=p.nearDown=null;p.nearDoor=p.fixDoor=-1;
+  if(I.face!==null)p.face=I.face;
+  if(I.mag>.08&&!(p.reviveT>0))moveAgent(p,I.mx,I.mz,CRAWL_SPEED*Math.min(1,I.mag),dt,false);else p.moving=0;   // held still while a teammate helps
+  p.moving=Math.min(p.moving,.4);
+  p.bleed-=dt;if(p.bleed<=0)die(p);
+}
+function nearestDowned(p){let best=null,bd=REVIVE_RANGE;for(const q of players){if(q===p||!isDown(q))continue;const d=Math.hypot(q.pos.x-p.pos.x,q.pos.z-p.pos.z);if(d<bd){bd=d;best=q;}}return best;}
+// E / the pick button next to a downed teammate starts helping; walking off, a new attack or the teammate gone stops it
+export function startHelp(p,q){
+  if(!p.alive||p.bleed>0||p.down>0||!q||!isDown(q))return false;
+  if(p.helping===q)return true;
+  p.helping=q;p.helpT=0;uiFor(p).feed('กำลังช่วยพยุงเพื่อน · ยืนนิ่ง ๆ '+REVIVE_SECONDS+' วินาที');return true;
+}
+function keepHelping(p,dt){
+  const q=p.helping,I=p.input;
+  if(!isDown(q)||I.mag>.08||I.fire||I.fireQ>0||Math.hypot(q.pos.x-p.pos.x,q.pos.z-p.pos.z)>REVIVE_RANGE+.3)return false;
+  p.face=Math.atan2(q.pos.x-p.pos.x,q.pos.z-p.pos.z);
+  p.helpT+=dt;q.reviveT=p.helpT/REVIVE_SECONDS;
+  if(p.helpT<REVIVE_SECONDS)return true;
+  q.bleed=0;q.reviveT=0;q.hp=REVIVE_HP;q.inv=2;q.lastHit=performance.now()/1000;
+  uiFor(q).say('เพื่อนช่วยพยุงคุณขึ้นมาแล้ว · HP '+REVIVE_HP,'',4);uiFor(p).feed('ช่วยเพื่อนลุกขึ้นได้แล้ว');
+  return false;
 }
 export function syncHeld(p){
   const id=curWeapon(p).id;if(id===p.heldId)return;p.heldId=id;

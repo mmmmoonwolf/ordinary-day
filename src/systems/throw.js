@@ -14,7 +14,7 @@ import {uiFor} from '../ui/hud.js';
 // flies in an arc, breaks where it lands or on the first wall, and the noise there draws zombies to the spot.
 const flying=[];
 export function throwBottle(p){
-  if(!p.alive||p.down>0)return false;
+  if(!p.alive||p.down>0||p.bleed>0)return false;
   const U=uiFor(p);
   if(countAmmo(p,'bottle')<=0){U.feedOnce('nobottle','ไม่มีขวดแก้วให้ขว้าง','warn');return false;}
   takeAmmo(p,'bottle',1);
