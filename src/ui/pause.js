@@ -8,6 +8,7 @@ import {closeBag} from './bag.js';
 import {showContinue} from './input.js';
 import {tipsOff,setTipsOff} from './tips.js';
 import {diffOf} from '../config/difficulty.js';
+import {initReport,closeReport} from './report.js';
 
 // ---------- pause menu ----------
 // Stops the game like the bag does (G.paused). Opens by itself when the page goes to the background,
@@ -19,14 +20,14 @@ export function openPause(){
   closeBag();
   $('pause').hidden=false;G.paused=true;ctl.fireHeld=false;joy.id=null;$('joy').hidden=true;
   $('pauseInfo').textContent=when();$('saveMsg').textContent='เกมบันทึกอัตโนมัติทุก 15 วินาทีอยู่แล้ว';
-  $('bResume').focus();
+  closeReport();$('bResume').focus();
 }
 export function closePause(){if(!isPauseOpen())return;$('pause').hidden=true;G.paused=false;updateLoadout(true);}
 export function togglePause(){isPauseOpen()?closePause():openPause();}
 const showTips=()=>{$('bTips').textContent='คำแนะนำ: '+(tipsOff()?'ปิด':'เปิด');};
 export function initPause(){
   showTips();$('bTips').addEventListener('click',()=>{setTipsOff(!tipsOff());showTips();});   // turning tips back on shows them all again
-  $('bPause').addEventListener('click',openPause);
+  $('bPause').addEventListener('click',openPause);initReport();
   $('bResume').addEventListener('click',closePause);
   $('bSaveNow').addEventListener('click',()=>{
     $('saveMsg').textContent=saveGame()?'บันทึกแล้ว · '+when():'บันทึกไม่ได้ เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูล (เช่น โหมดไม่ระบุตัวตน)';

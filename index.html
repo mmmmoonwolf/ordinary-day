@@ -120,9 +120,12 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 #pause{position:fixed;inset:0;z-index:6;display:grid;place-items:center;background:rgba(8,9,10,.62);padding-block:calc(env(safe-area-inset-top,0px) + 16px) calc(env(safe-area-inset-bottom,0px) + 16px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .sheet.pausesheet{max-width:360px}
 .pacts{display:grid;gap:10px}
+.reportbox{display:grid;gap:8px}.reportbox label{font-size:12px;color:var(--ink-dim)}
+.reportbox textarea{width:100%;box-sizing:border-box;resize:vertical;background:rgba(0,0,0,.35);color:var(--ink);border:1px solid var(--line);padding:8px;font:14px var(--f-ui)}
+#reportText{font:11px/1.45 ui-monospace,Menlo,Consolas,monospace;color:var(--ink-dim)}
 #bPause{font-size:12px;letter-spacing:-.1em}
 #bag{position:fixed;inset:0;z-index:6;display:grid;place-items:center;background:rgba(8,9,10,.62);padding-block:calc(env(safe-area-inset-top,0px) + 16px) calc(env(safe-area-inset-bottom,0px) + 16px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.sheet{width:100%;max-width:540px;max-height:100%;overflow:auto;background:var(--sheet);border:1px solid var(--line);padding:16px 16px 18px;display:grid;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.sheet{box-sizing:border-box;width:100%;max-width:540px;max-height:100%;overflow:auto;background:var(--sheet);border:1px solid var(--line);padding:16px 16px 18px;display:grid;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
 .sheet header{display:flex;align-items:baseline;gap:10px}
 .sheet h2{margin:0;font-size:22px}
 .sheet header span{font-family:var(--f-clock);font-size:20px;color:var(--ink-dim);font-variant-numeric:tabular-nums}
@@ -231,12 +234,25 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 <div id="pause" hidden>
   <div class="sheet pausesheet" role="dialog" aria-label="หยุดเกม">
     <header><h2>หยุดเกม</h2><span id="pauseInfo"></span></header>
-    <div class="pacts">
+    <div class="pacts" id="pacts">
       <button class="go" id="bResume">เล่นต่อ</button>
       <button class="go alt" id="bSaveNow">เซฟเกม</button>
       <button class="go alt" id="bSound2">เสียง: เปิด</button>
       <button class="go alt" id="bTips">คำแนะนำ: เปิด</button>
+      <button class="go alt" id="bReport">แจ้งบั๊ก</button>
       <button class="go alt" id="bToTitle">เซฟแล้วกลับหน้าแรก</button>
+    </div>
+    <div class="reportbox" id="reportBox" hidden>
+      <label for="reportNote">เล่าสั้น ๆ ว่าเกิดอะไรขึ้น</label>
+      <textarea id="reportNote" rows="3" maxlength="600" placeholder="เช่น เหยียบกระสุนแล้วเก็บไม่ได้ ตอนอยู่ข้างรถตำรวจ"></textarea>
+      <label for="reportText">ข้อมูลที่จะแนบไปด้วย (ไม่มีข้อมูลส่วนตัว)</label>
+      <textarea id="reportText" rows="5" readonly></textarea>
+      <div class="pacts">
+        <button class="go" id="bCopyReport">คัดลอกไปวางในแชต</button>
+        <button class="go alt" id="bOpenIssue">แจ้งบน GitHub</button>
+        <button class="go alt" id="bReportBack">กลับ</button>
+      </div>
+      <p class="savenote" id="reportMsg" aria-live="polite"></p>
     </div>
     <p class="savenote" id="saveMsg"></p>
   </div>
@@ -255,7 +271,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 
 <div id="overlay">
   <div class="panel" id="pStart">
-    <div class="eyebrow">ORDINARY DAY · PROTOTYPE 0.6</div>
+    <div class="eyebrow" id="verLabel">ORDINARY DAY · PROTOTYPE 0.6.2</div>
     <h1>วันธรรมดา</h1>
     <p class="lede">รอดให้ครบ 7 คืน แล้วไปขึ้นเฮลิคอปเตอร์กู้ภัย กลางวันซอมบี้ยังเชื่องช้า ใช้เวลานี้เก็บอาวุธและยา พอ 18:30 กลางคืนจะมาพร้อมซอมบี้ที่เร็ว หูไว และของระดับ Police กับ Military ให้เสี่ยงออกไปหา ถ้าถูกกัดอาจติดเชื้อ ต้องใช้ Antibiotic</p>
     <div class="keys" id="keys"></div>

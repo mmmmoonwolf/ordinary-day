@@ -21,7 +21,7 @@ function any() {
     construct() { return any(); },
   });
 }
-const startHidden = new Set(['boss', 'bag', 'pOver', 'joy', 'bPick', 'pause']);
+const startHidden = new Set(['boss', 'bag', 'pOver', 'joy', 'bPick', 'pause', 'reportBox']);
 function el(id) {
   const h = {};
   const e = {
@@ -323,6 +323,16 @@ let unreachable = 0;
 for (const b of solids.slice(0, 200)) { const [x, z] = reachableSpot(b.x0 + .25, (b.z0 + b.z1) / 2); if (!freeAt(x, z, .3)) unreachable++; }   // a drop just inside the edge, like one knocked out of a dying zombie
 if (unreachable) rfail(unreachable + ' drops inside solids could not be moved somewhere reachable');
 console.log('v0.6.1: drop does not bounce back, full-bag button, drops moved out of solids');
+
+// 11) v0.6.2: bug report from the pause menu
+clear(); key('KeyP', 'keydown'); els.bReport.fire('click');
+const info = els.reportText.value;
+if (els.reportBox.hidden || !els.pacts.hidden) errs.push('v0.6.2 test: bug report panel did not open');
+if (!/เวอร์ชัน: \d+\.\d+/.test(info) || !info.includes('วันที่') || !info.includes('อุปกรณ์')) errs.push('v0.6.2 test: report is missing version, day or device: ' + info.slice(0, 80));
+if (!els.verLabel.textContent.includes('0.6')) errs.push('v0.6.2 test: version label not set');
+els.bReportBack.fire('click'); if (!els.reportBox.hidden) errs.push('v0.6.2 test: back did not close the report panel');
+key('KeyP', 'keydown');
+console.log('v0.6.2: bug report', info.split('\n').length, 'lines |', info.split('\n')[0]);
 
 console.log(errs.length ? `FAILED: ${errs.length} runtime errors\n` + errs.slice(0, 3).join('\n---\n') : 'PASSED: no runtime errors');
 process.exit(errs.length ? 1 : 0);

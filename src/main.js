@@ -1,6 +1,7 @@
 // Ordinary Day — entry point: builds the city, wires input, starts a new game and runs the frame loop.
 import {renderer,scene,camera,camOffset,camTarget,flash,muzzle,boomLight} from './core/renderer.js';
 import {G} from './core/state.js';
+import {$} from './core/util.js';
 import {RATE,SPEEDS} from './config/time.js';
 import {buildCity} from './world/city.js';
 import {buildInteriors} from './world/interiors.js';
@@ -23,10 +24,13 @@ import {initInput} from './ui/input.js';
 import {initPause} from './ui/pause.js';
 import {updateTips} from './ui/tips.js';
 import {updateMinimap} from './ui/minimap.js';
+import {VERSION} from './config/version.js';
+import './ui/report.js';   // keeps the last script errors for bug reports
 
 buildCity();
 buildInteriors();   // after the city: its own rng, new loot spots appended
 initInput();
+$('verLabel').textContent='ORDINARY DAY · PROTOTYPE '+VERSION;
 initPause();
 initSave();
 initAudio();
