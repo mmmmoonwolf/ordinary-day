@@ -4,10 +4,18 @@ import {DEF} from '../config/items.js';
 import {agents} from './agents.js';
 import {players} from './player.js';
 import {curWeapon} from '../systems/inventory.js';
+import {skins,dress,skinFrame} from './skins.js';
 
 // ---------- animation ----------
 export function animate(a,dt){
   const p=a.b;
+  // with the character models loaded (v0.13) the model plays clips from the agent's state; the blocky body stays hidden
+  if(!a.sk&&skins.ready&&skins.on)dress(a);
+  if(a.sk){
+    a.y+=(groundY(a.pos.x,a.pos.z)-a.y)*Math.min(1,dt*12);p.root.position.set(a.pos.x,a.y,a.pos.z);p.root.rotation.y=a.face;
+    if(a.state==='player')p.root.visible=!(a.inv>0&&a.alive&&Math.floor(a.inv*10)%2===0);
+    skinFrame(a,dt);return;
+  }
   if(a.state==='dead'){p.root.position.set(a.pos.x,a.y,a.pos.z);p.root.rotation.y=a.face;return;}
   const amt=Math.min(1,a.moving/1.6);a.phase+=dt*(1.5+Math.min(a.moving,4)*2.7);const s=Math.sin(a.phase)*.75*amt;
   p.legL.rotation.x=s;p.legR.rotation.x=-s;

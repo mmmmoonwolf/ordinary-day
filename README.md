@@ -124,6 +124,7 @@
 - Three.js r128 (โหลดจาก cdnjs) JavaScript ล้วน ไม่มีขั้นตอน build
 - โค้ดเกมเป็น ES modules ใน `src/` (`index.html` มีแค่ HTML + CSS) texture ทั้งหมดวาดด้วยโค้ด ไม่มีไฟล์ภาพหรือเสียง
 - ฟอนต์ Chakra Petch และ Big Shoulders Display จาก Google Fonts
+- ตัวละคร: Quaternius Ultimate Modular Men / Women Pack (CC0) แปลงเป็น `.glb` ใน `assets/characters/` ด้วย `tools/build-characters.mjs` โหลด GLTFLoader และ SkeletonUtils ของ Three.js r128 จาก jsDelivr
 - PeerJS 1.5.4 (โหลดจาก jsDelivr ตอนเปิดหรือเข้าห้องครั้งแรกเท่านั้น) ใช้เซิร์ฟเวอร์กลางฟรีของ PeerJS แนะนำให้รู้จักกัน แล้วเครื่องคุยกันตรงด้วย WebRTC
 - GitHub Actions รัน smoke test และ net test ทุก pull request และทุกครั้งที่ push เข้า `main` (`.github/workflows/smoke-test.yml`)
 
@@ -131,11 +132,12 @@
 
 ```
 index.html                     HTML + CSS ของ HUD แล้วโหลด src/main.js
+assets/characters/             โมเดลตัวละคร 16 แบบ + ท่าทาง (anims.glb) จาก Quaternius
 src/main.js                    จุดเริ่ม: สร้างเมือง ผูก input เริ่มเกม และวน loop
 src/core/                      util (rng, $), renderer (scene กล้อง แสง), state (G), controls (สถานะปุ่ม), bus (สิ่งที่ส่งไปเครื่องอื่น)
 src/config/                    ตารางค่าเกม: time, world, items, loot, zombies, goal, needs, difficulty, shelter, stealth, events, version
 src/world/                     textures, materials, collision, sidewalk, props, city, interiors, item-models, occlusion
-src/entities/                  agents, movement, ai, player, animation
+src/entities/                  agents, movement, ai, player, animation, skins (โมเดลตัวละคร)
 src/systems/                   drops, inventory, combat, phases, weather, effects, game (reset), save, audio, infection, goal, records, needs, obstacles, doors, throw, events, actions (คำสั่งของผู้เล่น)
 src/net/                       เล่นออนไลน์: link (PeerJS), host, client, snapshot
 src/ui/                        hud, bag, input, pause, tips, minimap, report (แจ้งบั๊ก), settings, prompts, online (ปุ่มเปิดห้อง / เข้าห้อง)
@@ -145,8 +147,13 @@ docs/design-draft-01.md        Game System Design Draft 01 จากทีม
 tools/smoke-test.js            ทดสอบตรรกะเกมแบบไม่มีหน้าจอ: node tools/smoke-test.js
 tools/net-test.js              ทดสอบเล่นออนไลน์: host กับเพื่อนเป็น 2 process คุยกันแทน WebRTC (npm test รันทั้งสองไฟล์)
 tools/headless.js              stub ของ THREE และ DOM ที่เทสต์ทั้งสองใช้
+tools/build-characters.mjs     แปลงตัวละครจากแพ็ก Quaternius เป็น assets/characters/ (ไม่ได้ใช้ตอนเล่นหรือเทสต์)
 .github/workflows/             CI รัน smoke test ทุก PR
 ```
+
+## เครดิต
+
+- ตัวละคร: [Quaternius](https://quaternius.com) — Ultimate Modular Men Pack และ Ultimate Modular Women Pack (CC0)
 
 ## เอกสาร
 
@@ -157,6 +164,7 @@ tools/headless.js              stub ของ THREE และ DOM ที่เ�
 
 | เวอร์ชัน | สิ่งที่เพิ่ม |
 | --- | --- |
+| v0.13 | **ตัวละครใหม่**: ผู้เล่น ประชาชน และซอมบี้ใช้โมเดล 3D มีท่าทางจริง (เดิน วิ่ง ยิง ฟาด ตาย) จาก Quaternius ซอมบี้คือคนในเมืองที่กลายร่าง (ผิวเขียว เสื้อผ้าหม่น แขนยื่น) Armor Walker เป็นตำรวจ SWAT · กราฟิก "ต่ำ" ใช้ตัวละครแบบเรียบเหมือนเดิม |
 | v0.12 | **เล่นออนไลน์ได้แล้ว (เฟส 4)**: เปิดห้องจากเมนูหยุดเกม ได้รหัส 5 ตัว เพื่อนกรอกรหัสที่หน้าแรกแล้วเข้ามาเล่นด้วยได้สูงสุด 4 คน เข้ากลางเกมได้ หลุดแล้วกลับมาได้ตัวละครเดิม คนเปิดห้องเซฟเกมรวมตัวละครของเพื่อน |
 | v0.11 | เตรียมเล่นออนไลน์ (เฟส 4 ขั้นแรก): เล่นหลายคนแล้วกระเป๋าและเมนูหยุดไม่หยุดโลก ไม่มี ×2 / ×4 ยิงไม่โดนเพื่อน ใช้ Resurrection Kit ชุบเพื่อนที่ตายแล้วได้ ตายแล้วกล้องตามเพื่อนที่ยังรอด ข้อความ เสียง และเอฟเฟกต์ที่ต้องส่งไปเครื่องอื่นเข้าคิวรอระบบออนไลน์ · เล่นคนเดียวเหมือนเดิม (เสียงปืนของคนอื่นเบาลงตามระยะ) |
 | v0.10 | เตรียมเล่นด้วยกัน (เฟส 3 ข้อ 13–14): HP หมดตอนมีเพื่อนยืนอยู่จะล้มรอให้ช่วย 45 วินาที เพื่อนยืนข้าง ๆ แล้วกด ช่วย 4 วินาทีจะลุกด้วย HP 30 · ซอมบี้กลางคืน ฝูงซอมบี้ ของที่เกิด และเสบียงทิ้งจากฟ้าเพิ่มตามจำนวนผู้เล่น · เล่นคนเดียวเหมือนเดิม และท่าล้มของ Resurrection Kit กลับมาแสดงแล้ว |

@@ -3,6 +3,7 @@ import {OFF} from '../config/world.js';
 import {DEF,STACKS} from '../config/items.js';
 import {collide} from '../world/collision.js';
 import {weaponModel} from '../world/item-models.js';
+import {handOf} from './skins.js';
 import {agents,makeAgent} from './agents.js';
 import {moveAgent} from './movement.js';
 import {updateDead,makeNoise} from './ai.js';
@@ -128,8 +129,13 @@ function resurrect(p,q){
 }
 export function syncHeld(p){
   const id=curWeapon(p).id;if(id===p.heldId)return;p.heldId=id;
-  if(p.held){p.b.armR.remove(p.held);p.held=null;}
+  if(p.held){if(p.held.parent)p.held.parent.remove(p.held);p.held=null;}
   if(id==='fist')return;
-  const def=DEF[id],m=weaponModel(def.model);m.position.y=-.66;if(def.gun)m.rotation.x=Math.PI/2;
-  p.b.armR.add(m);p.held=m;
+  const def=DEF[id],m=weaponModel(def.model),hand=handOf(p);
+  if(hand){HOLD(m,def);hand.add(m);}   // in the character model's right hand (v0.13)
+  else{m.position.y=-.66;if(def.gun)m.rotation.x=Math.PI/2;p.b.armR.add(m);}
+  p.held=m;
 }
+// how a weapon sits in the model's hand (WristR's axes)
+const HOLD=(m,def)=>{m.position.set(...HAND.pos);m.rotation.set(...(def.gun?HAND.gun:HAND.melee));};
+export const HAND={pos:[0,.1,0],gun:[0,-Math.PI/2,0],melee:[Math.PI/2,0,0]};   // barrel forward; a bat or pipe upright in the fist

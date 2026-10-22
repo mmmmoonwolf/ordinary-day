@@ -32,6 +32,7 @@ import {bus} from './core/bus.js';
 import {hostFrame} from './net/host.js';
 import {clientStep} from './net/client.js';
 import {initOnline} from './ui/online.js';
+import {loadSkins,beginSkins} from './entities/skins.js';
 import './ui/report.js';   // keeps the last script errors for bug reports
 
 buildCity();
@@ -62,13 +63,15 @@ function simStep(dt,now){
   separate();updateThrows(dt);
 }
 reset();
+// character models load in the background; until then everyone is blocky (v0.13)
+loadSkins(s=>{const n=$('skinNote');n.hidden=s.ready;n.textContent=s.failed?'โหลดตัวละครไม่ได้ ใช้ตัวละครแบบเรียบแทน':'กำลังโหลดตัวละคร '+s.loaded+'/'+s.total;});
 let last=performance.now(),frame=0,acc=0;
 function loop(now){
   requestAnimationFrame(loop);
   const real=Math.min(.25,(now-last)/1000),dt=Math.min(.05,real);last=now;frame++;
   if(!G.paused){
     acc+=real;let n=0;while(acc>=STEP&&n<MAX_STEPS){simStep(STEP,now);acc-=STEP;n++;}if(n===MAX_STEPS)acc=0;   // a long stall is dropped, not replayed
-    for(const a of agents)animate(a,dt);
+    beginSkins();for(const a of agents)animate(a,dt);
     for(const p of players){syncHeld(p);animate(p,dt);}
     for(const tr of tracers){if(tr.t>0){tr.t-=dt;tr.l.material.opacity=Math.max(0,tr.t/.07)*.95;}}
     muzzle.intensity=Math.max(0,muzzle.intensity-dt*60);boomLight.intensity=Math.max(0,boomLight.intensity-dt*20);
