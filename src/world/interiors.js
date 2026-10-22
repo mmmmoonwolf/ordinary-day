@@ -17,7 +17,9 @@ const furnMats=['#6b5a46','#4c5560','#7d4b3c','#8b8577','#3f4a3a'].map(c=>S({col
 const doorMat=S({color:'#5a3d26',roughness:.7}),holeMat=S({color:'#141210',roughness:1}),brokenMat=S({color:'#3a2a1c',roughness:.9});
 const plankMat=S({color:'#a9834f',roughness:.85});
 const signMat=S({color:'#3a2f22',emissive:'#ffb35a',emissiveIntensity:.9});
-const FURN=[{d:.5,h:1.9},{d:.8,h:.85},{d:.9,h:.75},{d:.6,h:1.1}];   // shelf, counter, sofa, cabinet
+const FURN=[{d:.5,h:1.9,kind:'shelf'},{d:.8,h:.85,kind:'kitchen'},{d:.9,h:.75,kind:'sofa'},{d:.6,h:1.1,kind:'drawer'}];   // shelf, counter, sofa, cabinet
+// every piece of furniture can be searched once (v0.15, systems/search.js); its index here names it in G.searched and online
+export const boxes=[];
 
 // outward normals: +x, -x, +z, -z
 const SIDES=[[1,0],[-1,0],[0,1],[0,-1]];
@@ -63,10 +65,12 @@ function makeRoom(b,[nx,nz],rng){
   r.cutPlanks=[.35,.72].map(h=>slab(plankMat,nx?px-.04:dx-pw,nx?px+.04:dx+pw,nx?dz-pw:pz-.04,nx?dz+pw:pz+.04,y0+h,y0+h+.14));r.cut.add(...r.cutPlanks);
   for(const [sx,sz] of SIDES){
     if(sx===nx&&sz===nz||rng()<.2)continue;
-    const f=FURN[Math.floor(rng()*FURN.length)],wl=sx?r.z1-r.z0:r.x1-r.x0,L=Math.min(wl-2.8,1.6+rng()*1.8);if(L<1.2)continue;
+    const f=FURN[Math.floor(rng()*FURN.length)],wl=sx?r.z1-r.z0:r.x1-r.x0,L=Math.min(wl-2.8,1.6+rng()*1.8);if(L<1.2)continue;   // same rng calls as before v0.15
     const off=(rng()*2-1)*Math.max(0,wl/2-1.4-L/2),fx=sx?(sx>0?r.x1-f.d/2:r.x0+f.d/2):(r.x0+r.x1)/2+off,fz=sz?(sz>0?r.z1-f.d/2:r.z0+f.d/2):(r.z0+r.z1)/2+off;
     const hw=sx?f.d/2:L/2,hd=sx?L/2:f.d/2;
-    r.furniture.push(pushBox(fx-hw,fx+hw,fz-hd,fz+hd));r.cut.add(slab(furnMats[Math.floor(rng()*furnMats.length)],fx-hw,fx+hw,fz-hd,fz+hd,y0,y0+f.h));
+    const box=pushBox(fx-hw,fx+hw,fz-hd,fz+hd),mesh=slab(furnMats[Math.floor(rng()*furnMats.length)],fx-hw,fx+hw,fz-hd,fz+hd,y0,y0+f.h);
+    r.furniture.push(box);r.cut.add(mesh);
+    boxes.push({room:rooms.length,kind:f.kind,box,mesh,x:fx,z:fz,n:[sx,sz],L,d:f.d,h:f.h,y0,cut:r.cut,model:null});
   }
   // outside: a door or a dark doorway on the wall face, and a lit sign above it so enterable buildings stand out
   const fw=(a,thick)=>nx?[dx+nx*a-thick,dx+nx*a+thick,dz-DOOR_W/2,dz+DOOR_W/2]:[dx-DOOR_W/2,dx+DOOR_W/2,dz+nz*a-thick,dz+nz*a+thick];
@@ -89,12 +93,14 @@ export function buildInteriors(){
     for(const b of buildings){if(blockOf(b.cx)!==i||blockOf(b.cz)!==j||b.w<6.8||b.d<6.8)continue;const s=doorSide(b,bcx,bcz);if(s&&b.w*b.d>area){area=b.w*b.d;pick=b;side=s;}}
     if(pick)rooms.push(makeRoom(pick,side,rng));
   }
-  // a pantry spot in a free corner of each room (v0.14): food and water only (systems/drops.js). Again appended after every
-  // existing spot, so saves from v0.13 keep their spot indices
-  for(const r of rooms)for(const [px,pz] of [[r.x0+1,r.z0+1],[r.x1-1,r.z1-1],[r.x1-1,r.z0+1],[r.x0+1,r.z1-1]])
-    if(freeAt(px,pz,.5)&&!lootSpots.some(s=>Math.hypot(s.x-px,s.z-pz)<1.6)){lootSpots.push({x:px,z:pz,zone:'pantry',drop:null});break;}
 }
 
+// the furniture in room k nearest to (x,z) whose edge is within r, or -1 (v0.15)
+export function boxNear(x,z,k,r){
+  let best=-1,bd=r;
+  for(let i=0;i<boxes.length;i++){const b=boxes[i];if(b.room!==k)continue;const q=b.box,d=Math.hypot(Math.max(q.x0-x,0,x-q.x1),Math.max(q.z0-z,0,z-q.z1));if(d<bd){bd=d;best=i;}}
+  return best;
+}
 // index of the room containing (x,z), or -1; pad grows the room (the cutaway also covers the doorway)
 export function roomAt(x,z,pad=0){for(let k=0;k<rooms.length;k++){const r=rooms[k];if(x>r.x0-pad&&x<r.x1+pad&&z>r.z0-pad&&z<r.z1+pad)return k;}return -1;}
 // how a walker at (ax,az) gets to (tx,tz) when a room wall is in the way: the next point to walk to, and the

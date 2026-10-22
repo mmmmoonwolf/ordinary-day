@@ -129,7 +129,7 @@ const { freeAt } = await import('../src/world/collision.js');
 els.bAgain.fire('click'); T.G.running = true; T.player.inv = 1e9;
 const amb = lootSpots.filter(sp => sp.zone === 'ambulance');
 if (amb.length !== 1 || !amb[0].drop || amb[0].drop.item.id !== 'resurrect') afail('no Resurrection Kit at the ambulance at the start');
-if (lootSpots.indexOf(amb[0]) !== 80 || lootSpots.slice(81, 103).some(s => s.zone !== 'indoor') || lootSpots.slice(103).some(s => s.zone !== 'pantry')) afail('ambulance spot should stay at index 80, then the v0.6 indoor spots, then the v0.14 pantries');
+if (lootSpots.indexOf(amb[0]) !== 80 || lootSpots.slice(81).some(s => s.zone !== 'indoor')) afail('ambulance spot should stay at index 80, with only v0.6 indoor spots after it');
 if (!freeAt(amb[0].x, amb[0].z, 0.4)) afail('ambulance kit sits inside a solid');
 T.player.pos.x = amb[0].x; T.player.pos.z = amb[0].z; step(5);
 if (!T.inv.bag.some(e => e.id === 'resurrect') || amb[0].drop) afail('walking onto the kit did not pick it up');
@@ -511,23 +511,42 @@ if (Math.hypot(R.camTarget.x - c2.pos.x, R.camTarget.z - c2.pos.z) > 3) cfail('c
 clear(); T.openBag(); w0 = T.G.min; step(10); if (!T.G.paused || T.G.min !== w0) cfail('solo bag no longer pauses'); T.closeBag();
 console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed with two players, no friendly fire, Kit revives a dead teammate, spectate');
 
-// 17) v0.14: food indoors, pantries
+// 17) v0.14: food indoors · v0.15: searching furniture
 {
-  const vfail = m => errs.push('v0.14 food test: ' + m);
-  const Dr = await import('../src/systems/drops.js'); const { roomAt, rooms } = await import('../src/world/interiors.js');
-  const pans = lootSpots.filter(sp => sp.zone === 'pantry');
-  if (pans.length !== rooms.length || pans.some(sp => roomAt(sp.x, sp.z) < 0 || !freeAt(sp.x, sp.z, .4))) vfail(pans.length + ' pantries for ' + rooms.length + ' rooms, or one outside its room / in furniture');
-  for (const sp of pans) if (sp.drop) Dr.removeDrop(sp.drop);
-  Dr.fillDay(0, 1); Dr.fillNight(0, 1);
-  if (pans.some(sp => !sp.drop || !/^(canned|water)$/.test(sp.drop.item.id))) vfail('a pantry holds something other than food: ' + pans.map(sp => sp.drop && sp.drop.item.id).join(','));
+  const vfail = m => errs.push('v0.14 / v0.15 test: ' + m);
+  const Dr = await import('../src/systems/drops.js'); const { roomAt, rooms, boxes } = await import('../src/world/interiors.js');
+  const Se = await import('../src/systems/search.js'); const { SEARCH_SECONDS } = await import('../src/config/search.js'); const Ac = await import('../src/systems/actions.js');
   let fi = 0, fo = 0; for (let i = 0; i < 4000; i++) { if (/^(canned|water)$/.test(Dr.rollLoot('day', 'indoor').id)) fi++; if (/^(canned|water)$/.test(Dr.rollLoot('day', 'city').id)) fo++; }
   if (!(fi > fo * 1.6)) vfail('indoor spots are not richer in food: ' + fi + ' vs ' + fo);
+  if (boxes.length < rooms.length || boxes.some(b => roomAt((b.box.x0 + b.box.x1) / 2, (b.box.z0 + b.box.z1) / 2) !== b.room)) vfail(boxes.length + ' furniture for ' + rooms.length + ' rooms, or one outside its room');
+  let kf = 0, kn = 0; for (let i = 0; i < 2000; i++) for (const it of Se.rollBox('kitchen')) { kn++; if (/^(canned|water)$/.test(it.id)) kf++; }
+  if (!(kf / kn > .55)) vfail('kitchens hold too little food: ' + kf + '/' + kn);
+  if (Se.rollBox('drawer').concat(Se.rollBox('drawer'), Se.rollBox('drawer')).some(it => D5[it.id].grade && D5[it.id].grade !== 'civ')) vfail('police / military gear in a home');
+  // search one: stand in front of it, press E, hold still
+  const pl = T.player; pl.alive = true; pl.state = 'player'; pl.hp = 100; pl.inv = 1e9; pl.bleed = 0; pl.down = 0; T.G.searched = []; T.G.running = true;
+  const bi = boxes.findIndex(b => b.kind === 'kitchen'), b = boxes[bi], cx = (b.box.x0 + b.box.x1) / 2, cz = (b.box.z0 + b.box.z1) / 2;
+  const at = () => { pl.pos.x = cx - b.n[0] * (b.d / 2 + .35); pl.pos.z = cz - b.n[1] * (b.d / 2 + .35); };
+  at(); step(2);
+  if (pl.nearBox !== bi) vfail('furniture in reach not offered: nearBox ' + pl.nearBox + ' want ' + bi);
+  Ac.ACTIONS.use(pl); if (pl.searching !== bi) vfail('E did not start searching');
+  key('KeyW', 'keydown'); step(5); key('KeyW', 'keyup'); step(2);
+  if (pl.searching >= 0 || T.G.searched.includes(bi)) vfail('walking off did not stop the search');
+  at(); step(2); Ac.ACTIONS.use(pl); const d0 = T.drops.length, bag0 = JSON.stringify(pl.gear.bag);
+  step(Math.round(SEARCH_SECONDS * 60) + 5);
+  if (!T.G.searched.includes(bi) || pl.searching >= 0) vfail('search did not finish: searched ' + T.G.searched + ' searching ' + pl.searching);
+  step(3); if (pl.nearBox === bi) vfail('an emptied piece is still offered');
+  const found = T.drops.length - d0 + (JSON.stringify(pl.gear.bag) !== bag0 ? 1 : 0);
+  // saved and restocked
+  S.saveGame(); T.G.searched = []; S.loadGame(); if (!T.G.searched.includes(bi)) vfail('G.searched not saved');
+  T.G.searched = boxes.map((_, i) => i); Se.restockBoxes(); const left = T.G.searched.length;
+  if (!(left < boxes.length && left > 0)) vfail('restock: ' + left + ' of ' + boxes.length + ' still empty');
+  T.G.searched = [];
+  console.log('v0.14 / v0.15: food in indoor rolls ' + (fi / 40).toFixed(0) + '% vs outdoor ' + (fo / 40).toFixed(0) + '% · ' + boxes.length + ' furniture in ' + rooms.length + ' rooms (' + ['kitchen', 'shelf', 'drawer', 'sofa'].map(k => k + ' ' + boxes.filter(x => x.kind === k).length).join(', ') + '), kitchen food ' + Math.round(kf / kn * 100) + '%, searched one (' + (found ? 'found something' : 'empty') + '), ' + (boxes.length - left) + ' restocked at 06:00');
   // v0.14.1: one stack per item, no limit, sorted by category; old saves with split stacks are merged
   const Inv = await import('../src/systems/inventory.js'); const g = T.player.gear; g.bag = []; g.cap = 6;
   Inv.addStack(T.player, 'water', 3); Inv.addStack(T.player, 'a9', 150); Inv.addStack(T.player, 'a9', 150); Inv.addStack(T.player, 'bandage', 9); g.bag.unshift({ id: 'a9', n: 5 }, { id: 'bat_c', mag: 0, dur: 40 }); Inv.tidyBag(g);
   if (JSON.stringify(g.bag.map(e => e.id + ':' + (e.n ?? '-'))) !== JSON.stringify(['bat_c:-', 'a9:305', 'bandage:9', 'water:3'])) vfail('bag not merged / sorted: ' + JSON.stringify(g.bag));
   console.log('v0.14.1: bag ' + g.bag.map(e => e.id + (e.n ? ' ×' + e.n : '')).join(', '));
-  console.log('v0.14: ' + pans.length + ' pantries (food only), food in indoor rolls ' + (fi / 40).toFixed(0) + '% vs outdoor ' + (fo / 40).toFixed(0) + '%');
 }
 
 console.log(errs.length ? `FAILED: ${errs.length} runtime errors\n` + errs.slice(0, 3).join('\n---\n') : 'PASSED: no runtime errors');

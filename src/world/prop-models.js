@@ -1,6 +1,7 @@
 import {scene} from '../core/renderer.js';
 import {loadGltf} from '../core/gltf.js';
 import {breakables} from './props.js';
+import {boxes} from './interiors.js';
 
 // ---------- prop models (v0.14) ----------
 // Guns, knives, axes, food, water, medicine, backpacks, bottles and cars from Quaternius' packs (CC0; built into
@@ -15,7 +16,7 @@ export async function loadProps(){
     for(const n of [...g.scene.children]){n.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=false;}});n.updateMatrixWorld(true);tpl[n.name]=n;}
     props.ready=true;
   }catch(e){props.failed=true;console.warn('prop models: '+e.message);}
-  setCars();
+  setCars();setFurniture();
 }
 export const hasProp=id=>props.ready&&props.on&&!!tpl[id];
 // a copy of prop `id` in a group, scaled so its size along `axis` (0 x, 1 y, 2 z of the source model) is `len`, and moved so
@@ -49,4 +50,31 @@ function setCars(){
   }
 }
 // graphics quality "low" goes back to the box models (ui/settings.js); drops and held weapons are rebuilt by refreshItems()
-export function setPropsOn(on){const was=props.on;props.on=on;setCars();return props.ready&&was!==on;}
+export function setPropsOn(on){const was=props.on;props.on=on;setCars();setFurniture();return props.ready&&was!==on;}
+// furniture (v0.15): each box along a wall of an enterable building becomes a row of modules, scaled to the box's height
+// (or depth, whichever is smaller), stretched along the wall to fill it, backs against the wall, fronts into the room.
+// They sit in the room's cutaway group, so they show only when the player is inside, like the boxes did.
+const FURN={kitchen:['f_fridge','f_kdrawers','f_ksink','f_koven','f_kcab','f_k3'],shelf:['f_bookshelf','f_shelf'],drawer:['f_drawer1','f_drawer5','f_drawer2'],sofa:['f_couch']};
+const sizeOf=id=>{bb.setFromObject(tpl[id]);return bb.getSize(new THREE.Vector3());};
+function furnModel(b){
+  const ids=FURN[b.kind];if(!ids.every(id=>tpl[id]))return null;
+  const ref=sizeOf(ids[b.kind==='kitchen'?1:0]),s=Math.min(b.h/ref.y,b.d/ref.z);
+  const row=[];let len=0;
+  for(let k=0;len<b.L;k++){const id=b.kind==='sofa'?(b.L<1.9&&tpl.f_couch_m?'f_couch_m':'f_couch'):ids[k%ids.length],w=sizeOf(id).x*s;if(row.length&&len+w/2>b.L)break;row.push([id,w]);len+=w;}
+  const g=new THREE.Group(),[sx,sz]=b.n,th=Math.atan2(-sx,-sz),ax=Math.cos(th),az=-Math.sin(th),k=b.L/len;
+  const cx=(b.box.x0+b.box.x1)/2,cz=(b.box.z0+b.box.z1)/2,wx=cx+sx*b.d/2,wz=cz+sz*b.d/2;
+  let at=-b.L/2;
+  for(const [id,w] of row){
+    const src=tpl[id],o=src.clone(true),m=new THREE.Group();bb.setFromObject(src);
+    o.position.x-=(bb.min.x+bb.max.x)/2;o.position.y-=bb.min.y;o.position.z-=bb.min.z;m.add(o);
+    m.scale.set(s*k,s,s);m.rotation.y=th;const c=at+w*k/2;m.position.set(wx+ax*c,b.y0,wz+az*c);at+=w*k;g.add(m);
+  }
+  return g;
+}
+function setFurniture(){
+  for(const b of boxes){
+    const on=props.ready&&props.on;
+    if(on&&!b.model){b.model=furnModel(b);if(b.model)b.cut.add(b.model);}
+    if(b.model)b.model.visible=on;b.mesh.visible=!(on&&b.model);
+  }
+}

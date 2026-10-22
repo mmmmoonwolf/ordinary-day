@@ -10,7 +10,7 @@ import {EVENTS} from './phases.js';
 import {updateLoadout} from '../ui/hud.js';
 import {clearTip} from '../ui/tips.js';
 import {restoreObstacles} from './obstacles.js';
-import {REFILL,PANTRY} from '../config/loot.js';
+import {REFILL} from '../config/loot.js';
 import {restoreDoors} from './doors.js';
 import {clearThrows} from './throw.js';
 import {resetEvents} from './events.js';
@@ -33,6 +33,6 @@ export function reset(){
   let near=null,nd=1e9;for(const s of lootSpots){if(s.zone!=='city')continue;const d=Math.hypot(s.x-player.pos.x,s.z-player.pos.z);if(d>4&&d<nd){nd=d;near=s;}}
   if(near)spawnDrop(makeItem(pick(['pipe_c','knife_c','bat_c'])),near.x,near.z,near);
   for(const s of lootSpots)if(s.zone==='ambulance')spawnDrop(makeItem('resurrect'),s.x,s.z,s);
-  fillDay(REFILL.start,PANTRY.start);
+  fillDay(REFILL.start);
   $('hurt').style.opacity=0;$('boss').hidden=true;clearTip();updateLoadout(true);
 }
