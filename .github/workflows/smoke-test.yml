@@ -1,0 +1,17 @@
+# Runs the headless smoke test (tools/smoke-test.js) on every pull request and every push to main.
+# It checks game logic only; open the game in a browser for anything visual (see CLAUDE.md).
+name: smoke-test
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test

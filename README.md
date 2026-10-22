@@ -73,7 +73,9 @@
 
 ## หยุดเกม
 
-กดปุ่ม ❚❚ มุมขวาบน หรือกด P / Esc เพื่อหยุดเกม ในหน้าหยุดเกมมีปุ่มเล่นต่อ เซฟเกม (บอกวันและเวลาที่บันทึก) เปิดปิดเสียง และเซฟแล้วกลับหน้าแรก เกมจะหยุดเองเมื่อสลับแอปหรือพับหน้าเว็บ กลับมาจึงเจอหน้าหยุดเกมแทนการโดนรุม
+กดปุ่ม ❚❚ มุมขวาบน หรือกด P / Esc เพื่อหยุดเกม ในหน้าหยุดเกมมีปุ่มเล่นต่อ เซฟเกม (บอกวันและเวลาที่บันทึก) เปิดปิดเสียง แจ้งบั๊ก และเซฟแล้วกลับหน้าแรก เกมจะหยุดเองเมื่อสลับแอปหรือพับหน้าเว็บ กลับมาจึงเจอหน้าหยุดเกมแทนการโดนรุม
+
+**แจ้งบั๊ก (v0.6.2):** ปุ่มแจ้งบั๊กในหน้าหยุดเกมให้ผู้เล่นเล่าสั้น ๆ ว่าเกิดอะไรขึ้น แล้วแนบข้อมูลให้อัตโนมัติ: เวอร์ชัน วันและเวลาในเกม ระดับความยาก ความเร็ว HP อาหาร น้ำ ติดเชื้อ ของในกระเป๋า จำนวนซอมบี้และประชาชน สถานะประตู อุปกรณ์ (จอสัมผัสหรือไม่ ขนาดจอ user agent) และ error ล่าสุดไม่เกิน 5 รายการ ผู้เล่นเห็นข้อมูลทั้งหมดก่อนส่ง เลือกได้ว่าจะคัดลอกไปวางในแชต หรือเปิดหน้าแจ้งบั๊กบน GitHub (ต้องมีบัญชี)
 
 ## การเซฟ
 
@@ -84,6 +86,7 @@
 - Three.js r128 (โหลดจาก cdnjs) JavaScript ล้วน ไม่มีขั้นตอน build
 - โค้ดเกมเป็น ES modules ใน `src/` (`index.html` มีแค่ HTML + CSS) texture ทั้งหมดวาดด้วยโค้ด ไม่มีไฟล์ภาพหรือเสียง
 - ฟอนต์ Chakra Petch และ Big Shoulders Display จาก Google Fonts
+- GitHub Actions รัน smoke test ทุก pull request และทุกครั้งที่ push เข้า `main` (`.github/workflows/smoke-test.yml`)
 
 ## โครงสร้าง repo
 
@@ -91,26 +94,28 @@
 index.html                     HTML + CSS ของ HUD แล้วโหลด src/main.js
 src/main.js                    จุดเริ่ม: สร้างเมือง ผูก input เริ่มเกม และวน loop
 src/core/                      util (rng, $), renderer (scene กล้อง แสง), state (G), controls (สถานะปุ่ม)
-src/config/                    ตารางค่าเกม: time, world, items, loot, zombies, goal, needs, difficulty, shelter
+src/config/                    ตารางค่าเกม: time, world, items, loot, zombies, goal, needs, difficulty, shelter, version
 src/world/                     textures, materials, collision, sidewalk, props, city, interiors, item-models, occlusion
 src/entities/                  agents, movement, ai, player, animation
 src/systems/                   drops, inventory, combat, phases, weather, effects, game (reset), save, audio, infection, goal, records, needs, obstacles, doors
-src/ui/                        hud, bag, input, pause, tips, minimap
+src/ui/                        hud, bag, input, pause, tips, minimap, report (แจ้งบั๊ก)
 CLAUDE.md                      กติกาสำหรับ Claude Code และ AI ที่ช่วยพัฒนา
-docs/project-summary-v0.3.md   เอกสารสรุประบบทั้งหมด + Decision Log
+docs/project-summary.md        เอกสารสรุประบบทั้งหมด + Decision Log
 docs/design-draft-01.md        Game System Design Draft 01 จากทีม
 tools/smoke-test.js            ทดสอบตรรกะเกมแบบไม่มีหน้าจอ: node tools/smoke-test.js (หรือ npm test)
+.github/workflows/             CI รัน smoke test ทุก PR
 ```
 
 ## เอกสาร
 
-- [สรุปโปรเจกต์ v0.3](docs/project-summary-v0.3.md) ระบบทั้งหมดที่มีในเกม ตัวเลขทุกค่า และ Decision Log Q01–Q12
+- [สรุปโปรเจกต์](docs/project-summary.md) ระบบทั้งหมดที่มีในเกม ตัวเลขทุกค่า และ Decision Log Q01–Q12
 - [Design Draft 01](docs/design-draft-01.md) สเปกจากทีมที่ v0.3 นำมาทำ
 
 ## ประวัติเวอร์ชัน
 
 | เวอร์ชัน | สิ่งที่เพิ่ม |
 | --- | --- |
+| v0.6.2 | ปุ่มแจ้งบั๊กในหน้าหยุดเกม (แนบเวอร์ชัน สถานะเกม อุปกรณ์ error ล่าสุด คัดลอกหรือเปิด GitHub), CI รัน smoke test ทุก PR, แก้หน้าหยุดเกมและกระเป๋าล้นขอบจอมือถือ, เปลี่ยนชื่อเอกสารเป็น `docs/project-summary.md` |
 | v0.6.1 | แก้บั๊ก: ทิ้งกระสุน ยา หรืออาหารแล้วเด้งกลับเข้ากระเป๋า, กระเป๋าเต็มแล้วเหยียบกระสุนไม่เกิดอะไร (ตอนนี้มีปุ่ม "กระเป๋าเต็ม" กดแล้วเปิดกระเป๋า), ของที่ดรอปตกในรถหรือผนังจนเก็บไม่ได้, ปุ่มประตูขึ้นคำว่า "เก็บ" นำหน้า |
 | v0.6 | เข้าไปในตึกได้ 11 หลัง (ตัดหลังคาให้เห็นข้างใน) มีเฟอร์นิเจอร์และของ, ประตูเปิดปิดได้ ซอมบี้มองทะลุผนังไม่ได้แต่ได้ยินเสียงแล้วมาพังประตู, แผนที่เล็กแสดงตึกที่เข้าได้และสถานะประตู |
 | v0.5 | อาวุธประชิดมีความทนและพังได้, หิวและกระหาย (อาหารกระป๋อง น้ำดื่ม ปุ่ม 🍴), Armor Walker เกราะเฉพาะด้านหน้า, Tyrant ทุบรถ กองขยะ ม้านั่งที่ขวางทาง, ระดับความยาก ง่าย / ปกติ / ยาก พร้อมสถิติแยกตามระดับ |
