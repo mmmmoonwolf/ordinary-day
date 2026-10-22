@@ -46,11 +46,11 @@ export function fillNight(chance=.4){for(const s of lootSpots){if(s.drop||s.zone
   if(s.zone==='police')spawnDrop(rollLoot('night',s.zone,'pol'),s.x,s.z,s);
   else if(s.zone==='military'){if(Math.random()<.7)spawnDrop(rollLoot('night',s.zone,'mil'),s.x,s.z,s);}
   else if(Math.random()<chance)spawnDrop(rollLoot('night',s.zone),s.x,s.z,s);}}
-// 06:00: other survivors clear some of the loot lying far from the player (v0.7); returns how many went
+// 06:00: other survivors clear some of the loot lying far from every player (v0.7); returns how many went
 const KEEP=new Set(['police','military','ambulance']);
-export function takeByOthers(px,pz){
+export function takeByOthers(near){
   let n=0;
-  for(let i=drops.length-1;i>=0;i--){const d=drops[i];if(d.mine||(d.spot&&KEEP.has(d.spot.zone))||Math.hypot(d.x-px,d.z-pz)<TAKEN.minDist)continue;if(Math.random()<TAKEN.chance){removeDrop(d);n++;}}
+  for(let i=drops.length-1;i>=0;i--){const d=drops[i];if(d.mine||(d.spot&&KEEP.has(d.spot.zone))||near.some(p=>Math.hypot(d.x-p.pos.x,d.z-p.pos.z)<TAKEN.minDist))continue;if(Math.random()<TAKEN.chance){removeDrop(d);n++;}}
   return n;
 }
 export function dropGuaranteed(grade,x,z){

@@ -7,7 +7,7 @@ import {solids} from '../world/collision.js';
 import {LAYOUT,pois,lootSpots} from '../world/city.js';
 import {rooms} from '../world/interiors.js';
 import {agents} from '../entities/agents.js';
-import {player} from '../entities/player.js';
+import {player,players} from '../entities/player.js';
 
 // ---------- minimap ----------
 // The whole city, turned to match the isometric camera (screen up = world -x,-z), so the map reads like the view.
@@ -50,6 +50,7 @@ function draw(now){
     if(a.kind==='tyrant')dot(a.pos.x,a.pos.z,(3+.8*Math.sin(now/160))*s,'#ff4a3a','#16130d');
     else if(Math.hypot(a.pos.x-player.pos.x,a.pos.z-player.pos.z)<HEAR)dot(a.pos.x,a.pos.z,1.3*s,'#c9473a');
   }
+  for(const p of players)if(p!==player)dot(p.pos.x,p.pos.z,2.2*s,p.alive?'#7fc8ff':'#8a8a86','#16130d');   // other players (v0.9)
   // player: an arrow pointing where the player faces, in map space
   const [u,v]=xy(player.pos.x,player.pos.z),fx=Math.sin(player.face),fz=Math.cos(player.face),ang=Math.atan2((fx-fz)/Math.SQRT2,-(fx+fz)/Math.SQRT2);
   g.save();g.translate(u,v);g.rotate(ang);g.beginPath();g.moveTo(0,-4.2*s);g.lineTo(3*s,3.2*s);g.lineTo(0,1.6*s);g.lineTo(-3*s,3.2*s);g.closePath();

@@ -3,7 +3,7 @@ import {G} from '../core/state.js';
 import {ctl,joy} from '../core/controls.js';
 import {DEF,STACKS,GRADES,SLOTNAME,itemColor,durPct} from '../config/items.js';
 import {player} from '../entities/player.js';
-import {inv,useItemAt,useFoodAt,dropItem} from '../systems/inventory.js';
+import {useItemAt,useFoodAt,dropItem} from '../systems/inventory.js';
 import {feedOnce,updateLoadout} from './hud.js';
 
 // ---------- bag UI ----------
@@ -23,7 +23,9 @@ function itemDesc(it){
   return '';
 }
 function cellHTML(it,extra){const d=DEF[it.id];const ct=STACKS.has(d.kind)?it.n:(d.gun?it.mag:d.dur?Math.ceil(durPct(it)*100)+'%':'');const g=d.grade?`<span class="sl">${GRADES[d.grade].name}</span>`:'';return `${extra||g}<span class="nm">${d.name}</span><span class="ct">${ct}</span>`;}
+// the bag of the player on this device (player.gear)
 export function renderBag(){
+  const inv=player.gear;
   const eq=$('bagEq');eq.innerHTML='';
   for(const s of ['primary','secondary','melee']){
     const it=inv.eq[s];const b=document.createElement('button');b.className='cell'+(it?'':' blank')+(sel&&sel.where==='eq'&&sel.slot===s?' sel':'');
@@ -50,13 +52,13 @@ export function renderBag(){
   const btn=(label,fn,pri,dis)=>{const b=document.createElement('button');b.textContent=label;if(pri)b.className='pri';if(dis)b.disabled=true;b.onclick=()=>{fn();updateLoadout(true);renderBag();};acts.appendChild(b);};
   if(sel.where==='bag'){
     if(d.kind==='weapon')btn(inv.eq[d.slot]?'สลับกับ '+DEF[inv.eq[d.slot].id].name:'ติดตั้ง',()=>{const old=inv.eq[d.slot];inv.eq[d.slot]=it;if(old)inv.bag[sel.i]=old;else inv.bag.splice(sel.i,1);inv.active=d.slot;player.reloadT=0;sel={where:'eq',slot:d.slot};},true);
-    if(d.kind==='food')btn(d.water?'ดื่ม':'กิน',()=>{useFoodAt(sel.i);if(inv.bag[sel.i]!==it)sel=null;},true);
-    if(d.kind==='heal')btn('ใช้',()=>{useItemAt(sel.i);if(inv.bag[sel.i]!==it)sel=null;},true,player.hp>=player.maxHp&&!(d.cure&&player.infect>0));
-    btn('ทิ้ง',()=>{inv.bag.splice(sel.i,1);dropItem(it);sel=null;});
+    if(d.kind==='food')btn(d.water?'ดื่ม':'กิน',()=>{useFoodAt(player,sel.i);if(inv.bag[sel.i]!==it)sel=null;},true);
+    if(d.kind==='heal')btn('ใช้',()=>{useItemAt(player,sel.i);if(inv.bag[sel.i]!==it)sel=null;},true,player.hp>=player.maxHp&&!(d.cure&&player.infect>0));
+    btn('ทิ้ง',()=>{inv.bag.splice(sel.i,1);dropItem(player,it);sel=null;});
   } else {
     if(inv.active!==sel.slot)btn('ถือ',()=>{inv.active=sel.slot;player.reloadT=0;},true);
     btn('ถอดเก็บเข้ากระเป๋า',()=>{if(inv.bag.length>=inv.cap){feedOnce('full','กระเป๋าเต็ม','warn');return;}inv.bag.push(it);inv.eq[sel.slot]=null;sel=null;});
-    btn('ทิ้ง',()=>{inv.eq[sel.slot]=null;dropItem(it);sel=null;});
+    btn('ทิ้ง',()=>{inv.eq[sel.slot]=null;dropItem(player,it);sel=null;});
   }
   det.appendChild(acts);
 }

@@ -4,8 +4,7 @@ import {SPEEDS} from '../config/time.js';
 import {VERSION,REPO} from '../config/version.js';
 import {diffOf} from '../config/difficulty.js';
 import {agents} from '../entities/agents.js';
-import {player} from '../entities/player.js';
-import {inv} from '../systems/inventory.js';
+import {player,players} from '../entities/player.js';
 import {hhmm} from './hud.js';
 import {settings,fps} from './settings.js';
 
@@ -18,12 +17,13 @@ addEventListener('error',e=>keep(e.message,e.filename?e.filename.split('/').slic
 addEventListener('unhandledrejection',e=>keep('promise: '+(e.reason&&e.reason.message||e.reason)));
 
 export function reportInfo(){
-  const zs=agents.filter(a=>a.state==='zombie'),ppl=agents.filter(a=>a.state==='human').length,p=player;
+  const zs=agents.filter(a=>a.state==='zombie'),ppl=agents.filter(a=>a.state==='human').length,p=player,g=p.gear;
   return [
     'เวอร์ชัน: '+VERSION,
     'ในเกม: วันที่ '+(Math.floor(G.min/1440)+1)+' '+hhmm(G.min)+' · '+(G.phase==='night'?'NIGHT':'DAY')+' · '+diffOf(G).name+' · ×'+SPEEDS[G.speedIdx],
     'ผู้เล่น: HP '+Math.round(p.hp)+' · อาหาร '+Math.round(p.food)+' · น้ำ '+Math.round(p.water)+' · ติดเชื้อ '+Math.round((p.infect||0)*100)+'%'+(p.room>=0?' · อยู่ในตึก '+p.room:''),
-    'กระเป๋า: '+inv.bag.length+'/'+inv.cap+' · ถือ '+(inv.eq[inv.active]?inv.eq[inv.active].id:'fist')+' · '+inv.bag.map(e=>e.id+(e.n?'×'+e.n:'')).join(', '),
+    'กระเป๋า: '+g.bag.length+'/'+g.cap+' · ถือ '+(g.eq[g.active]?g.eq[g.active].id:'fist')+' · '+g.bag.map(e=>e.id+(e.n?'×'+e.n:'')).join(', '),
+    'ผู้เล่น: '+players.length+' คน'+(players.length>1?' ('+players.map(q=>q.alive?Math.round(q.hp):'x').join('/')+')':''),
     'โลก: ซอมบี้ '+zs.length+' ('+[...new Set(zs.map(z=>z.kind))].join(',')+') · ประชาชน '+ppl+' · ประตู '+(G.doors||[]).map(d=>d.broken?'x':d.open?'o':'c').join(''),
     'อุปกรณ์: '+(isTouch?'จอสัมผัส':'เมาส์/คีย์บอร์ด')+' · จอ '+innerWidth+'×'+innerHeight+' @'+(devicePixelRatio||1)+' · กราฟิก '+settings.quality+' · '+fps+' FPS · '+navigator.userAgent,
     'error ล่าสุด: '+(errors.length?'\n  '+errors.join('\n  '):'ไม่มี'),

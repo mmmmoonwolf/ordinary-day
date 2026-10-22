@@ -1,5 +1,5 @@
 import {$,isTouch} from '../core/util.js';
-import {cv,zoom} from '../core/renderer.js';
+import {cv,zoom,camera} from '../core/renderer.js';
 import {G} from '../core/state.js';
 import {keys,ctl,mouse,joy} from '../core/controls.js';
 import {SPEEDS} from '../config/time.js';
@@ -26,7 +26,22 @@ export function showContinue(){
   if(has)$('contInfo').textContent='วันที่ '+(Math.floor(s.G.min/1440)+1)+' · '+hhmm(s.G.min);
 }
 // E / the pick button: take the item, open the bag when it is full, or work a door
-function usePick(){if(player.near)pickup(player.near);else if(player.full)openBag();else if(player.nearDoor>=0)toggleDoor(player.nearDoor);}
+function usePick(){if(player.near)pickup(player,player.near);else if(player.full)openBag();else if(player.nearDoor>=0)toggleDoor(player,player.nearDoor);}
+// keyboard / mouse / stick -> the local player's input, once per simulation step (v0.9: the player reads only p.input)
+const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),mray=new THREE.Raycaster();
+export function pollInput(p){
+  const I=p.input;let ix=0,iy=0;
+  if(keys.KeyW||keys.ArrowUp)iy+=1;if(keys.KeyS||keys.ArrowDown)iy-=1;if(keys.KeyD||keys.ArrowRight)ix+=1;if(keys.KeyA||keys.ArrowLeft)ix-=1;
+  if(joy.id!==null){ix+=joy.x;iy-=joy.y;}
+  let mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1;}
+  // screen to ground under the isometric camera: screen right = (1,-1)/√2, screen up = (-1,-1)/√2
+  I.mx=(ix-iy)/Math.SQRT2;I.mz=(-ix-iy)/Math.SQRT2;I.mag=mag;
+  I.run=!!(keys.ShiftLeft||keys.ShiftRight)||(joy.id!==null&&mag>.9);
+  I.slow=!!keys.KeyC;I.sneak=joy.id!==null&&mag>.08&&mag<.45;
+  I.aim=mouse.active;I.face=null;
+  if(mouse.active){mray.setFromCamera(mouse.ndc,camera);if(mray.ray.intersectPlane(groundPlane,mouse.world)){I.face=Math.atan2(mouse.world.x-p.pos.x,mouse.world.z-p.pos.z);I.aimDist=Math.hypot(mouse.world.x-p.pos.x,mouse.world.z-p.pos.z);}}
+  I.fire=ctl.fireHeld;if(ctl.fireQ>0){I.fireQ=ctl.fireQ;ctl.fireQ=0;}
+}
 function showSound(){for(const id of ['bSound','bSound2'])$(id).textContent='เสียง: '+(isMuted()?'ปิด':'เปิด');}
 export function initInput(){
   addEventListener('keydown',e=>{
@@ -36,11 +51,11 @@ export function initInput(){
     if(G.paused)return;
     keys[e.code]=true;
     if(e.code==='Space'){e.preventDefault();if(!e.repeat){ctl.fireHeld=true;ctl.fireQ=.2;}}
-    if(e.code==='Digit1')switchTo('primary');if(e.code==='Digit2')switchTo('secondary');if(e.code==='Digit3')switchTo('melee');
-    if(e.code==='KeyR')startReload();if(e.code==='KeyH')useHeal();if(e.code==='KeyG')eatBest();
+    if(e.code==='Digit1')switchTo(player,'primary');if(e.code==='Digit2')switchTo(player,'secondary');if(e.code==='Digit3')switchTo(player,'melee');
+    if(e.code==='KeyR')startReload(player);if(e.code==='KeyH')useHeal(player);if(e.code==='KeyG')eatBest(player);
     if(e.code==='KeyE'||e.code==='KeyF')usePick();
-    if(e.code==='KeyB'&&player.fixDoor>=0)fixDoor(player.fixDoor);
-    if(e.code==='KeyQ'&&!e.repeat)throwBottle();
+    if(e.code==='KeyB'&&player.fixDoor>=0)fixDoor(player,player.fixDoor);
+    if(e.code==='KeyQ'&&!e.repeat)throwBottle(player);
   });
   addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Space')ctl.fireHeld=false;});
   addEventListener('blur',()=>{for(const k in keys)keys[k]=false;ctl.fireHeld=false;});
@@ -67,18 +82,18 @@ export function initInput(){
   const atk=$('bAtk');
   atk.addEventListener('pointerdown',e=>{e.preventDefault();mouse.active=e.pointerType==='mouse'&&mouse.active;ctl.fireHeld=true;ctl.fireQ=.2;try{atk.setPointerCapture(e.pointerId);}catch(_){}});
   for(const ev of ['pointerup','pointercancel','lostpointercapture'])atk.addEventListener(ev,()=>{ctl.fireHeld=false;});
-  $('bReload').addEventListener('click',startReload);
-  $('bHeal').addEventListener('click',useHeal);
-  $('bEat').addEventListener('click',eatBest);
+  $('bReload').addEventListener('click',()=>startReload(player));
+  $('bHeal').addEventListener('click',()=>useHeal(player));
+  $('bEat').addEventListener('click',()=>eatBest(player));
   // difficulty for new games, remembered in this browser; a continued save keeps its own
   let pref='normal';try{pref=localStorage.getItem('ordinary-day.diff')||'normal';}catch(_){}
   const pickDiff=k=>{if(!DIFFS[k])k='normal';G.diff=k;for(const b of document.querySelectorAll('.diffs button')){b.classList.toggle('on',b.dataset.diff===k);b.setAttribute('aria-checked',b.dataset.diff===k);}$('diffNote').textContent=DIFFS[k].desc;try{localStorage.setItem('ordinary-day.diff',k);}catch(_){}};
   for(const b of document.querySelectorAll('.diffs button'))b.addEventListener('click',()=>pickDiff(b.dataset.diff));
   pickDiff(pref);
   $('bPick').addEventListener('click',usePick);
-  $('bFix').addEventListener('click',()=>{if(player.fixDoor>=0)fixDoor(player.fixDoor);});
-  $('bThrow').addEventListener('click',throwBottle);
-  for(const c of chipEls)c.addEventListener('click',()=>switchTo(c.dataset.slot));
+  $('bFix').addEventListener('click',()=>{if(player.fixDoor>=0)fixDoor(player,player.fixDoor);});
+  $('bThrow').addEventListener('click',()=>throwBottle(player));
+  for(const c of chipEls)c.addEventListener('click',()=>switchTo(player,c.dataset.slot));
   $('bStart').addEventListener('click',()=>{clearSave();reset();$('overlay').hidden=true;G.running=true;});
   $('bContinue').addEventListener('click',()=>{if(!loadGame()){showContinue();return;}$('overlay').hidden=true;G.running=true;say('เล่นต่อจากเซฟ · '+$('contInfo').textContent,'',4);});
   showContinue();

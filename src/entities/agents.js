@@ -7,7 +7,7 @@ import {ZC} from '../config/zombies.js';
 import {S,part,eyeMat,vestMat} from '../world/materials.js';
 import {nodeXZ,nearestNode,randomNode} from '../world/sidewalk.js';
 import {vendorSpots} from '../world/city.js';
-import {player} from './player.js';
+import {nearestPlayerDist} from './player.js';
 
 // ---------- characters ----------
 const SHIRTS=['#5f7a8c','#8c4a3e','#c9c2b0','#3f4a3a','#7a6a8a','#a88a4a','#2f3b4f','#9a5a6a','#6b6b6b','#d0c8b8','#476b6b','#b07a52'];
@@ -66,6 +66,6 @@ export function spawnPopulation(){
 export function spawnEdge(kind){
   if(agents.length>=95&&kind!=='tyrant')return null;
   for(let tries=0;tries<24;tries++){const n=randomNode();if(n.i!==0&&n.i!==4&&n.j!==0&&n.j!==4&&tries<18)continue;const [x,z]=nodeXZ(n);
-    if(Math.hypot(x-player.pos.x,z-player.pos.z)<28&&tries<23)continue;const a=makeAgent(x,z);becomeZombie(a,kind);agents.push(a);return a;}
+    if(nearestPlayerDist(x,z)<28&&tries<23)continue;const a=makeAgent(x,z);becomeZombie(a,kind);agents.push(a);return a;}
   return null;
 }

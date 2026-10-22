@@ -8,7 +8,7 @@ import {EVENT_CHANCE,AIRDROP_ITEMS,HORDE} from '../config/events.js';
 import {S,part} from '../world/materials.js';
 import {solids,freeAt} from '../world/collision.js';
 import {agents,makeAgent,becomeZombie} from '../entities/agents.js';
-import {player} from '../entities/player.js';
+import {nearestPlayerDist} from '../entities/player.js';
 import {makeItem,spawnDrop,reachableSpot} from './drops.js';
 import {sfx} from './audio.js';
 import {hhmm,say} from '../ui/hud.js';
@@ -40,8 +40,8 @@ function makeCrate(x,z){
 }
 export function clearCrate(){if(!crate)return;scene.remove(crate.g);const i=solids.indexOf(crate.box);if(i>=0)solids.splice(i,1);crate=null;}
 function airdrop(){
-  // a street corner 20-70 m from the player
-  const spots=[];for(let i=1;i<4;i++)for(let j=1;j<4;j++){const x=RC[i]+rnd(-2,2),z=RC[j]+rnd(-2,2),d=Math.hypot(x-player.pos.x,z-player.pos.z);if(d>20&&d<70&&freeAt(x,z,1.2))spots.push([x,z]);}
+  // a street corner 20-70 m from the nearest player
+  const spots=[];for(let i=1;i<4;i++)for(let j=1;j<4;j++){const x=RC[i]+rnd(-2,2),z=RC[j]+rnd(-2,2),d=nearestPlayerDist(x,z);if(d>20&&d<70&&freeAt(x,z,1.2))spots.push([x,z]);}
   if(!spots.length)return;
   const [x,z]=pick(spots);makeCrate(x,z);G.drop={x,z,day:Math.floor(G.min/1440)+1};
   // daytime loot only: Police / Military grades stay night-only (confirmed rule)
