@@ -1,6 +1,8 @@
 import {scene} from '../core/renderer.js';
+import {groundY} from '../config/world.js';
 import {loadGltf} from '../core/gltf.js';
-import {breakables} from './props.js';
+import {breakables,trees} from './props.js';
+import {decor} from './decor.js';
 import {boxes} from './interiors.js';
 
 // ---------- prop models (v0.14) ----------
@@ -16,7 +18,7 @@ export async function loadProps(){
     for(const n of [...g.scene.children]){n.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=false;}});n.updateMatrixWorld(true);tpl[n.name]=n;}
     props.ready=true;
   }catch(e){props.failed=true;console.warn('prop models: '+e.message);}
-  setCars();setFurniture();
+  setCars();setFurniture();setTown();
 }
 export const hasProp=id=>props.ready&&props.on&&!!tpl[id];
 // a copy of prop `id` in a group, scaled so its size along `axis` (0 x, 1 y, 2 z of the source model) is `len`, and moved so
@@ -34,13 +36,15 @@ export function propModel(id,axis,len,at,own){
 // flattens every mesh in the breakable's list, the model included). Plain cars get the box car's paint.
 const PLAIN=['car_1','car_2','car_suv','car_1','car_2','car_suv','car_taxi','car_sport'],PAINT={car_1:'Blue',car_2:'LightBlue',car_suv:'White'};
 export const CAR_LEN=4.3;
+const CHAR=new THREE.Color(.005,.0045,.004);   // burned out: soot black (linear)
 function setCars(){
   let i=0;
   for(const b of breakables){
     if(!b.car)continue;const c=b.car,id=c.police?'car_police':PLAIN[i++%PLAIN.length],on=hasProp(id);
     if(on&&!c.model){
-      const g=propModel(id,2,CAR_LEN,[.5,0,.5],!!PAINT[id]);
-      if(PAINT[id])g.traverse(m=>{if(m.isMesh&&m.material.name===PAINT[id])m.material.color.set(c.paint).convertSRGBToLinear();});
+      const g=propModel(id,2,CAR_LEN,[.5,0,.5],!!PAINT[id]||c.burned);
+      if(c.burned)g.traverse(m=>{if(m.isMesh){m.material.color.copy(CHAR);m.material.roughness=1;m.material.metalness=0;}});   // v0.16
+      else if(PAINT[id])g.traverse(m=>{if(m.isMesh&&m.material.name===PAINT[id])m.material.color.set(c.paint).convertSRGBToLinear();});
       g.position.set(b.x,0,b.z);if(c.alongX)g.rotation.y=Math.PI/2;
       g.userData.y0=0;g.userData.sy0=1;if(b.broken)g.scale.y=.3;
       scene.add(g);b.meshes.push(g);c.model=g;
@@ -50,7 +54,7 @@ function setCars(){
   }
 }
 // graphics quality "low" goes back to the box models (ui/settings.js); drops and held weapons are rebuilt by refreshItems()
-export function setPropsOn(on){const was=props.on;props.on=on;setCars();setFurniture();return props.ready&&was!==on;}
+export function setPropsOn(on){const was=props.on;props.on=on;setCars();setFurniture();setTown();return props.ready&&was!==on;}
 // furniture (v0.15): each box along a wall of an enterable building becomes a row of modules, scaled to the box's height
 // (or depth, whichever is smaller), stretched along the wall to fill it, backs against the wall, fronts into the room.
 // They sit in the room's cutaway group, so they show only when the player is inside, like the boxes did.
@@ -77,4 +81,69 @@ function setFurniture(){
     if(on&&!b.model){b.model=furnModel(b);if(b.model)b.cut.add(b.model);}
     if(b.model)b.model.visible=on;b.mesh.visible=!(on&&b.model);
   }
+}
+
+// ---------- the town (v0.16) ----------
+// Trees (over the old ones, which stay for "low" graphics) and world/decor.js `decor`. Hundreds of small models would be
+// hundreds of draw calls, so they are baked: every copy's triangles go into one mesh per material and per 46 m square of
+// the city (the squares let the camera skip what it does not see). Trees, signs and traffic lights cast shadows.
+const LEAVES=['#6a7243','#86783f','#7a5a34'].map(c=>new THREE.Color(c).convertSRGBToLinear());
+const TOWN_COL={Bark:'#4f4134',Green:'#56603a'};
+let town=null;
+const v3=new THREE.Vector3(),n3=new THREE.Vector3(),nm=new THREE.Matrix3();
+// reads a vertex attribute value; glTF quantized attributes are normalized integers, which r128's getX leaves raw
+function reader(a){
+  const arr=a.isInterleavedBufferAttribute?a.data.array:a.array;
+  const d=!a.normalized?1:arr instanceof Int8Array?127:arr instanceof Uint8Array?255:arr instanceof Int16Array?32767:arr instanceof Uint16Array?65535:1;
+  return (i,c)=>{const v=c===0?a.getX(i):c===1?a.getY(i):a.getZ(i);return d===1?v:Math.max(v/d,-1);};
+}
+const partsCache={};
+function partsOf(id){
+  if(partsCache[id])return partsCache[id];
+  const out=[];tpl[id].traverse(m=>{if(m.isMesh)out.push({geo:m.geometry,mat:m.material,rel:m.matrixWorld.clone()});});
+  bb.setFromObject(tpl[id]);const size=bb.getSize(new THREE.Vector3());
+  return partsCache[id]={out,size,anchor:new THREE.Vector3((bb.min.x+bb.max.x)/2,bb.min.y,(bb.min.z+bb.max.z)/2)};
+}
+// copies [{id,x,y,z,ry,size,shadow,mat(material)}] -> a group of merged meshes
+function bake(list){
+  const buckets=new Map(),M=new THREE.Matrix4(),P=new THREE.Matrix4(),Q=new THREE.Quaternion(),U=new THREE.Vector3(0,1,0);
+  for(const c of list){
+    const pr=partsOf(c.id),k=c.size/(pr.size.y||1);
+    P.compose(new THREE.Vector3(c.x,c.y,c.z),Q.setFromAxisAngle(U,c.ry),new THREE.Vector3(k,k,k)).multiply(new THREE.Matrix4().makeTranslation(-pr.anchor.x,-pr.anchor.y,-pr.anchor.z));
+    const key0=Math.floor((c.x+70)/46)+','+Math.floor((c.z+70)/46)+(c.shadow?'s':'');
+    for(const p of pr.out){const mat=c.mat?c.mat(p.mat):p.mat,key=key0+mat.uuid;let b=buckets.get(key);if(!b)buckets.set(key,b={mat,shadow:c.shadow,items:[]});b.items.push([p.geo,M.multiplyMatrices(P,p.rel).clone()]);}
+  }
+  const g=new THREE.Group();
+  for(const b of buckets.values()){
+    let nv=0,ni=0;for(const [geo] of b.items){nv+=geo.attributes.position.count;ni+=geo.index?geo.index.count:geo.attributes.position.count;}
+    const pos=new Float32Array(nv*3),nor=new Float32Array(nv*3),idx=new Uint32Array(ni);let ov=0,oi=0;
+    for(const [geo,m] of b.items){
+      const pa=geo.attributes.position,na=geo.attributes.normal,rp=reader(pa),rn=na?reader(na):null;nm.getNormalMatrix(m);
+      for(let i=0;i<pa.count;i++){
+        v3.set(rp(i,0),rp(i,1),rp(i,2)).applyMatrix4(m);pos.set([v3.x,v3.y,v3.z],(ov+i)*3);
+        if(rn){n3.set(rn(i,0),rn(i,1),rn(i,2)).applyMatrix3(nm).normalize();nor.set([n3.x,n3.y,n3.z],(ov+i)*3);}else nor[(ov+i)*3+1]=1;
+      }
+      if(geo.index)for(let i=0;i<geo.index.count;i++)idx[oi++]=geo.index.getX(i)+ov;else for(let i=0;i<pa.count;i++)idx[oi++]=ov+i;
+      ov+=pa.count;
+    }
+    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('normal',new THREE.BufferAttribute(nor,3));geo.setIndex(new THREE.BufferAttribute(idx,1));geo.computeBoundingSphere();
+    const mesh=new THREE.Mesh(geo,b.mat);mesh.castShadow=b.shadow;mesh.receiveShadow=true;g.add(mesh);
+  }
+  return g;
+}
+const own={};
+function townMat(m,leaf){
+  if(m.name==='Tree_Leaves'){const k='leaf'+leaf;return own[k]||(own[k]=Object.assign(m.clone(),{color:LEAVES[leaf].clone()}));}
+  const c=TOWN_COL[m.name];if(!c)return m;return own[m.name]||(own[m.name]=Object.assign(m.clone(),{color:new THREE.Color(c).convertSRGBToLinear()}));
+}
+function setTown(){
+  const on=props.ready&&props.on;
+  if(on&&!town){
+    const H=i=>((i*2654435761)>>>0)/4294967296;   // a fixed 0..1 per tree, so the town looks the same every time
+    const list=trees.map((t,i)=>{const leaf=Math.floor(H(i+7)*3);return {id:t.bare?'dead_'+(1+i%5):'tree_'+(1+i%4),x:t.x,y:t.g.position.y,z:t.z,ry:H(i)*6.28,size:t.bare?4.6+H(i+3)*1.6:5+H(i+3)*1.8,shadow:true,mat:m=>townMat(m,leaf)};});
+    for(const d of decor)list.push({id:d.id,x:d.x,y:groundY(d.x,d.z),z:d.z,ry:d.ry,size:d.size,shadow:d.shadow,mat:m=>townMat(m,0)});
+    if(list.every(c=>tpl[c.id])){town=bake(list);scene.add(town);}
+  }
+  if(town)town.visible=on;
+  for(const t of trees)t.g.visible=!(on&&town);
 }

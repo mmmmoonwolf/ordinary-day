@@ -546,6 +546,12 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   const Inv = await import('../src/systems/inventory.js'); const g = T.player.gear; g.bag = []; g.cap = 6;
   Inv.addStack(T.player, 'water', 3); Inv.addStack(T.player, 'a9', 150); Inv.addStack(T.player, 'a9', 150); Inv.addStack(T.player, 'bandage', 9); g.bag.unshift({ id: 'a9', n: 5 }, { id: 'bat_c', mag: 0, dur: 40 }); Inv.tidyBag(g);
   if (JSON.stringify(g.bag.map(e => e.id + ':' + (e.n ?? '-'))) !== JSON.stringify(['bat_c:-', 'a9:305', 'bandage:9', 'water:3'])) vfail('bag not merged / sorted: ' + JSON.stringify(g.bag));
+  // v0.16: the town after the outbreak (looks only: no collision boxes, no rand(), clear of loot and rooms)
+  const Dc = await import('../src/world/decor.js'); const Pr = await import('../src/world/props.js');
+  if (Dc.decor.length < 150 || Dc.decor.some(d => lootSpots.some(s => Math.hypot(s.x - d.x, s.z - d.z) < .85) || roomAt(d.x, d.z) >= 0)) vfail('decor: ' + Dc.decor.length + ' pieces, or one on loot / in a room');
+  const burned = Pr.breakables.filter(x => x.car && x.car.burned).length;
+  if (!burned || !Pr.flickers.length || Pr.trees.length < 30) vfail('burned cars ' + burned + ', flickering lamps ' + Pr.flickers.length + ', trees ' + Pr.trees.length);
+  console.log('v0.16: ' + Dc.decor.length + ' weeds / bushes / signs, ' + Pr.trees.length + ' trees, ' + burned + ' burned cars, ' + Pr.flickers.length + ' flickering lamps');
   console.log('v0.14.1: bag ' + g.bag.map(e => e.id + (e.n ? ' ×' + e.n : '')).join(', '));
 }
 
