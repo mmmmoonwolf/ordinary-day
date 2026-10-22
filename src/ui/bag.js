@@ -1,7 +1,7 @@
-import {$} from '../core/util.js';
+import {$,isTouch} from '../core/util.js';
 import {G} from '../core/state.js';
 import {ctl,joy} from '../core/controls.js';
-import {DEF,GRADES,SLOTNAME,itemColor,durPct} from '../config/items.js';
+import {DEF,STACKS,GRADES,SLOTNAME,itemColor,durPct} from '../config/items.js';
 import {player} from '../entities/player.js';
 import {inv,useItemAt,useFoodAt,dropItem} from '../systems/inventory.js';
 import {feedOnce,updateLoadout} from './hud.js';
@@ -14,13 +14,15 @@ function itemDesc(it){
   if(d.kind==='weapon'){
     if(d.gun)return SLOTNAME[d.slot]+' · แม็ก '+d.mag+' นัด · ใช้กระสุน '+DEF[d.ammo].name+(d.auto?' · ยิงอัตโนมัติ':'')+(d.pierce?' · ทะลุได้ '+d.pierce+' ตัว':'')+(d.heavy?' · เดินช้าลงขณะยิง':'')+' · ในแม็กตอนนี้ '+it.mag+' นัด';
     return SLOTNAME[d.slot]+' · ระยะ '+(d.range||1.4).toFixed(1)+' ม.'+(d.cleave?' · โดนหลายตัวในวงฟัน':'')+(d.dur?' · ความทนเหลือ '+Math.ceil(durPct(it)*100)+'% (พังเมื่อหมด)':'');}
+  if(d.kind==='mat')return 'ใช้ตอกประตูที่ปิดอยู่ให้ทนขึ้น หรือซ่อมประตูที่พัง ยืนใกล้ประตูแล้ว'+(isTouch?'แตะปุ่มตอกไม้':'กด B')+' · มี '+it.n+' แผ่น';
+  if(d.kind==='throw')return 'ขว้างให้แตกเสียงดัง ซอมบี้จะไปดูที่จุดนั้น '+(isTouch?'แตะปุ่ม 🍾':'กด Q (ขว้างไปทางที่เล็ง)')+' · มี '+it.n+' ขวด';
   if(d.kind==='food')return (d.food?'อิ่มขึ้น '+d.food+'%':'หายกระหาย '+d.water+'%')+' · มี '+it.n+' ชิ้น';
   if(d.kind==='ammo')return 'มี '+it.n+' นัด (สูงสุด '+d.stack+' นัดต่อช่อง)';
   if(d.kind==='heal')return 'ฟื้น '+Math.round(d.heal*100)+'% ของ HP สูงสุด'+(d.cure?' และรักษาการติดเชื้อ':'')+' · มี '+it.n+' ชิ้น';
   if(d.kind==='revive')return 'ทำงานอัตโนมัติเมื่อ HP หมด ชุบชีวิตด้วย HP 100% (ใช้ครั้งเดียว)';
   return '';
 }
-function cellHTML(it,extra){const d=DEF[it.id];const ct=(d.kind==='ammo'||d.kind==='heal'||d.kind==='revive'||d.kind==='food')?it.n:(d.gun?it.mag:d.dur?Math.ceil(durPct(it)*100)+'%':'');const g=d.grade?`<span class="sl">${GRADES[d.grade].name}</span>`:'';return `${extra||g}<span class="nm">${d.name}</span><span class="ct">${ct}</span>`;}
+function cellHTML(it,extra){const d=DEF[it.id];const ct=STACKS.has(d.kind)?it.n:(d.gun?it.mag:d.dur?Math.ceil(durPct(it)*100)+'%':'');const g=d.grade?`<span class="sl">${GRADES[d.grade].name}</span>`:'';return `${extra||g}<span class="nm">${d.name}</span><span class="ct">${ct}</span>`;}
 export function renderBag(){
   const eq=$('bagEq');eq.innerHTML='';
   for(const s of ['primary','secondary','melee']){

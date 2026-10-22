@@ -3,7 +3,7 @@ import {camera} from '../core/renderer.js';
 import {G} from '../core/state.js';
 import {keys,ctl,mouse,joy} from '../core/controls.js';
 import {OFF} from '../config/world.js';
-import {DEF,itemColor} from '../config/items.js';
+import {DEF,STACKS,itemColor} from '../config/items.js';
 import {collide} from '../world/collision.js';
 import {weaponModel} from '../world/item-models.js';
 import {agents,makeAgent} from './agents.js';
@@ -15,6 +15,7 @@ import {aimAssist,finishReload,fireGun,meleeHit} from '../systems/combat.js';
 import {updateInfection} from '../systems/infection.js';
 import {updateNeeds} from '../systems/needs.js';
 import {LOW_NEED} from '../config/needs.js';
+import {SNEAK_SPEED} from '../config/stealth.js';
 import {sfx} from '../systems/audio.js';
 import {nearDoor} from '../systems/doors.js';
 import {DOOR_HP} from '../config/shelter.js';
@@ -24,7 +25,7 @@ export let player;
 export function setPlayer(p){player=p;}
 export function makePlayer(){
   const p=makeAgent(OFF,OFF,{shirt:'#c4612a',pants:'#24272c',skin:'#d8a882',hair:'#15130f'});
-  Object.assign(p,{state:'player',hp:100,maxHp:100,alive:true,swing:0,swingDur:.4,hitDone:true,lastHit:-99,face:Math.PI*1.25,cool:0,reloadT:0,recoil:0,aimT:0,held:null,heldId:'fist',down:0,inv:0,infect:0,infWarn:0,food:100,water:100,needWarn:0,starving:false,room:-1,nearDoor:-1});
+  Object.assign(p,{state:'player',hp:100,maxHp:100,alive:true,swing:0,swingDur:.4,hitDone:true,lastHit:-99,face:Math.PI*1.25,cool:0,reloadT:0,recoil:0,aimT:0,held:null,heldId:'fist',down:0,inv:0,infect:0,infWarn:0,food:100,water:100,needWarn:0,starving:false,room:-1,nearDoor:-1,fixDoor:-1,sneak:false});
   return p;
 }
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),mray=new THREE.Raycaster();
@@ -40,11 +41,13 @@ export function updatePlayer(dt){
   if(joy.id!==null){ix+=joy.x;iy-=joy.y;}
   let mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1;}
   const run=keys.ShiftLeft||keys.ShiftRight||(joy.id!==null&&Math.hypot(joy.x,joy.y)>.9);
+  // sneak (v0.7): hold C, or on touch push the stick only a little (it is already that slow)
+  player.sneak=!run&&(!!keys.KeyC||(joy.id!==null&&mag>.08&&mag<.45));
   if(mouse.active){mray.setFromCamera(mouse.ndc,camera);if(mray.ray.intersectPlane(groundPlane,mouse.world))player.face=Math.atan2(mouse.world.x-player.pos.x,mouse.world.z-player.pos.z);}
   if(player.aimT>0)player.aimT-=dt;
   const w=curWeapon(),def=DEF[w.id];
   const heavy=def.heavy&&(ctl.fireHeld||player.aimT>0)?.7:1;
-  if(mag>.08){const wx=(ix-iy)/Math.SQRT2,wz=(-ix-iy)/Math.SQRT2;moveAgent(player,wx,wz,(run?5.8:3.4)*Math.max(.45,mag)*heavy,dt,mouse.active||player.aimT>0);
+  if(mag>.08){const wx=(ix-iy)/Math.SQRT2,wz=(-ix-iy)/Math.SQRT2;moveAgent(player,wx,wz,(keys.KeyC&&!run?SNEAK_SPEED:(run?5.8:3.4)*Math.max(.45,mag))*heavy,dt,mouse.active||player.aimT>0);
     if(run&&G.phase==='night'){G.runNoise-=dt;if(G.runNoise<=0){G.runNoise=.5;makeNoise(player.pos.x,player.pos.z,5);}}}
   else player.moving=0;
   if(player.cool>0)player.cool-=dt;
@@ -57,7 +60,7 @@ export function updatePlayer(dt){
   if(player.swing>0){player.swing-=dt;if(!player.hitDone&&player.swing<player.swingDur*.55){player.hitDone=true;meleeHit(def);}}
   player.recoil=Math.max(0,player.recoil-dt*8);
   let full=null;   // an item underfoot that does not fit in the bag
-  for(let i=drops.length-1;i>=0;i--){const d=drops[i];const k=DEF[d.item.id].kind;if(k!=='ammo'&&k!=='heal'&&k!=='revive'&&k!=='food')continue;
+  for(let i=drops.length-1;i>=0;i--){const d=drops[i];if(!STACKS.has(DEF[d.item.id].kind))continue;
     const dist=Math.hypot(d.x-player.pos.x,d.z-player.pos.z);if(d.hold){if(dist>1.4)d.hold=false;continue;}   // just dropped: wait until the player walks away
     if(dist<.9&&!pickup(d,true))full=d;}
   const np=nearestPickable();const bp=$('bPick');player.full=!np&&full?full:null;
@@ -66,7 +69,7 @@ export function updatePlayer(dt){
     player.near=null;player.nearDoor=-1;}
   else if(np){const key=String(drops.indexOf(np));if(bp.hidden||bp.dataset.for!==key){bp.hidden=false;bp.dataset.for=key;$('pickVerb').textContent='เก็บ ';$('pickName').textContent=DEF[np.item.id].name+gradeTag(np.item.id);bp.style.setProperty('--pg',itemColor(np.item.id));bp.style.borderColor=itemColor(np.item.id);}player.near=np;}
   else{player.near=null;const k=nearDoor();player.nearDoor=k;
-    if(k>=0){const st=G.doors[k],label=(st.open?'ปิดประตู':'เปิดประตู')+(st.hp<DOOR_HP?' · '+Math.round(st.hp/DOOR_HP*100)+'%':''),key='door'+k+label;   // E / the pick button also works doors (v0.6)
+    if(k>=0){const st=G.doors[k],label=(st.open?'ปิดประตู':'เปิดประตู')+(st.hp!==DOOR_HP?' · '+Math.round(st.hp/DOOR_HP*100)+'%':''),key='door'+k+label;   // E / the pick button also works doors (v0.6)
       if(bp.hidden||bp.dataset.for!==key){bp.hidden=false;bp.dataset.for=key;$('pickVerb').textContent='';$('pickName').textContent=label;bp.style.setProperty('--pg','#e2a64a');bp.style.borderColor='#e2a64a';}}
     else if(!bp.hidden)bp.hidden=true;}
   if(performance.now()/1000-player.lastHit>6&&player.hp<player.maxHp&&!(player.infect>0)&&player.food>=LOW_NEED&&player.water>=LOW_NEED)player.hp=Math.min(player.maxHp,player.hp+1.5*dt);

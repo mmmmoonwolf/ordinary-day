@@ -69,5 +69,5 @@ export function useFoodAt(i){
 export function dropItem(it){
   const p=player.pos;let x=p.x,z=p.z;
   for(const da of [0,.6,-.6,1.2,-1.2,1.9,-1.9,2.6,-2.6,Math.PI]){const a=player.face+da,qx=p.x+Math.sin(a)*1.15,qz=p.z+Math.cos(a)*1.15;if(freeAt(qx,qz,.3)&&!walledOff(p.x,p.z,qx,qz)){x=qx;z=qz;break;}}
-  spawnDrop(it,x,z).hold=true;
+  Object.assign(spawnDrop(it,x,z),{hold:true,mine:true});   // mine: other survivors never take it (v0.7)
 }

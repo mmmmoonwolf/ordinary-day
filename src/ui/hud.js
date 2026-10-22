@@ -43,6 +43,7 @@ export function updateLoadout(force){
   for(const c of chipEls){const s=c.dataset.slot;c.classList.toggle('on',inv.active===s);c.classList.toggle('empty',s!=='melee'&&!inv.eq[s]);c.title=inv.eq[s]?DEF[inv.eq[s].id].name+gradeTag(inv.eq[s].id):(s==='melee'?'มือเปล่า':'ว่าง');}
   $('healN').textContent=heals;$('bHeal').classList.toggle('empty',!heals);
   $('eatN').textContent=foods;$('bEat').classList.toggle('empty',!foods);
+  const bottles=inv.bag.reduce((s,e)=>s+(e.id==='bottle'?e.n:0),0);$('bThrow').hidden=!bottles;$('throwN').textContent=bottles;   // v0.7: only with bottles
   $('bReload').disabled=!def.gun;
   $('atkLabel').textContent=def.verb;
 }

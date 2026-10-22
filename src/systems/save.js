@@ -28,7 +28,7 @@ function snapshot(){
     player:{x:player.pos.x,z:player.pos.z,face:player.face,hp:player.hp,down:player.down,inv:player.inv,infect:player.infect,infWarn:player.infWarn,food:player.food,water:player.water,sinceHit:performance.now()/1000-player.lastHit},
     inv:{bag:inv.bag,cap:inv.cap,eq:inv.eq,active:inv.active},
     agents:agents.filter(a=>a.state!=='dead'&&!a.gone).map(a=>{const o={x:a.pos.x,z:a.pos.z,look:a.look};for(const k of AGENT_KEYS)o[k]=a[k];return o;}),
-    drops:drops.map(d=>({item:d.item,x:d.x,z:d.z,spot:d.spot?lootSpots.indexOf(d.spot):-1}))};
+    drops:drops.map(d=>({item:d.item,x:d.x,z:d.z,spot:d.spot?lootSpots.indexOf(d.spot):-1,mine:!!d.mine}))};
 }
 export function saveGame(){
   if(!player||!player.alive||G.over)return false;
@@ -56,7 +56,7 @@ export function loadGame(){
     if(a.state==='zombie')styleZombie(a);
     agents.push(a);
   }
-  for(const d of s.drops)if(validItem(d.item))spawnDrop(d.item,d.x,d.z,d.spot>=0&&lootSpots[d.spot]&&!lootSpots[d.spot].drop?lootSpots[d.spot]:null);
+  for(const d of s.drops)if(validItem(d.item))spawnDrop(d.item,d.x,d.z,d.spot>=0&&lootSpots[d.spot]&&!lootSpots[d.spot].drop?lootSpots[d.spot]:null).mine=!!d.mine;
   sinceSave=0;updateLoadout(true);
   return true;
 }
