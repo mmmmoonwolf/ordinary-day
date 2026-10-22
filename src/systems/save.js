@@ -50,6 +50,7 @@ export function loadGame(){
   while(drops.length)removeDrop(drops[0]);
   Object.assign(G,s.G,{speedIdx:G.speedIdx,diff:s.G.diff||'normal'});
   for(const e of EVENTS)e.done=G.min>=e.t;
+  G.searched=G.searched||[];   // before v0.15 nothing was searched
   G.broken=G.broken||[];applyBroken(G.broken);applyDoors(G.doors);applyEvents();   // saves from before v0.6 have no doors (all open), before v0.8 no events
   s.players.forEach((o,i)=>{
     const p=i?addPlayer():player,g=o.gear||{},eq=g.eq||{};

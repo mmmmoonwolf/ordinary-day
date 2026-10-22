@@ -11,10 +11,8 @@ export const MED_W={day:{bandage:50,antibiotic:30,resurrect:1},night:{bandage:50
 export const CAT_W={day:{weapon:22,ammo:38,med:30,bag:6,food:24,mat:10,throw:8},night:{weapon:32,ammo:42,med:26,food:16,mat:6,throw:6}};
 export const FOOD_W={canned:1,water:1.2};
 // v0.14 food is mostly found indoors (PLACEHOLDERS): the two loot spots in each enterable building roll from this table
-// instead of CAT_W (food about 1 in 3 instead of 1 in 6), and each building has a pantry spot that only ever holds canned
-// food or water. Pantry chances do not fade with the days like REFILL; they still scale with the party size.
+// instead of CAT_W (food about 1 in 3 instead of 1 in 6). Since v0.15 the rest is in the furniture (config/search.js).
 export const INDOOR_W={day:{weapon:12,ammo:26,med:28,bag:4,food:44,mat:10,throw:8},night:{weapon:18,ammo:32,med:24,food:38,mat:6,throw:6}};
-export const PANTRY={start:.8,day:.5,night:.25};
 // v0.7 scarcity, all PLACEHOLDERS. Chance that an empty loot spot gets an item: at a new game, each 06:00 and each 18:30.
 // The 06:00 / 18:30 chances shrink by `fade` per day (never below `floor` of the day-1 value), so later days are leaner.
 export const REFILL={start:.6,day:.3,night:.4,fade:.85,floor:.4};

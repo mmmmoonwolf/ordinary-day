@@ -1,9 +1,9 @@
-// Builds assets/props/props.glb from Quaternius' packs (CC0, FBX): guns, a few survival items and cars (v0.14).
+// Builds assets/props/props.glb from Quaternius' packs (CC0, FBX): guns, a few survival items and cars (v0.14), furniture (v0.15).
 // Every prop is converted with FBX2glTF, then all of them go into one file, one top-level node per prop named as in
 // PROPS below, with shared materials merged and the meshes quantized. Not part of the game or the tests; run it again
 // when the props change:
 //   npm i --no-save fbx2gltf@0.9.7-p1 @gltf-transform/core@4 @gltf-transform/extensions@4 @gltf-transform/functions@4
-//   node tools/build-props.mjs <folder with "Guns", "Survival Pack", "Foods" and "Cars">
+//   node tools/build-props.mjs <folder with "Guns", "Survival Pack", "Foods", "Furnitures" and "Cars">
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { mergeDocuments, prune, dedup, quantize, weld, join } from '@gltf-transform/functions';
@@ -25,6 +25,10 @@ const PROPS = {
   knife: 'Survival Pack/Knife', axe: 'Survival Pack/Axe',
   canned: 'Survival Pack/Can_Closed', water: 'Survival Pack/WaterBottle_1', bandage: 'Survival Pack/Bandages',
   firstaid: 'Survival Pack/FirstAidKit', backpack: 'Survival Pack/Backpack', bottle: 'Foods/Bottle1',
+  // furniture in the enterable buildings (v0.15), put together along the walls by world/prop-models.js
+  f_fridge: 'Furnitures/Kitchen_Fridge', f_kdrawers: 'Furnitures/Kitchen_2Drawers', f_ksink: 'Furnitures/Kitchen_Sink', f_koven: 'Furnitures/Kitchen_Oven',
+  f_kcab: 'Furnitures/Kitchen_Cabinet1', f_k3: 'Furnitures/Kitchen_3Drawers', f_bookshelf: 'Furnitures/Bookshelf', f_shelf: 'Furnitures/Shelf_Large',
+  f_couch: 'Furnitures/Couch_Large1', f_couch_m: 'Furnitures/Couch_Medium2', f_drawer1: 'Furnitures/Drawer_1', f_drawer2: 'Furnitures/Drawer_2', f_drawer5: 'Furnitures/Drawer_5',
   car_police: 'Cars/Cop', car_1: 'Cars/NormalCar1', car_2: 'Cars/NormalCar2', car_suv: 'Cars/SUV', car_taxi: 'Cars/Taxi', car_sport: 'Cars/SportsCar',
 };
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);

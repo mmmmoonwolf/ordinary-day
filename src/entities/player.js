@@ -16,6 +16,7 @@ import {LOW_NEED} from '../config/needs.js';
 import {SNEAK_SPEED} from '../config/stealth.js';
 import {sfxFor} from '../systems/audio.js';
 import {nearDoor,nearFixDoor} from '../systems/doors.js';
+import {nearBoxOf,keepSearching} from '../systems/search.js';
 import {CRAWL_SPEED,REVIVE_SECONDS,REVIVE_RANGE,REVIVE_HP} from '../config/party.js';
 import {uiFor} from '../ui/hud.js';
 
@@ -32,7 +33,7 @@ export const freshInput=()=>({mx:0,mz:0,mag:0,run:false,sneak:false,slow:false,a
 export function makePlayer(i=0){
   const p=makeAgent(OFF+i*1.3,OFF,LOOKS[i%LOOKS.length]);
   Object.assign(p,{state:'player',id:i,name:'ผู้เล่น '+(i+1),local:false,away:false,token:null,hp:100,maxHp:100,alive:true,swing:0,swingDur:.4,hitDone:true,lastHit:-99,face:Math.PI*1.25,cool:0,reloadT:0,recoil:0,aimT:0,held:null,heldId:'fist',down:0,inv:0,
-    infect:0,infWarn:0,food:100,water:100,needWarn:0,starving:false,room:-1,nearDoor:-1,bleed:0,reviveT:0,helping:null,helpT:0,nearDown:null,fixDoor:-1,near:null,full:null,sneak:false,runNoise:0,stay:null,endCause:null,gear:freshGear(),input:freshInput()});
+    infect:0,infWarn:0,food:100,water:100,needWarn:0,starving:false,room:-1,nearDoor:-1,bleed:0,reviveT:0,helping:null,helpT:0,nearDown:null,fixDoor:-1,nearBox:-1,searching:-1,searchT:0,searchHit:0,near:null,full:null,sneak:false,runNoise:0,stay:null,endCause:null,gear:freshGear(),input:freshInput()});
   return p;
 }
 // players that zombies can go after (v0.12: not one whose device has dropped out of the game, p.away)
@@ -71,6 +72,7 @@ export function updatePlayer(p,dt){
   if(p.reloadT>0){p.reloadT-=dt;if(p.reloadT<=0)finishReload(p);}
   if(I.fireQ>0)I.fireQ-=dt;
   if(p.helping&&!keepHelping(p,dt)){if(isDown(p.helping))p.helping.reviveT=0;p.helping=null;}
+  if(p.searching>=0&&!keepSearching(p,dt)){p.searching=-1;p.searchT=0;}   // v0.15
   if((I.fire||I.fireQ>0)&&p.cool<=0&&p.reloadT<=0){
     if(def.gun){if(def.auto||I.fireQ>0){I.fireQ=0;aimAssist(p,def);fireGun(p,w,def);}}
     else{I.fireQ=0;aimAssist(p,def);sfxFor(p).swing();p.swing=p.swingDur=def.cd;p.hitDone=false;p.cool=def.cd;p.aimT=.3;}
@@ -85,13 +87,14 @@ export function updatePlayer(p,dt){
   p.nearDown=nearestDowned(p);
   const np=nearestPickable(p);p.full=!np&&full?full:null;p.near=p.full?null:np;
   p.nearDoor=p.full||np?-1:nearDoor(p);p.fixDoor=nearFixDoor(p);
+  p.nearBox=p.full||np||p.nearDoor>=0?-1:nearBoxOf(p);
   if(performance.now()/1000-p.lastHit>6&&p.hp<p.maxHp&&!(p.infect>0)&&p.food>=LOW_NEED&&p.water>=LOW_NEED)p.hp=Math.min(p.maxHp,p.hp+1.5*dt);
   updateInfection(p,dt);updateNeeds(p,dt);
 }
 // ---------- downed and helping up (v0.10) ----------
 // A downed player can only crawl; the clock runs down (hits take more off, see hurtPlayer) and at 0 they die.
 function updateDowned(p,dt){
-  const I=p.input;I.fireQ=0;p.near=p.full=p.nearDown=null;p.nearDoor=p.fixDoor=-1;
+  const I=p.input;I.fireQ=0;p.near=p.full=p.nearDown=null;p.nearDoor=p.fixDoor=p.nearBox=p.searching=-1;
   if(I.face!==null)p.face=I.face;
   if(I.mag>.08&&!(p.reviveT>0))moveAgent(p,I.mx,I.mz,CRAWL_SPEED*Math.min(1,I.mag),dt,false);else p.moving=0;   // held still while a teammate helps
   p.moving=Math.min(p.moving,.4);
