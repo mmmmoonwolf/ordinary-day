@@ -52,7 +52,7 @@ console.log('after night:', els.clock.textContent, els.phaseName.textContent, 'z
 // 3) save system: autosave while playing, load restores the same world, death deletes the save
 const fail = m => errs.push('save test: ' + m);
 els.bAgain.fire('click');
-T.inv.bag.push({ id: 'bandage', n: 3 }, { id: 'a9', n: 40 }); T.inv.eq.secondary = T.makeItem('pistol_c');
+T.inv.bag.push({ id: 'a9', n: 40 }, { id: 'bandage', n: 3 }); T.inv.eq.secondary = T.makeItem('pistol_c');
 T.player.inv = 1e9;   // keep the player alive so the result does not depend on the night's zombies
 T.G.min = 19 * 60; step(1000);
 if (!store.has('ordinary-day.save')) fail('no autosave after ~17 s of play');
@@ -522,6 +522,11 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   if (pans.some(sp => !sp.drop || !/^(canned|water)$/.test(sp.drop.item.id))) vfail('a pantry holds something other than food: ' + pans.map(sp => sp.drop && sp.drop.item.id).join(','));
   let fi = 0, fo = 0; for (let i = 0; i < 4000; i++) { if (/^(canned|water)$/.test(Dr.rollLoot('day', 'indoor').id)) fi++; if (/^(canned|water)$/.test(Dr.rollLoot('day', 'city').id)) fo++; }
   if (!(fi > fo * 1.6)) vfail('indoor spots are not richer in food: ' + fi + ' vs ' + fo);
+  // v0.14.1: one stack per item, no limit, sorted by category; old saves with split stacks are merged
+  const Inv = await import('../src/systems/inventory.js'); const g = T.player.gear; g.bag = []; g.cap = 6;
+  Inv.addStack(T.player, 'water', 3); Inv.addStack(T.player, 'a9', 150); Inv.addStack(T.player, 'a9', 150); Inv.addStack(T.player, 'bandage', 9); g.bag.unshift({ id: 'a9', n: 5 }, { id: 'bat_c', mag: 0, dur: 40 }); Inv.tidyBag(g);
+  if (JSON.stringify(g.bag.map(e => e.id + ':' + (e.n ?? '-'))) !== JSON.stringify(['bat_c:-', 'a9:305', 'bandage:9', 'water:3'])) vfail('bag not merged / sorted: ' + JSON.stringify(g.bag));
+  console.log('v0.14.1: bag ' + g.bag.map(e => e.id + (e.n ? ' ×' + e.n : '')).join(', '));
   console.log('v0.14: ' + pans.length + ' pantries (food only), food in indoor rolls ' + (fi / 40).toFixed(0) + '% vs outdoor ' + (fo / 40).toFixed(0) + '%');
 }
 

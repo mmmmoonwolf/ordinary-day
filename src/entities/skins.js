@@ -82,7 +82,7 @@ export function zombify(a){
 }
 // once a frame per agent, after animate() has placed the root
 const CLIPS={walk:'Walk',run:'Run',idle:'Idle',die:'Death',hit:'HitRecieve',shoot:'Gun_Shoot',gunIdle:'Idle_Gun',gunRun:'Run_Shoot',use:'Interact',punch:'Punch_Right',slash:'Sword_Slash'};
-const frustum=new THREE.Frustum(),pv=new THREE.Matrix4(),sphere=new THREE.Sphere();
+const frustum=new THREE.Frustum(),pv=new THREE.Matrix4(),sphere=new THREE.Sphere(),qa=new THREE.Quaternion(),qb=new THREE.Quaternion();
 // once a frame, before the agents: what the camera sees
 export function beginSkins(){if(!skins.ready)return;pv.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);frustum.setFromProjectionMatrix(pv);}
 export function skinFrame(a,dt){
@@ -113,6 +113,11 @@ export function skinFrame(a,dt){
   // zombies: arms reaching forward, head hanging (on top of the clip, not while striking or dead)
   const b=s.bones;
   if(s.zombie&&!dead&&clip!=='slash'&&clip!=='punch'&&b.UpperArmL){b.UpperArmL.rotation.z-=1.25;b.UpperArmR.rotation.z+=1.25;b.LowerArmL.rotation.z-=.2;b.LowerArmR.rotation.z+=.2;b.Head.rotation.x+=.3;}
+  // a gun in the hand points where the player faces whatever the clip does with the wrist (v0.14.1): the run and shoot clips
+  // turn the wrist so far that the barrel ended up pointing up or backwards
+  if(a.state==='player'&&a.held&&a.held.parent===b.WristR&&DEF[curWeapon(a).id].gun){
+    b.WristR.updateWorldMatrix(true,false);a.b.root.getWorldQuaternion(qa);b.WristR.getWorldQuaternion(qb);a.held.quaternion.copy(qb.invert().multiply(qa));
+  }
   // a bitten person going grey before turning
   if(a.state==='infected'){const k=clamp(1-a.turnT/8,0,1),sk=new THREE.Color(ZC.walker.skin);for(const m of s.mats)if(/Skin/i.test(m.name))m.color.copy(m.userData.base).lerp(sk,k);}
   // hit: red flash · Boomer about to burst: swelling

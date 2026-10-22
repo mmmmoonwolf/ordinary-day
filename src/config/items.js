@@ -29,28 +29,28 @@ gun('rifle_m','Assault Rifle','mil','primary',6,7,Object.assign({},AR));
 gun('sniper_m','Sniper Rifle','mil','primary',10,2,{ammo:'a762',mag:5,reload:2.8,range:46,spread:.004,noise:42,pierce:3,model:'sniper'});
 gun('lmg_m','Light Machine Gun','mil','primary',7,9,{ammo:'a556',auto:true,mag:100,reload:4.2,range:30,spread:.08,noise:44,heavy:true,model:'lmg'});
 Object.assign(DEF,{
-  a9:{name:'9mm',kind:'ammo',stack:60,find:[10,24],color:'#b8913a'},
-  a556:{name:'5.56mm',kind:'ammo',stack:90,find:[20,40],color:'#5f6b44'},
-  a12:{name:'12 Gauge',kind:'ammo',stack:24,find:[4,10],color:'#9a3328'},
-  a762:{name:'7.62mm',kind:'ammo',stack:20,find:[3,8],color:'#4a4f5a'},
-  bandage:{name:'Bandage',kind:'heal',heal:.25,stack:5,color:'#78D99B'},
-  antibiotic:{name:'Antibiotic',kind:'heal',heal:.35,cure:true,stack:4,color:'#66B0FF'},
-  painkiller:{name:'Painkiller',kind:'heal',heal:.5,stack:3,color:'#b58cff'},
-  firstaid:{name:'First Aid Kit',kind:'heal',heal:.8,stack:2,color:'#ff9a4a'},
-  resurrect:{name:'Resurrection Kit',kind:'revive',stack:1,color:'#F0C46B'},
+  a9:{name:'9mm',kind:'ammo',find:[10,24],color:'#b8913a'},
+  a556:{name:'5.56mm',kind:'ammo',find:[20,40],color:'#5f6b44'},
+  a12:{name:'12 Gauge',kind:'ammo',find:[4,10],color:'#9a3328'},
+  a762:{name:'7.62mm',kind:'ammo',find:[3,8],color:'#4a4f5a'},
+  bandage:{name:'Bandage',kind:'heal',heal:.25,color:'#78D99B'},
+  antibiotic:{name:'Antibiotic',kind:'heal',heal:.35,cure:true,color:'#66B0FF'},
+  painkiller:{name:'Painkiller',kind:'heal',heal:.5,color:'#b58cff'},
+  firstaid:{name:'First Aid Kit',kind:'heal',heal:.8,color:'#ff9a4a'},
+  resurrect:{name:'Resurrection Kit',kind:'revive',color:'#F0C46B'},
   backpack:{name:'กระเป๋าเป้',kind:'bag',slots:14,color:'#e8e3d6'},
   // v0.5 food and water (PLACEHOLDER amounts, % of the bar)
-  canned:{name:'อาหารกระป๋อง',kind:'food',food:45,stack:4,color:'#d9a24a'},
-  water:{name:'น้ำดื่ม',kind:'food',water:50,stack:4,color:'#6fb3e0'},
-  // v0.7 (stack sizes PLACEHOLDER): planks board up doors, bottles are thrown to lure zombies with the noise
-  planks:{name:'ไม้กระดาน',kind:'mat',stack:6,color:'#a9834f'},
-  bottle:{name:'ขวดแก้ว',kind:'throw',stack:3,color:'#7fae8a'},
+  canned:{name:'อาหารกระป๋อง',kind:'food',food:45,color:'#d9a24a'},
+  water:{name:'น้ำดื่ม',kind:'food',water:50,color:'#6fb3e0'},
+  // v0.7: planks board up doors, bottles are thrown to lure zombies with the noise
+  planks:{name:'ไม้กระดาน',kind:'mat',color:'#a9834f'},
+  bottle:{name:'ขวดแก้ว',kind:'throw',color:'#7fae8a'},
 });
 export const SLOTNAME={primary:'อาวุธหลัก',secondary:'อาวุธรอง',melee:'อาวุธประชิด'};
 export function gradeOf(id){return DEF[id].grade||null;}
 export function itemColor(id){const d=DEF[id];if(d.kind==='weapon'&&d.grade)return GRADES[d.grade].color;if(d.kind==='ammo')return '#d9d2bf';return d.color||'#e8e3d6';}
 export function wname(id){return DEF[id].name;}
 // melee wear left, 0..1; items from before v0.5 have no dur and count as new
-// kinds that stack (n) and are picked up by walking over them
+// kinds that stack (n) and are picked up by walking over them; since v0.14.1 one stack per item, with no limit
 export const STACKS=new Set(['ammo','heal','revive','food','mat','throw']);
 export function durPct(it){const m=DEF[it.id].dur;return m?Math.max(0,(it.dur??m)/m):1;}
