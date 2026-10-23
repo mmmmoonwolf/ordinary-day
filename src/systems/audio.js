@@ -83,6 +83,7 @@ const S={
   heal(){play(.5,undefined,0,1,(t,d)=>{tone(t,.15,{f0:520,peak:.16,dest:d});tone(t+.12,.3,{f0:780,peak:.14,dest:d});});},
   infect(){play(.9,undefined,0,1,(t,d)=>{for(const k of [0,.28,.6])tone(t+k,.18,{f0:65,f1:45,peak:.6,dest:d});});},
   radio(){play(.3,undefined,0,1,(t,d)=>noise(t,.25,{type:'bandpass',f0:2600,q:3,peak:.1,attack:.02,dest:d}));},
+  carAlarm(x,z){play(1.4,x,z,60,(t,d,g)=>{for(let i=0;i<6;i++)tone(t+i*.22,.18,{wave:'square',f0:i%2?880:660,peak:.1*g,attack:.01,dest:d});});},   // v0.18
   alarm(){play(1.6,undefined,0,1,(t,d)=>{for(let i=0;i<4;i++)tone(t+i*.36,.3,{wave:'square',f0:i%2?330:440,peak:.07,attack:.02,dest:d});});},
   night(){play(2.4,undefined,0,1,(t,d)=>{tone(t,2.2,{wave:'sawtooth',f0:55,f1:48,peak:.18,attack:.6,dest:d});tone(t,2.2,{f0:110,f1:96,peak:.1,attack:.6,dest:d});});},
   dawn(){play(1.4,undefined,0,1,(t,d)=>{tone(t,.5,{f0:523,peak:.12,dest:d});tone(t+.25,.6,{f0:659,peak:.11,dest:d});tone(t+.5,.8,{f0:784,peak:.1,dest:d});});},

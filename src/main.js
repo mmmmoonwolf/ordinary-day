@@ -12,7 +12,7 @@ import {updateHuman,updateZombie,updateDead} from './entities/ai.js';
 import {player,players,updatePlayer,syncHeld,isSolo,viewed} from './entities/player.js';
 import {animate,separate} from './entities/animation.js';
 import {ring,alertRing,blast,tracers} from './systems/effects.js';
-import {drops,ringMats,refreshItems} from './systems/drops.js';
+import {drops,ringMats,glowMats,refreshItems} from './systems/drops.js';
 import {runEvents} from './systems/phases.js';
 import {updateSky} from './systems/weather.js';
 import {reset} from './systems/game.js';
@@ -82,7 +82,7 @@ function loop(now){
     muzzle.intensity=Math.max(0,muzzle.intensity-dt*60);boomLight.intensity=Math.max(0,boomLight.intensity-dt*20);
     if(blast.userData.t>0){blast.userData.t-=dt;const k=1-blast.userData.t/.4;blast.scale.setScalar(.5+k*4);blast.material.opacity=Math.max(0,.75*(1-k));}else blast.material.opacity=0;
     for(const d of drops)d.m.rotation.y+=dt*.6;
-    const pulse=.45+.3*Math.sin(now/280);for(const k in ringMats)ringMats[k].opacity=pulse;
+    const pulse=.45+.3*Math.sin(now/280);for(const k in ringMats)ringMats[k].opacity=pulse;for(const k in glowMats)glowMats[k].opacity=.1+.1*Math.sin(now/280);
     updateSky(dt,now);
     updateGoal(dt,now);
     updateTips(dt);

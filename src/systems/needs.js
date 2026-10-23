@@ -1,3 +1,4 @@
+import {DAILY} from '../config/events.js';
 import {G} from '../core/state.js';
 import {RATE,SPEEDS} from '../config/time.js';
 import {FOOD_MINUTES,WATER_MINUTES,RUN_THIRST,LOW_NEED,STARVE_HP_PER_MIN} from '../config/needs.js';
@@ -13,7 +14,7 @@ export function updateNeeds(p,dt){
   if(!p.alive||p.down>0||p.bleed>0)return;
   const min=dt*RATE*SPEEDS[G.speedIdx]*diffOf(G).needs,running=p.moving>4;
   p.food=Math.max(0,p.food-min*100/FOOD_MINUTES);
-  p.water=Math.max(0,p.water-min*100/WATER_MINUTES*(running?RUN_THIRST:1));
+  p.water=Math.max(0,p.water-min*100/WATER_MINUTES*(running?RUN_THIRST:1)*(G.heat>G.min?DAILY.heatThirst:1));   // heat wave (v0.18)
   const lowNow=(p.food<LOW_NEED?1:0)+(p.water<LOW_NEED?2:0);
   if(lowNow&~p.needWarn){
     if(lowNow&1&&!(p.needWarn&1))U.feed('หิวแล้ว · HP จะไม่ฟื้นเองจนกว่าจะได้กิน','warn');

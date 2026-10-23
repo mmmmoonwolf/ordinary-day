@@ -6,7 +6,12 @@ export const POOLS={
 };
 // Draft 01 percentages are used as WEIGHTS inside each phase's table (decision Q02/Q03 default)
 export const GRADE_W={day:{civ:70},night:{pol:40,mil:10},nightLot:{pol:40,mil:20}};
-export const MED_W={day:{bandage:50,antibiotic:30,resurrect:1},night:{bandage:50,antibiotic:30,painkiller:15,firstaid:5,resurrect:1}};
+import {INFECTION} from './zombies.js';
+const MED_ALL={day:{bandage:50,antibiotic:30,resurrect:1},night:{bandage:50,antibiotic:30,painkiller:15,firstaid:5,resurrect:1}};
+// v0.18: no Antibiotic while player infection is off (config/zombies.js INFECTION); the other weights are as confirmed
+export const MED_W={day:{},night:{}};
+export function setMedTables(){for(const ph of ['day','night']){MED_W[ph]={...MED_ALL[ph]};if(!INFECTION.on)delete MED_W[ph].antibiotic;}}
+setMedTables();
 // food (v0.5), planks and bottles (v0.7) weights are PLACEHOLDERS
 export const CAT_W={day:{weapon:22,ammo:38,med:30,bag:6,food:24,mat:10,throw:8},night:{weapon:32,ammo:42,med:26,food:16,mat:6,throw:6}};
 export const FOOD_W={canned:1,water:1.2};

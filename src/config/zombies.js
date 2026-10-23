@@ -1,6 +1,9 @@
 // ---------- zombie classes ----------
 // HP + spawn rules from Draft 01 [CONFIRMED]; speeds/damage/infect are PLACEHOLDERS
 // infect = chance that a bite infects the player (v0.4); explosions and the Tyrant slam never infect
+// v0.18: the creator switched player infection off for now: bites do not infect, Antibiotic is no longer found (one already
+// in the bag still heals). An object, not a const flag, so the smoke test can still run the infection code
+export const INFECTION={on:false};
 export const ZC={
   walker:{name:'Walker',hp:30,speed:.9,sense:6,dmg:6,rate:1.3,infect:.1,skin:'#7d8c69'},
   zombie:{name:'Zombie',hp:30,speed:2.6,sense:15,dmg:15,rate:1.0,infect:.2,skin:'#6f7d5c'},

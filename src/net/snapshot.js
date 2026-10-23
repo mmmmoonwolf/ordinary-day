@@ -17,7 +17,7 @@ const ST=['human','infected','zombie','dead'];
 const r2=v=>Math.round((v||0)*100)/100;
 export function freshSent(){return {seen:new Set(),doors:'',broken:-1,drops:'',gear:'',drop:'',searched:''};}
 export function encodeWorld(c,me){
-  const s={t:'s',g:{min:r2(G.min),ph:G.phase,rt:G.rainTarget,ob:G.outbreak,bo:G.blackout,ov:G.over,k:G.kills,kb:G.killsBy,df:G.diff,ec:G.endCause}};
+  const s={t:'s',g:{min:r2(G.min),ph:G.phase,rt:G.rainTarget,ob:G.outbreak,bo:G.blackout,ov:G.over,k:G.kills,kb:G.killsBy,df:G.diff,ec:G.endCause,fg:G.fog,ht:G.heat,st:G.site}};   // fog / heat / event site (v0.18)
   const dj=JSON.stringify(G.doors);if(dj!==c.doors){c.doors=dj;s.doors=G.doors;}
   const sj=G.searched.join();if(sj!==c.searched){c.searched=sj;s.sr=G.searched;}   // v0.15
   if(G.broken.length!==c.broken){c.broken=G.broken.length;s.broken=G.broken;}
@@ -44,7 +44,7 @@ export function clearClientMaps(){byNid.clear();looks.clear();dropByNid.clear();
 export function dropOf(nid){return dropByNid.get(nid)||null;}
 const want=(a,x,z)=>{a.nx=x;a.nz=z;if(!(Math.hypot(x-a.pos.x,z-a.pos.z)<4)){a.pos.x=x;a.pos.z=z;}};   // far off (new, or a jump): no sliding
 export function applyWorld(s,myId){
-  const g=s.g;Object.assign(G,{min:g.min,phase:g.ph,rainTarget:g.rt,outbreak:g.ob,blackout:g.bo,kills:g.k,killsBy:g.kb||{},diff:g.df});
+  const g=s.g;Object.assign(G,{min:g.min,phase:g.ph,rainTarget:g.rt,outbreak:g.ob,blackout:g.bo,kills:g.k,killsBy:g.kb||{},diff:g.df,fog:g.fg||0,heat:g.ht||0,site:g.st||null});
   if(s.doors)applyDoors(s.doors);
   if(s.sr)G.searched=s.sr.slice();
   if(s.broken){if(s.broken.length<G.broken.length){restoreObstacles();G.broken=[];}applyBroken(s.broken);G.broken=s.broken.slice();}

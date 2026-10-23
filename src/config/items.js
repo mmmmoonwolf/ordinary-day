@@ -50,6 +50,10 @@ export const SLOTNAME={primary:'อาวุธหลัก',secondary:'อา�
 export function gradeOf(id){return DEF[id].grade||null;}
 export function itemColor(id){const d=DEF[id];if(d.kind==='weapon'&&d.grade)return GRADES[d.grade].color;if(d.kind==='ammo')return '#d9d2bf';return d.color||'#e8e3d6';}
 export function wname(id){return DEF[id].name;}
+// v0.18: the glowing ring under an item on the ground shows what kind of thing it is; a Police / Military weapon also gets
+// a second, outer ring in its grade colour
+export const RING={weapon:'#ff5a3c',bag:'#c77dff',med:'#3fe07a',food:'#ffa43a',water:'#3fb0ff',ammo:'#ffe23a',other:'#d8d2c0'};
+export function ringColor(id){const d=DEF[id];return RING[d.kind==='weapon'?'weapon':d.kind==='ammo'?'ammo':d.kind==='heal'||d.kind==='revive'?'med':d.kind==='food'?(d.water?'water':'food'):id==='backpack'?'bag':'other'];}
 // melee wear left, 0..1; items from before v0.5 have no dur and count as new
 // kinds that stack (n) and are picked up by walking over them; since v0.14.1 one stack per item, with no limit
 export const STACKS=new Set(['ammo','heal','revive','food','mat','throw']);

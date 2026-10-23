@@ -8,6 +8,8 @@ import { els, handlers, store, errs, step, key } from './headless.js';
 
 // the game modules read the stubs from headless.js, so they are imported only now
 await import('../src/main.js');
+// player infection is switched off in the game since v0.18; the older tests below still run its code, so it is on here until the v0.18 section
+const ZCF = await import('../src/config/zombies.js'), LOOT = await import('../src/config/loot.js'); ZCF.INFECTION.on = true; LOOT.setMedTables();
 const { G } = await import('../src/core/state.js');
 const { agents, becomeZombie, makeAgent } = await import('../src/entities/agents.js');
 const P = await import('../src/entities/player.js');
@@ -563,6 +565,25 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   const hw = Array.from({ length: 300 }, () => Dr.rollLoot('day', 'hardware')).filter(it => D5[it.id].kind === 'weapon'); if (hw.some(it => D5[it.id].gun)) vfail('a gun from the hardware store');
   const pz = lootSpots.filter(s => PL.PLACE_W[s.zone]).length;
   console.log('v0.17: ' + placed.map(r => r.place.type + ' ' + boxes.filter(x => x.room === rooms.indexOf(r)).length).join(', ') + ' furniture; ' + pz + ' shop floor spots; hospital rolls ' + Math.round(hm / 20) + '% medicine, gun shop ' + Math.round(gw / 20) + '% guns / ammo');
+  // v0.18: infection off, rings by kind, a random event every day
+  ZCF.INFECTION.on = false; LOOT.setMedTables();
+  if (LOOT.MED_W.day.antibiotic || LOOT.MED_W.night.antibiotic) vfail('Antibiotic still in the loot tables');
+  { const pl = T.player; pl.infect = 0; infectPlayer(pl); if (pl.infect > 0) vfail('a bite infected the player with infection off'); }
+  const It = await import('../src/config/items.js'); const rc = ['pistol_c', 'backpack', 'bandage', 'canned', 'water', 'a9'].map(It.ringColor);
+  if (new Set(rc).size !== 6) vfail('ring colours not one per kind: ' + rc);
+  const Ev = await import('../src/systems/events.js'); const EvC = await import('../src/config/events.js');
+  const day = Math.floor(T.G.min / 1440) + 1; T.G.plan = []; Ev.planDaily(day + 1); Ev.planDaily(day + 5);
+  const planned = T.G.plan.filter(e => e.daily); if (planned.length !== 3) vfail('daily plan: ' + JSON.stringify(planned));
+  const ran = [];
+  for (const kind of Object.keys(EvC.DAILY.weights)) {
+    T.G.site = null; T.G.alarm = null; T.G.fog = 0; T.G.heat = 0; const d0 = T.drops.length, s0 = T.G.searched.length, a0 = T.agents.length;
+    T.player.pos.x = 0; T.player.pos.z = 0; T.G.plan = [{ kind, at: T.G.min - 1, done: false, warned: false, daily: true }]; Ev.updateEvents(0);
+    const ok = { alarm: () => T.G.alarm, stash: () => T.G.site && T.drops.length > d0, truck: () => T.G.site && T.drops.length > d0, crash: () => T.G.site && T.drops.length > d0, fog: () => T.G.fog > T.G.min, heat: () => T.G.heat > T.G.min, raid: () => T.G.searched.length > s0 }[kind]();
+    if (!ok) vfail('daily event ' + kind + ' did nothing'); else ran.push(kind + (T.agents.length > a0 ? '+' + (T.agents.length - a0) + 'z' : ''));
+  }
+  T.G.alarm = { x: 5, z: 5, until: T.G.min + 10, next: T.G.min }; Ev.updateEvents(0); if (!(T.G.alarm.next > T.G.min)) vfail('car alarm did not call');
+  T.G.alarm = null; T.G.site = null; T.G.fog = 0; T.G.heat = 0; T.G.plan = [];
+  console.log('v0.18: infection off, no Antibiotic, ' + rc.length + ' ring colours, events ran: ' + ran.join(', '));
   console.log('v0.14.1: bag ' + g.bag.map(e => e.id + (e.n ? ' ×' + e.n : '')).join(', '));
 }
 
