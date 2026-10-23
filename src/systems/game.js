@@ -13,6 +13,8 @@ import {restoreObstacles} from './obstacles.js';
 import {REFILL} from '../config/loot.js';
 import {restoreDoors} from './doors.js';
 import {clearThrows} from './throw.js';
+import {applyTanks,clearFires} from './blast.js';
+import {clearFireFx} from './effects.js';
 import {resetEvents} from './events.js';
 
 // ---------- new game ----------
@@ -24,7 +26,7 @@ export function clearWorld(){
   for(const m of blood){scene.remove(m);m.geometry.dispose();}blood.length=0;
   while(drops.length)removeDrop(drops[0]);clearThrows();
   restoreObstacles();
-  Object.assign(G,freshG());restoreDoors();resetEvents();
+  Object.assign(G,freshG());applyTanks();clearFires();clearFireFx();restoreDoors();resetEvents();   // v0.23 every gas cylinder back
   for(const e of EVENTS)e.done=false;
 }
 export function reset(){

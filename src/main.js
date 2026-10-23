@@ -8,12 +8,13 @@ import {buildInteriors,roomAt} from './world/interiors.js';
 import {buildDecor} from './world/decor.js';
 import {buildClutter} from './world/clutter.js';
 import {buildFarm} from './world/farm.js';
+import {buildExtras} from './world/extras.js';
 import {updateOcclusion} from './world/occlusion.js';
 import {agents,removeAgent} from './entities/agents.js';
 import {updateHuman,updateZombie,updateDead} from './entities/ai.js';
 import {player,players,updatePlayer,syncHeld,isSolo,viewed} from './entities/player.js';
 import {animate,separate} from './entities/animation.js';
-import {ring,alertRing,blast,tracers} from './systems/effects.js';
+import {ring,alertRing,blast,tracers,updateFireFx} from './systems/effects.js';
 import {drops,ringMats,glowMats,refreshItems} from './systems/drops.js';
 import {runEvents} from './systems/phases.js';
 import {updateSky} from './systems/weather.js';
@@ -21,6 +22,7 @@ import {reset} from './systems/game.js';
 import {autosave,initSave} from './systems/save.js';
 import {updateShelter} from './systems/doors.js';
 import {updateThrows} from './systems/throw.js';
+import {updateFires} from './systems/blast.js';
 import {initAudio,updateMusic,updateAmbience} from './systems/audio.js';
 import {updateGoal} from './systems/goal.js';
 import {updateHUD} from './ui/hud.js';
@@ -44,6 +46,7 @@ buildInteriors();   // after the city: its own rng, new loot spots appended
 buildDecor();   // v0.16: weeds, signs and stains, own rng, after everything else
 buildClutter();   // v0.18: City Pack litter, wrecks and dumpsters, crowded rooms; own rng, after the decor
 buildFarm();   // v0.22: the farm west of town, through the gate; own rng, everything appended
+buildExtras();   // v0.23: bus stops, benches, signs, billboards, a building site, gas cylinders; own rng, appended
 initInput();
 initSettings();
 $('verLabel').textContent='ORDINARY DAY · PROTOTYPE '+VERSION;
@@ -67,7 +70,7 @@ function simStep(dt,now){
     else updateDead(a,dt);
     if(a.gone||(a.state==='dead'&&a.deadT>25)){removeAgent(a);agents.splice(i,1);}
   }
-  separate();updateThrows(dt);
+  separate();updateThrows(dt);updateFires(dt);
 }
 reset();
 // character models load in the background; until then everyone is blocky (v0.13)
@@ -87,7 +90,7 @@ function loop(now){
     if(blast.userData.t>0){blast.userData.t-=dt;const k=1-blast.userData.t/.4;blast.scale.setScalar(.5+k*4);blast.material.opacity=Math.max(0,.75*(1-k));}else blast.material.opacity=0;
     for(const d of drops)d.m.rotation.y+=dt*.6;
     const pulse=.62+.25*Math.sin(now/280);for(const k in ringMats)ringMats[k].opacity=pulse;for(const k in glowMats)glowMats[k].opacity=.14+.1*Math.sin(now/280);
-    updateSky(dt,now);
+    updateSky(dt,now);updateFireFx(dt,now);
     updateGoal(dt,now);
     updateTips(dt);
   }

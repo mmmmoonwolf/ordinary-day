@@ -610,6 +610,41 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     if (!W.inFarm(z.pos.x, z.pos.z)) vfail('a farm zombie wandered off: ' + JSON.stringify(z.pos));
     console.log('v0.22: farm ' + farmRooms.length + ' rooms (barn ' + I2.boxes.filter(b => b.kind === 'farm').length + ' shelves), ' + spots.length + ' loot spots, ' + Fm.attach.length + ' boarded windows, gate ' + thru.x.toFixed(0) + ', wall held at ' + wall.x.toFixed(1) + ', zombie wandered to ' + z.pos.x.toFixed(0) + ',' + z.pos.z.toFixed(0));
   }
+  // v0.23: gas cylinders blow up when shot (chain, blown list saved), Molotov fire, grenades, farm weapons, town extras
+  { const Ex = await import('../src/world/extras.js'), Bl = await import('../src/systems/blast.js'), Th = await import('../src/systems/throw.js'), Cb = await import('../src/systems/combat.js'), It2 = await import('../src/config/items.js'), Cl2 = await import('../src/world/clutter.js'), Col2 = await import('../src/world/collision.js');
+    const pl = T.player, bag0 = pl.gear.bag.slice(); pl.inv = 1e9; T.G.blown = []; Bl.applyTanks(); Bl.clearFires();
+    if (Ex.tanks.length < 10 || !Ex.tanks.some(t => t.kind === 'propane') || !Ex.tanks.some(t => t.kind === 'gas')) vfail('tanks: ' + Ex.tanks.length);
+    const tk = Ex.tanks.findIndex(t => t.kind === 'propane'), t0 = Ex.tanks[tk];
+    // stand 6 m off, facing it, with a zombie next to the cylinder; one pistol shot
+    const z = T.makeAgent(t0.x + 1.2, t0.z); T.becomeZombie(z, 'zombie'); T.agents.push(z);
+    let st = null; for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const x = t0.x + dx * 6, zz = t0.z + dz * 6; if (Col2.freeAt(x, zz, .5) && Col2.rayWall(x, zz, -dx, -dz, 6) > 5.6) { st = [x, zz, -dx, -dz]; break; } }
+    if (!st) vfail('no clear shot at a cylinder'); else {
+      pl.pos.x = st[0]; pl.pos.z = st[1]; pl.face = Math.atan2(st[2], st[3]);
+      const I3 = await import('../src/world/interiors.js'); for (const [ox, oz] of [[st[3] * 1.3, -st[2] * 1.3], [-st[3] * 1.3, st[2] * 1.3], [st[2] * 1.3, st[3] * 1.3], [-st[2] * 2, -st[3] * 2]]) { const x = t0.x + ox, zz = t0.z + oz; if (Col2.freeAt(x, zz, .4) && !I3.walledOff(t0.x, t0.z, x, zz)) { z.pos.x = x; z.pos.z = zz; break; } } z.feed = 99;
+      const w = { id: 'pistol_c', mag: 12 }, d0 = It2.DEF.pistol_c, sp = d0.spread; d0.spread = 0; Cb.fireGun(pl, w, d0); d0.spread = sp;
+      for (let i = 0; i < 30; i++) Bl.updateFires(1 / 30);
+      if (!T.G.blown.includes(tk) || Col2.solids.includes(t0.box)) vfail('shot cylinder did not blow: ' + JSON.stringify(T.G.blown));
+      if (z.state === 'zombie') vfail('zombie next to the blast survived (hp ' + z.hp + ')');
+    }
+    const blownN = T.G.blown.length; S.saveGame(); T.G.blown = []; Bl.applyTanks(); S.loadGame(); if (T.G.blown.length !== blownN || !Ex.tanks[tk].entry.gone) vfail('blown cylinders not restored from the save');
+    // a Molotov burns a zombie standing in it, a grenade blows one up
+    pl.pos.x = 0; pl.pos.z = -4; pl.face = 0; pl.input.aim = false; pl.gear.bag = [{ id: 'molotov', n: 1 }, { id: 'grenade', n: 1 }, { id: 'bottle', n: 2 }];
+    if (Th.throwPick(pl.gear) !== 'bottle') vfail('default throwable should be the bottle'); Th.pickThrow(pl, 'molotov'); if (Th.throwPick(pl.gear) !== 'molotov') vfail('picked throwable');
+    const z2 = T.makeAgent(0, -4 + 9.6); T.becomeZombie(z2, 'zombie'); T.agents.push(z2); z2.feed = 99;
+    Th.throwBottle(pl); for (let i = 0; i < 300; i++) { Th.updateThrows(1 / 30); Bl.updateFires(1 / 30); z2.pos.x = 0; z2.pos.z = -4 + 9.6; }
+    const burnt = z2.state !== 'zombie' || z2.hp < z2.maxHp * .5;
+    Th.pickThrow(pl, 'grenade'); const z3 = T.makeAgent(0, -4 + 9.6); T.becomeZombie(z3, 'zombie'); T.agents.push(z3); z3.feed = 99;
+    Th.throwBottle(pl); for (let i = 0; i < 90; i++) { Th.updateThrows(1 / 30); Bl.updateFires(1 / 30); }
+    if (!burnt || z3.state === 'zombie') vfail('Molotov burnt ' + burnt + ', grenade killed ' + (z3.state !== 'zombie') + ' (' + z3.hp + ')');
+    if (Th.throwPick(pl.gear) !== 'bottle') vfail('after the grenade the bottles are next'); Bl.clearFires();
+    // the farm rolls its own tools; town extras are there
+    const fr = Array.from({ length: 400 }, () => Dr.rollLoot('day', 'farm')).map(it => it.id), tools = fr.filter(id => ['pitchfork_c', 'sickle_c', 'spade_c', 'pickaxe_c', 'dbshotgun_c'].includes(id));
+    if (!tools.length || fr.some(id => It2.DEF[id].kind === 'weapon' && !tools.includes(id))) vfail('farm weapons: ' + [...new Set(fr.filter(id => It2.DEF[id].kind === 'weapon'))]);
+    const ids = id => Dc.decor.filter(d => d.id === id).length, stops = Cl2.heavy.filter(h => h.id === 'c_busstop').length;
+    if (stops < 2 || ids('c_bench') < 5 || ids('n_corn1') + ids('n_corn2') < 100 || ids('n_wheat') < 50) vfail('extras: bus stops ' + stops + ', benches ' + ids('c_bench') + ', corn ' + (ids('n_corn1') + ids('n_corn2')) + ', wheat ' + ids('n_wheat'));
+    T.G.blown = []; Bl.applyTanks(); pl.gear.bag = bag0; delete pl.gear.throwId;
+    console.log('v0.23: ' + Ex.tanks.length + ' gas cylinders / cans, shot one: blew ' + blownN + ' (chain), saved; Molotov burnt a zombie, grenade killed one; farm tools ' + Math.round(tools.length / 4) + '%; ' + stops + ' bus stops, ' + ids('c_bench') + ' benches, ' + ids('c_stop') + ' stop signs, ' + (ids('n_corn1') + ids('n_corn2')) + ' corn, ' + ids('n_wheat') + ' wheat');
+  }
   // v0.19: every recording the game asks for is in assets/sounds/
   { const Au = await import('../src/systems/audio.js'), fs = await import('fs'); const miss = Object.values(Au.FILES).flat().filter(n => !fs.existsSync(new URL('../assets/sounds/' + n + '.mp3', import.meta.url)));
     if (miss.length) vfail('missing sounds: ' + miss); else console.log('v0.19: ' + Object.values(Au.FILES).flat().length + ' recordings (' + Object.entries(Au.FILES).map(([k, l]) => k + ' ' + l.length).join(', ') + ')'); }

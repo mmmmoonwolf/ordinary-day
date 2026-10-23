@@ -4,6 +4,7 @@ import {player,viewed} from '../entities/player.js';
 import {agents} from '../entities/agents.js';
 import {G} from '../core/state.js';
 import {breakables} from '../world/props.js';
+import {fireSpots} from './effects.js';
 
 // ---------- audio ----------
 // Sounds are synthesized with WebAudio, except screams, rain and thunder (v0.19, recordings in assets/sounds/). Browsers
@@ -91,9 +92,9 @@ function sample(kind,t,dest,gain,o={}){
   src.connect(f).connect(g).connect(dest);src.start(t);return src;
 }
 // v0.21 which recording each gun model plays: [kind, playback rate, level]; the sniper is the rifle shot slowed down
-const GUN_REC={pistol:['shot_pistol',1,.8],smg:['shot_smg',1.05,.65],lmg:['shot_smg',.85,.8],rifle:['shot_rifle',1,.8],sniper:['shot_rifle',.78,1],shotgun:['shot_shotgun',1,.95]};
-const RELOAD_REC={pistol:'reload_pistol',shotgun:'reload_shotgun',smg:'reload_rifle',rifle:'reload_rifle',lmg:'reload_rifle',sniper:'reload_rifle'};
-const GUN={
+const GUN_REC={pistol:['shot_pistol',1,.8],smg:['shot_smg',1.05,.65],lmg:['shot_smg',.85,.8],rifle:['shot_rifle',1,.8],sniper:['shot_rifle',.78,1],shotgun:['shot_shotgun',1,.95],dbshotgun:['shot_shotgun',.9,1]};
+const RELOAD_REC={pistol:'reload_pistol',shotgun:'reload_shotgun',dbshotgun:'reload_shotgun',smg:'reload_rifle',rifle:'reload_rifle',lmg:'reload_rifle',sniper:'reload_rifle'};
+const GUN={dbshotgun:{f:850,dur:.34,peak:.8,thump:75},
   pistol:{f:1900,dur:.12,peak:.5,thump:110},smg:{f:2300,dur:.07,peak:.32,thump:0},rifle:{f:1500,dur:.11,peak:.5,thump:95},
   shotgun:{f:900,dur:.3,peak:.75,thump:80},sniper:{f:1300,dur:.38,peak:.7,thump:70},lmg:{f:1300,dur:.09,peak:.45,thump:85},
 };
@@ -229,6 +230,7 @@ export function updateAmbience(m){
   if(v){
     let pol=null,pd=1e9,fire=null,fd=1e9;
     for(const b of breakables)if(b.car){const d=Math.hypot(b.x-v.pos.x,b.z-v.pos.z);if(b.car.police&&d<pd){pd=d;pol=b;}if(b.car.burned&&d<fd){fd=d;fire=b;}}
+    for(const f of fireSpots){const d=Math.hypot(f.x-v.pos.x,f.z-v.pos.z);if(d<fd){fd=d;fire=f;}}   // v0.23 Molotovs and burning fuel
     if(G.site&&G.site.kind==='crash'){const d=Math.hypot(G.site.x-v.pos.x,G.site.z-v.pos.z);if(d<fd){fd=d;fire=G.site;}}
     near('siren_police',m.on&&m.night>.5&&pol,pol,55,.3,t);near('fire',m.on&&fire,fire,20,.5,t);
     // steps on the wooden floors indoors, one every 0.75 m walked (louder running, quiet sneaking)

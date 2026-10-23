@@ -19,7 +19,7 @@ import {solidAt,furnish} from './clutter.js';
 // Kenney models (Retro Urban Kit, Building Kit: trucks, pallets, planks, concrete barriers, trees, window barricades)
 // are drawn by world/prop-models.js; `attach` holds the ones that belong to a building's shell (hidden with it).
 export const attach=[];   // {id, x, y, z, ry, size, group}
-export const farm={field:null,corn:null};
+export const farm={field:null,corn:null,pond:null};
 const tex={};
 function planksTex(paint){const [c,g]=mk(128,128);g.fillStyle=paint;g.fillRect(0,0,128,128);
   for(let x=0;x<128;x+=16){g.fillStyle='rgba(0,0,0,.35)';g.fillRect(x,0,2,128);g.fillStyle=`rgba(255,240,210,${.05+Math.random()*.08})`;g.fillRect(x+3,0,10,128);}
@@ -83,8 +83,17 @@ export function buildFarm(){
   farm.field=ground(S({map:soilTex(),roughness:1}),-127,-104,8,27,.012);
   // dead corn in rows: two crossed quads per stalk, all one mesh; it hides what walks in it (no collision)
   {const q=new THREE.PlaneGeometry(.9,1);q.translate(0,.5,0);const parts=[];
-    for(let z=9;z<26.5;z+=1.25)for(let x=-126.3;x<-104.6;x+=.55){if(rng()<.12)continue;const h=R(1.3,2.1),a=R(0,3.14),xx=x+R(-.15,.15),zz=z+R(-.2,.2);parts.push([q,M(xx,.01,zz,1,h,1,a)],[q,M(xx,.01,zz,1,h,1,a+Math.PI/2)]);}
+    let n=0;for(let z=9;z<26.5;z+=1.25)for(let x=-126.3;x<-104.6;x+=.55){if(rng()<.12)continue;const h=R(1.3,2.1),a=R(0,3.14),xx=x+R(-.15,.15),zz=z+R(-.2,.2);parts.push([q,M(xx,.01,zz,1,h,1,a)],[q,M(xx,.01,zz,1,h,1,a+Math.PI/2)]);
+      if(n++%2===0)decor.push({id:rng()<.5?'n_corn1':'n_corn2',x:xx,z:zz,ry:a,size:h*1.05,shadow:false,crop:true});}   // v0.23 the 3D corn (every other stalk) takes over once the models load
     const mat=S({map:cornTex(),alphaTest:.5,side:THREE.DoubleSide,roughness:1});farm.corn=merge(parts,mat);farm.corn.castShadow=true;scene.add(farm.corn);}
+  // v0.23 a strip of wheat behind the farmhouse, a pond with lily pads, a greenhouse, washing hung out to dry
+  ground(S({map:soilTex(),roughness:1}),-102.5,-92,-28.2,-21.2,.012);
+  for(let z=-27.6;z<-21.6;z+=.75)for(let x=-102;x<-92.4;x+=.75)if(rng()<.85)decor.push({id:'n_wheat',x:x+R(-.2,.2),z:z+R(-.2,.2),ry:R(0,6.28),size:R(.8,1.1),shadow:false,crop:true});
+  {const w=new THREE.Mesh(new THREE.CircleGeometry(3.3,28),S({color:new THREE.Color('#2b3530').convertSRGBToLinear(),roughness:.12,metalness:.5}));w.rotation.x=-Math.PI/2;w.scale.set(1.25,1,1);w.position.set(-95.5,.03,24);w.receiveShadow=true;scene.add(w);farm.pond=w;
+    const bank=new THREE.Mesh(new THREE.RingGeometry(3.2,3.9,28),S({color:new THREE.Color('#3f3626').convertSRGBToLinear(),roughness:1}));bank.rotation.x=-Math.PI/2;bank.scale.set(1.25,1,1);bank.position.set(-95.5,.025,24);scene.add(bank);
+    solids.push({x0:-95.5-3.6,x1:-95.5+3.6,z0:24-2.6,z1:24+2.6});   // water: walk round it
+    for(let k=0;k<7;k++){const a=R(0,6.28),d=R(.5,2.4);decor.push({id:'n_lily',x:-95.5+Math.cos(a)*d*1.25,z:24+Math.sin(a)*d,ry:R(0,6.28),size:R(.7,1.1),by:'w',y:.035,shadow:false});}}
+  solidAt('c_greenhouse',-74.5,21.5,2.2,3,0,3,-1);
   // buildings: farmhouse and cottage (homes), the barn (a place), a shed and a silo
   const house=shed(-83,-15,11,9,6.4,'#8d8170','#7d6a5a'),barn=shed(-108,-16.5,14,12,7.5,'#7a3a2c','#8c949a'),cottage=shed(-84,16,9,8,3.6,'#9a9484','#6d5a4a'),hut=shed(-97,15,5,4,3,'#6b5e4c','#7f878b');
   windows(house,0,1,3,1.6,rng,.6);windows(house,0,1,3,4.8,rng,.6);windows(house,1,0,2,1.6,rng,.5);windows(house,-1,0,2,4.8,rng,.5);windows(cottage,0,-1,2,1.6,rng,.7);windows(cottage,1,0,2,1.6,rng,.5);
@@ -107,7 +116,7 @@ export function buildFarm(){
   const put=(id,x,z,size,o={})=>decor.push({id,x,z,ry:o.ry??R(0,6.28),size,shadow:o.shadow??true,y:o.y,by:o.by});
   for(let k=0;k<26;k++){const e=rng(),x=e<.4?FARM.x0+R(-4,1):R(FARM.x0,WALL_X-3),z=e<.4?R(FARM.z0,FARM.z1):(rng()<.5?FARM.z0+R(-4,1.5):FARM.z1+R(-1.5,4));if(Math.abs(z)<4&&x>-128)continue;put(rng()<.35?'k_pine':rng()<.6?'k_tree':'dead_'+(1+Math.floor(rng()*5)),x,z,R(5,7.5));}
   for(let k=0;k<14;k++){const x=R(FARM.x0+2,WALL_X-2),z=R(FARM.z0+2,FARM.z1-2);if(freeAt(x,z,1)&&roomAt(x,z,1)<0&&!(x>-128&&x<-103&&z>7&&z<28))put(rng()<.5?'k_shrub':'grass_2',x,z,R(.5,1.1));}
-  for(const [id,x,z,s] of [['k_pallet',-104,-9.5,1.2],['k_pallet',-104.3,-8.2,1.2],['k_planks',-112,-9.3,1.3],['k_planks',-96,-8.5,1.2],['k_bricks',-90,10,.7],['k_pallet',-99.8,12,1.1],['k_barrier',-71,-3.4,1.3],['k_barrier',-71.5,3.6,1.3],['k_roadblock',-72.5,1.2,1.2],['k_lean',-116.5,-17,2.2]])put(id,x,z,s,{by:'w',ry:R(-.4,.4)});
+  for(const [id,x,z,s] of [['c_washline',-91,-23.5,2.4],['n_birch',-100.2,21.8,6.5],['n_birch',-90.6,26.5,6],['tree_2',-91.5,20,5.5],['n_berry',-99.8,26.8,.9],['n_berry',-88.6,22.5,.8],['n_mossrock',-92.6,27.2,.6],['k_pallet',-104,-9.5,1.2],['k_pallet',-104.3,-8.2,1.2],['k_planks',-112,-9.3,1.3],['k_planks',-96,-8.5,1.2],['k_bricks',-90,10,.7],['k_pallet',-99.8,12,1.1],['k_barrier',-71,-3.4,1.3],['k_barrier',-71.5,3.6,1.3],['k_roadblock',-72.5,1.2,1.2],['k_lean',-116.5,-17,2.2]])put(id,x,z,s,{by:/^k_/.test(id)?'w':undefined,ry:R(-.4,.4)});
   // loot out in the open (zone 'farm', config/places.js), appended after every other spot
   for(const [x,z] of [[-95,-9],[-99.5,10.5],[-118,-9.5],[-90.5,7.5],[-104.5,4.5],[-76,6],[-125,-3]])if(freeAt(x,z,.5))lootSpots.push({x,z,zone:'farm',drop:null});
 }

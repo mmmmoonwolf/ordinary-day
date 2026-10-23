@@ -4,6 +4,7 @@ import {ctl,joy} from '../core/controls.js';
 import {DEF,STACKS,GRADES,SLOTNAME,itemColor,durPct} from '../config/items.js';
 import {player,isSolo} from '../entities/player.js';
 import {act} from '../systems/actions.js';
+import {throwPick} from '../systems/throw.js';
 import {updateLoadout} from './hud.js';
 
 // ---------- bag UI ----------
@@ -15,7 +16,7 @@ function itemDesc(it){
     if(d.gun)return SLOTNAME[d.slot]+' · แม็ก '+d.mag+' นัด · ใช้กระสุน '+DEF[d.ammo].name+(d.auto?' · ยิงอัตโนมัติ':'')+(d.pierce?' · ทะลุได้ '+d.pierce+' ตัว':'')+(d.heavy?' · เดินช้าลงขณะยิง':'')+' · ในแม็กตอนนี้ '+it.mag+' นัด';
     return SLOTNAME[d.slot]+' · ระยะ '+(d.range||1.4).toFixed(1)+' ม.'+(d.cleave?' · โดนหลายตัวในวงฟัน':'')+(d.dur?' · ความทนเหลือ '+Math.ceil(durPct(it)*100)+'% (พังเมื่อหมด)':'');}
   if(d.kind==='mat')return 'ใช้ตอกประตูที่ปิดอยู่ให้ทนขึ้น หรือซ่อมประตูที่พัง ยืนใกล้ประตูแล้ว'+(isTouch?'แตะปุ่มตอกไม้':'กด B')+' · มี '+it.n+' แผ่น';
-  if(d.kind==='throw')return 'ขว้างให้แตกเสียงดัง ซอมบี้จะไปดูที่จุดนั้น '+(isTouch?'แตะปุ่ม 🍾':'กด Q (ขว้างไปทางที่เล็ง)')+' · มี '+it.n+' ขวด';
+  if(d.kind==='throw')return (d.fire?'ขว้างแล้วไฟลุกเป็นวง ซอมบี้ที่เดินผ่านไหม้ อย่าเดินเข้าไปเอง ':d.blast?'ขว้างแล้วระเบิดหลังตก 1 วินาที รัศมีราว 4.5 ม. ถอยให้พ้น ':'ขว้างให้แตกเสียงดัง ซอมบี้จะไปดูที่จุดนั้น ')+(isTouch?'แตะปุ่มขว้าง':'กด Q (ขว้างไปทางที่เล็ง)')+' · มี '+it.n+' ชิ้น'+' · มี '+it.n+' ขวด';
   if(d.kind==='food')return (d.food?'อิ่มขึ้น '+d.food+'%':'หายกระหาย '+d.water+'%')+' · มี '+it.n+' ชิ้น';
   if(d.kind==='ammo')return 'มี '+it.n+' นัด';
   if(d.kind==='heal')return 'ฟื้น '+Math.round(d.heal*100)+'% ของ HP สูงสุด'+(d.cure?' และรักษาการติดเชื้อ':'')+' · มี '+it.n+' ชิ้น';
@@ -54,6 +55,7 @@ export function renderBag(){
     // each button is an action (v0.12): run here, or sent to the host when playing in someone else's game
     if(d.kind==='weapon')btn(inv.eq[d.slot]?'สลับกับ '+DEF[inv.eq[d.slot].id].name:'ติดตั้ง',()=>{act('equip',sel.i);sel={where:'eq',slot:d.slot};},true);
     if(d.kind==='food')btn(d.water?'ดื่ม':'กิน',()=>{act('foodAt',sel.i);if(inv.bag[sel.i]!==it)sel=null;},true);
+    if(d.kind==='throw')btn(throwPick(inv)===it.id?'ขว้างอันนี้อยู่':'ใช้ปุ่มขว้างกับอันนี้',()=>act('pickThrow',it.id),true,throwPick(inv)===it.id);   // v0.23
     if(d.kind==='heal')btn('ใช้',()=>{act('useAt',sel.i);if(inv.bag[sel.i]!==it)sel=null;},true,player.hp>=player.maxHp&&!(d.cure&&player.infect>0));
     btn('ทิ้ง',()=>{act('dropBag',sel.i);sel=null;});
   } else {
