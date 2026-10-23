@@ -12,3 +12,7 @@ export const GRENADE_FUSE=.9;   // seconds from landing to the blast
 // burning ground: damage per second to zombies and players standing in it, a Molotov's fire, how long a cylinder sits
 // in fire before it goes, and how far the flames are heard
 export const FIRE={zdps:28,pdps:12,molotov:[2.6,7],ignite:1.2,noise:26};
+// v0.26 the camp: bear traps hold a zombie (s) and hurt it, hold a player (s) and hurt them; walkers left there
+export const CAMP_CFG={trapHold:6,trapZ:30,trapHoldP:2,trapP:20,guards:4};
+// v0.26 a flare: burns this long (s), calling zombies this far (m) every few seconds
+export const FLARE={secs:20,noise:34,every:2.5};

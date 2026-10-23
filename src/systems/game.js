@@ -14,6 +14,7 @@ import {REFILL} from '../config/loot.js';
 import {restoreDoors} from './doors.js';
 import {clearThrows} from './throw.js';
 import {applyTanks,clearFires} from './blast.js';
+import {applyTraps} from './camp.js';
 import {clearFireFx} from './effects.js';
 import {resetEvents} from './events.js';
 
@@ -26,7 +27,7 @@ export function clearWorld(){
   for(const m of blood){scene.remove(m);m.geometry.dispose();}blood.length=0;
   while(drops.length)removeDrop(drops[0]);clearThrows();
   restoreObstacles();
-  Object.assign(G,freshG());applyTanks();clearFires();clearFireFx();restoreDoors();resetEvents();   // v0.23 every gas cylinder back
+  Object.assign(G,freshG());applyTanks();clearFires();clearFireFx();restoreDoors();resetEvents();applyTraps();   // v0.23 every gas cylinder back, v0.26 every trap
   for(const e of EVENTS)e.done=false;
 }
 export function reset(){

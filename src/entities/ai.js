@@ -51,6 +51,7 @@ function slam(a){
 export function updateZombie(a,dt){
   const C=ZC[a.kind];
   if(a.hitT>0){a.hitT-=dt;a.b.mats[0].emissive.setRGB(Math.max(0,a.hitT)*4,0,0);}
+  if(a.trapT>0){a.trapT-=dt;a.moving=0;return;}   // v0.26 caught in a bear trap
   if(a.retreat){let near=null,nd=1e9;for(const p of players){const d=Math.hypot(a.pos.x-p.pos.x,a.pos.z-p.pos.z);if(d<nd){nd=d;near=p;}}   // walk away from the nearest player
     const dx=a.pos.x-near.pos.x,dz=a.pos.z-near.pos.z,d=nd;moveAgent(a,dx,dz,Math.max(1.6,C.speed*.6),dt);
     if(d>36||!inWorld(a.pos.x,a.pos.z,.5)){a.gone=true;}return;}

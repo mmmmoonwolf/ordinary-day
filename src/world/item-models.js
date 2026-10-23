@@ -50,7 +50,7 @@ export function weaponModel(model){
   return g;
 }
 // items on the ground with a prop model: [height, or width when `w`]
-const ITEM={canned:[.3],water:[.42],bandage:[.18],firstaid:[.42,'w'],backpack:[.55],bottle:[.36],molotov:[.34,0,'w_molotov'],grenade:[.14,0,'w_grenade']};   // [size, by width, prop id when not the item id]
+const ITEM={canned:[.3],water:[.42],bandage:[.18],firstaid:[.42,'w'],backpack:[.55],bottle:[.36],molotov:[.34,0,'w_molotov'],grenade:[.14,0,'w_grenade'],flare:[.34,1,'s_flare']};   // [size, by width, prop id when not the item id]
 export function itemModel(id){
   const d=DEF[id];
   if(d.kind==='weapon'){const m=weaponModel(d.model),p=hasProp(d.model)||(WP[d.model]&&hasProp(WP[d.model][0]));if(p){m.rotation.z=Math.PI/2;m.position.y=.06;}else m.position.y=d.gun?.2:.07;return m;}   // a prop weapon lies on its side
@@ -67,6 +67,7 @@ export function itemModel(id){
   else if(id==='planks'){g.add(part(cm('#a9834f'),.7,.05,.16,0,.03,0));g.add(part(cm('#8f6d3f'),.7,.05,.16,.04,.08,.12));}
   else if(id==='bottle'){g.add(part(cm('#7fae8a'),.1,.26,.1,0,.13,0));g.add(part(cm('#7fae8a'),.05,.1,.05,0,.31,0));}
   else if(id==='molotov'){g.add(part(cm('#6e8a52'),.1,.24,.1,0,.12,0));g.add(part(cm('#d8c9a8'),.04,.1,.04,0,.29,0));}   // v0.23
+  else if(id==='flare'){g.add(part(cm('#d84a3a'),.08,.08,.3,0,.05,0));g.add(part(cm('#2b2d30'),.06,.14,.06,0,.06,-.1));}   // v0.26
   else if(id==='grenade'){g.add(part(cm('#4f5a36'),.11,.13,.11,0,.07,0));g.add(part(pipeMat,.03,.05,.05,0,.16,0));}
   else if(id==='backpack'){g.add(part(cm('#4f5a3a'),.46,.56,.3,0,.28,0));g.add(part(woodMat,.36,.24,.1,0,.2,.19));}
   return g;

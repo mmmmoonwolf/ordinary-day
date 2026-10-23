@@ -20,7 +20,8 @@ export const PLACE_W={
   diner:{food:85,throw:15},
   pharmacy:{med:85,food:15},
   hardware:{mat:50,throw:20,melee:20,bag:10},
-  farm:{food:55,mat:12,melee:12,weapon:4,ammo:5,throw:8,bag:4},   // v0.22 the farm (indoors and out), PLACEHOLDER
+  farm:{food:55,mat:12,melee:12,weapon:4,ammo:5,throw:8,bag:4},
+  camp:{weapon:28,ammo:30,med:20,food:10,throw:8,bag:4},   // v0.26 the camp: grades better than the street (systems/drops.js CAMP_GRADE)   // v0.22 the farm (indoors and out), PLACEHOLDER
 };
 // v0.22 the farm west of town (world/farm.js): its barn is a place like the shops, but not one of the six above
 export const BARN={type:'farm',name:'โรงนา',sign:'FARM',color:'#b5654a',box:'farm'};

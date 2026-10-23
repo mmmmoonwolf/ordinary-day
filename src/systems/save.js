@@ -1,6 +1,7 @@
 import {camTarget} from '../core/renderer.js';
 import {G} from '../core/state.js';
 import {applyTanks,clearFires} from './blast.js';
+import {applyTraps} from './camp.js';
 import {DEF} from '../config/items.js';
 import {ZC} from '../config/zombies.js';
 import {lootSpots} from '../world/city.js';
@@ -52,7 +53,7 @@ export function loadGame(){
   Object.assign(G,s.G,{speedIdx:G.speedIdx,diff:s.G.diff||'normal'});
   for(const e of EVENTS)e.done=G.min>=e.t;
   G.searched=G.searched||[];   // before v0.15 nothing was searched
-  G.broken=G.broken||[];applyBroken(G.broken);G.blown=G.blown||[];applyTanks();clearFires();   // v0.23 cylinders already blown
+  G.broken=G.broken||[];applyBroken(G.broken);G.blown=G.blown||[];applyTanks();clearFires();G.traps=G.traps||[];applyTraps();   // v0.23 cylinders already blown
   applyDoors(G.doors);applyEvents();   // saves from before v0.6 have no doors (all open), before v0.8 no events
   s.players.forEach((o,i)=>{
     const p=i?addPlayer():player,g=o.gear||{},eq=g.eq||{};

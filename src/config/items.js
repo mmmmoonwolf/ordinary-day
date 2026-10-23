@@ -62,6 +62,8 @@ Object.assign(DEF,{
   // v0.23 thrown to kill: a Molotov sets the ground on fire, a grenade blows up after a second (systems/throw.js, PLACEHOLDER numbers)
   molotov:{name:'Molotov',kind:'throw',color:'#d8662f',fire:true},
   grenade:{name:'Hand Grenade',kind:'throw',color:'#6b7a46',blast:true},
+  // v0.26 a flare fired from the camp's flare gun: burns red where it lands and keeps calling zombies to it for a while
+  flare:{name:'Flare',kind:'throw',color:'#d84a3a',lure:true},
 });
 export const SLOTNAME={primary:'อาวุธหลัก',secondary:'อาวุธรอง',melee:'อาวุธประชิด'};
 export function gradeOf(id){return DEF[id].grade||null;}

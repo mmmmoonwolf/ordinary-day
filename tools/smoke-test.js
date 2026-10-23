@@ -642,6 +642,28 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     for (const a of hz) a.gone = true;
     console.log('v0.25: bridge crossed to ' + over.x.toFixed(0) + ', river held at ' + swim.x.toFixed(1) + ', ' + shack.length + ' shack, ' + spots.length + ' loot spots, bridge horde ' + passed + '/' + hz.length + ' into town');
   }
+  // v0.26: the camp: traps catch once (saved), the fire burns, better loot, guards, flares call zombies
+  { const Cw = await import('../src/world/camp.js'), Cs = await import('../src/systems/camp.js'), Cl3 = await import('../src/world/clutter.js'), Th2 = await import('../src/systems/throw.js'), It3 = await import('../src/config/items.js');
+    const tents = Cl3.heavy.filter(h => h.id === 's_tent').length, cs = lootSpots.filter(sp => sp.zone === 'camp').length;
+    if (Cw.camp.traps.length < 5 || tents < 3 || cs !== 4) vfail('camp: traps ' + Cw.camp.traps.length + ', tents ' + tents + ', loot spots ' + cs);
+    T.G.traps = []; Cs.applyTraps(); const tr = Cw.camp.traps[0];
+    const z = T.makeAgent(tr.x, tr.z); T.becomeZombie(z, 'zombie'); T.agents.push(z); Cs.updateCamp(1 / 60);
+    if (!T.G.traps.includes(0) || !(z.trapT > 0) || !tr.entry.gone) vfail('trap did not catch the zombie');
+    const pl = T.player, px = pl.pos.x, pz = pl.pos.z, tr2 = Cw.camp.traps[1]; pl.pos.x = tr2.x; pl.pos.z = tr2.z; pl.inv = 0; const hp0 = pl.hp; Cs.updateCamp(1 / 60); pl.inv = 1e9;
+    if (!(pl.trapT > 0) || pl.hp >= hp0) vfail('trap did not catch the player (hp ' + hp0 + ' -> ' + pl.hp + ')'); pl.trapT = 0; pl.hp = pl.maxHp; pl.pos.x = px; pl.pos.z = pz;
+    S.saveGame(); T.G.traps = []; Cs.applyTraps(); S.loadGame(); if (T.G.traps.length !== 2 || !Cw.camp.traps[1].entry.gone) vfail('spent traps not restored from the save');
+    const f = Cw.camp.fire, z2 = T.makeAgent(f.x, f.z); T.becomeZombie(z2, 'zombie'); T.agents.push(z2); for (let i = 0; i < 120; i++) { Cs.updateCamp(1 / 30); z2.pos.x = f.x; z2.pos.z = f.z; }
+    if (!(z2.hp < z2.maxHp * .6) && z2.state === 'zombie') vfail('the camp fire did not burn a zombie (' + z2.hp + ')');
+    const rolls = Array.from({ length: 600 }, () => Dr.rollLoot('day', 'camp')), good = rolls.filter(it => ['pol', 'mil'].includes(It3.DEF[it.id].grade)).length;
+    if (good < 60 || !rolls.some(it => it.id === 'flare')) vfail('camp loot: ' + good + ' police / military in 600, flare ' + rolls.some(it => it.id === 'flare'));
+    const a0 = T.agents.length; Cs.campGuards(); const guards = T.agents.length - a0; for (const g of T.agents.slice(a0)) g.gone = true;
+    // a flare draws a zombie 25 m away to where it burns
+    pl.gear.bag = [{ id: 'flare', n: 1 }]; pl.pos.x = 0; pl.pos.z = -4; pl.face = 0; pl.input.aim = false; T.G.phase = 'night';
+    const z3 = T.makeAgent(0, 30); T.becomeZombie(z3, 'zombie'); T.agents.push(z3); z3.heard = null; Th2.throwBottle(pl); for (let i = 0; i < 120; i++) { Th2.updateThrows(1 / 30); Th2.updateLures(1 / 30); }
+    if (!z3.heard) vfail('the flare did not call a zombie'); Th2.clearThrows(); T.G.phase = 'day'; pl.gear.bag = [];
+    for (const a of [z, z2, z3]) a.gone = true; T.G.traps = []; Cs.applyTraps();
+    console.log('v0.26: camp ' + tents + ' tents, ' + Cw.camp.traps.length + ' traps (caught a zombie and the player, saved), fire burns, ' + Math.round(good / 6) + '% police / military loot, ' + guards + ' guards, flare calls zombies');
+  }
   // v0.23: gas cylinders blow up when shot (chain, blown list saved), Molotov fire, grenades, farm weapons, town extras
   { const Ex = await import('../src/world/extras.js'), Bl = await import('../src/systems/blast.js'), Th = await import('../src/systems/throw.js'), Cb = await import('../src/systems/combat.js'), It2 = await import('../src/config/items.js'), Cl2 = await import('../src/world/clutter.js'), Col2 = await import('../src/world/collision.js');
     const pl = T.player, bag0 = pl.gear.bag.slice(); pl.inv = 1e9; T.G.blown = []; Bl.applyTanks(); Bl.clearFires();
