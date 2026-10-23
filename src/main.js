@@ -4,7 +4,7 @@ import {G} from './core/state.js';
 import {$} from './core/util.js';
 import {RATE,SPEEDS} from './config/time.js';
 import {buildCity} from './world/city.js';
-import {buildInteriors} from './world/interiors.js';
+import {buildInteriors,roomAt} from './world/interiors.js';
 import {buildDecor} from './world/decor.js';
 import {buildClutter} from './world/clutter.js';
 import {updateOcclusion} from './world/occlusion.js';
@@ -20,7 +20,7 @@ import {reset} from './systems/game.js';
 import {autosave,initSave} from './systems/save.js';
 import {updateShelter} from './systems/doors.js';
 import {updateThrows} from './systems/throw.js';
-import {initAudio,updateMusic} from './systems/audio.js';
+import {initAudio,updateMusic,updateAmbience} from './systems/audio.js';
 import {updateGoal} from './systems/goal.js';
 import {updateHUD} from './ui/hud.js';
 import {initInput,pollInput} from './ui/input.js';
@@ -96,6 +96,7 @@ function loop(now){
   const view=viewed();   // the player on this device, or the teammate they watch once dead (v0.11)
   let chasing=0;if(G.running&&view.alive)for(const a of agents)if(a.state==='zombie'&&a.seenP===view&&!a.retreat)chasing++;
   updateMusic({night:G.night||0,outbreak:G.outbreak,danger:Math.min(1,chasing/4)});
+  updateAmbience({rain:G.running?G.rain||0:0,night:G.night||0,outbreak:G.running&&G.outbreak&&!G.over,alive:view.alive,inside:roomAt(view.pos.x,view.pos.z)>=0});   // v0.19 rain, distant screams
   camTarget.x+=(view.pos.x-camTarget.x)*Math.min(1,dt*5);camTarget.z+=(view.pos.z-camTarget.z)*Math.min(1,dt*5);
   camera.position.copy(camTarget).add(camOffset);camera.lookAt(camTarget);
   ring.position.set(player.pos.x,player.y+.03,player.pos.z);ring.visible=player.alive;

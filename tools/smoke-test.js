@@ -594,6 +594,9 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   }
   const kinds = id => Cl.heavy.filter(h => h.id === id).length, inside = Cl.roomDecor.reduce((n, l) => n + (l ? l.length : 0), 0);
   if (kinds('c_bus') + kinds('c_van') + kinds('c_pickup') < 4 || kinds('c_dumpster') < 4 || inside < rooms.length * 8) vfail('clutter: wrecks ' + (kinds('c_bus') + kinds('c_van') + kinds('c_pickup')) + ', dumpsters ' + kinds('c_dumpster') + ', room pieces ' + inside);
+  // v0.19: every recording the game asks for is in assets/sounds/
+  { const Au = await import('../src/systems/audio.js'), fs = await import('fs'); const miss = Object.values(Au.FILES).flat().filter(n => !fs.existsSync(new URL('../assets/sounds/' + n + '.mp3', import.meta.url)));
+    if (miss.length) vfail('missing sounds: ' + miss); else console.log('v0.19: ' + Object.values(Au.FILES).flat().length + ' recordings (' + Object.entries(Au.FILES).map(([k, l]) => k + ' ' + l.length).join(', ') + ')'); }
   console.log('v0.18: clutter ' + Cl.heavy.filter(h => h.room < 0).length + ' solids outside (bus ' + kinds('c_bus') + ', vans ' + kinds('c_van') + ', pickups ' + kinds('c_pickup') + ', dumpsters ' + kinds('c_dumpster') + '), ' + Cl.heavy.filter(h => h.room >= 0).length + ' beds / tables and ' + inside + ' pieces in ' + rooms.length + ' rooms, ' + Dc.decor.length + ' decor');
   console.log('v0.18: infection off, no Antibiotic, ' + rc.length + ' ring colours, events ran: ' + ran.join(', '));
   console.log('v0.14.1: bag ' + g.bag.map(e => e.id + (e.n ? ' ×' + e.n : '')).join(', '));
