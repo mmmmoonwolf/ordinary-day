@@ -3,8 +3,8 @@ import {send} from '../core/bus.js';
 import {player,viewed} from '../entities/player.js';
 
 // ---------- audio ----------
-// Every sound is synthesized with WebAudio (no sound files). Browsers only allow audio after a tap or key press,
-// so the context is created on the first gesture. Without WebAudio (or in the headless smoke test) every call is a no-op.
+// Sounds are synthesized with WebAudio, except screams, rain and thunder (v0.19, recordings in assets/sounds/). Browsers
+// only allow audio after a tap or key press, so the context is created (and the recordings loaded) on the first gesture. Without WebAudio (or in the headless smoke test) every call is a no-op.
 const PREF_KEY='ordinary-day.sound';
 let ctx=null,master=null,noiseBuf=null,voices=0,muted=false,rotor=null;
 try{muted=localStorage.getItem(PREF_KEY)==='off';}catch(_){}
@@ -19,6 +19,7 @@ function ensure(){
   sfxBus=ctx.createGain();sfxBus.gain.value=vol.sfx;sfxBus.connect(master);
   musicBus=ctx.createGain();musicBus.gain.value=vol.music;musicBus.connect(master);
   noiseBuf=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  loadSounds();
 }
 export function setVolumes(v){
   Object.assign(vol,v);if(!ctx)return;
@@ -59,6 +60,25 @@ function play(len,x,z,range,build){
   voice(len);build(ctx.currentTime+.005,out(pan),g);
 }
 
+// ---------- recordings (v0.19) ----------
+// Pixabay sound effects (README credits), cut, mono and level-matched in assets/sounds/. Until they have loaded, or when
+// one fails, the call plays nothing; the game never waits for them.
+export const FILES={scream:['scream_m1','scream_m2','scream_m3','scream_m4','scream_m5','scream_m6','scream_w1','scream_w2','scream_x1','scream_x2'],thunder:['thunder1','thunder2','thunder3'],rain:['rain']};
+const bufs={};let loading=false,lastScream=-9;
+function loadSounds(){
+  if(loading||typeof fetch!=='function')return;loading=true;
+  for(const k in FILES)for(const n of FILES[k])fetch('assets/sounds/'+n+'.mp3').then(r=>r.ok?r.arrayBuffer():Promise.reject(r.status))
+    .then(b=>new Promise((ok,no)=>ctx.decodeAudioData(b,ok,no))).then(buf=>(bufs[k]||(bufs[k]=[])).push(buf)).catch(()=>{});
+}
+export const soundsLoaded=()=>Object.fromEntries(Object.keys(FILES).map(k=>[k,(bufs[k]||[]).length]));
+export const rainLevel=()=>rainLoop?rainLoop.g.gain.value:0;
+// one recording of a kind, picked at random, slightly detuned; far away it is duller (lowpass)
+function sample(kind,t,dest,gain,o={}){
+  const L=bufs[kind];if(!L||!L.length)return null;
+  const src=ctx.createBufferSource();src.buffer=L[Math.floor(Math.random()*L.length)];src.playbackRate.value=o.rate||1;
+  const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=o.cut||16000;const g=ctx.createGain();g.gain.value=gain;
+  src.connect(f).connect(g).connect(dest);src.start(t);return src;
+}
 const GUN={
   pistol:{f:1900,dur:.12,peak:.5,thump:110},smg:{f:2300,dur:.07,peak:.32,thump:0},rifle:{f:1500,dur:.11,peak:.5,thump:95},
   shotgun:{f:900,dur:.3,peak:.75,thump:80},sniper:{f:1300,dur:.38,peak:.7,thump:70},lmg:{f:1300,dur:.09,peak:.45,thump:85},
@@ -82,6 +102,11 @@ const S={
   eat(){play(.4,undefined,0,1,(t,d)=>{for(const k of [0,.12,.24])noise(t+k,.06,{type:'bandpass',f0:1400,q:2,peak:.18,dest:d});});},
   heal(){play(.5,undefined,0,1,(t,d)=>{tone(t,.15,{f0:520,peak:.16,dest:d});tone(t+.12,.3,{f0:780,peak:.14,dest:d});});},
   infect(){play(.9,undefined,0,1,(t,d)=>{for(const k of [0,.28,.6])tone(t+k,.18,{f0:65,f1:45,peak:.6,dest:d});});},
+  // v0.19 a person bitten (or a player killed) screams, at most one every 0.7 s (the outbreak bites many at once);
+  // heard far, duller with distance
+  scream(x,z){if(!bufs.scream||ctx.currentTime<lastScream+.7)return;lastScream=ctx.currentTime;play(2.8,x,z,75,(t,d,g)=>sample('scream',t,d,.8*g,{rate:.92+Math.random()*.16,cut:1500+g*g*14000}));},
+  // thunder after a lightning flash (systems/weather.js); each device has its own storm, so it is not sent
+  thunder(delay){if(ctx&&!muted&&bufs.thunder)sample('thunder',ctx.currentTime+delay,sfxBus,.75,{rate:.9+Math.random()*.2,cut:delay>1.2?2500:9000});},
   radio(){play(.3,undefined,0,1,(t,d)=>noise(t,.25,{type:'bandpass',f0:2600,q:3,peak:.1,attack:.02,dest:d}));},
   carAlarm(x,z){play(1.4,x,z,60,(t,d,g)=>{for(let i=0;i<6;i++)tone(t+i*.22,.18,{wave:'square',f0:i%2?880:660,peak:.1*g,attack:.01,dest:d});});},   // v0.18
   alarm(){play(1.6,undefined,0,1,(t,d)=>{for(let i=0;i<4;i++)tone(t+i*.36,.3,{wave:'square',f0:i%2?330:440,peak:.07,attack:.02,dest:d});});},
@@ -106,7 +131,7 @@ const S={
 // Sounds of the world are played here and sent to every other device (v0.11, core/bus.js); the rotor is driven by
 // each device's own frame loop. A sound for one player only (their reload click, a pickup) goes through sfxFor(p):
 // played here when that player is on this device, otherwise sent to theirs.
-export const sfx={};for(const k in S)sfx[k]=k==='rotor'?S[k]:(...a)=>{S[k](...a);send('*','sfx',[k,...a]);};
+export const sfx={};for(const k in S)sfx[k]=k==='rotor'||k==='thunder'?S[k]:(...a)=>{S[k](...a);send('*','sfx',[k,...a]);};
 const away={};
 export function sfxFor(p){
   if(p.local)return S;
@@ -135,4 +160,25 @@ export function updateMusic(m){
   }
   if(m.danger>0&&t>=nextBeat){for(const k of [0,.22]){const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.setValueAtTime(70,t+k);o.frequency.exponentialRampToValueAtTime(40,t+k+.15);g.gain.setValueAtTime(.0001,t+k);g.gain.exponentialRampToValueAtTime(.25*m.danger,t+k+.02);g.gain.exponentialRampToValueAtTime(.0001,t+k+.2);o.connect(g).connect(musicBus);o.start(t+k);o.stop(t+k+.25);}
     nextBeat=t+1.1-m.danger*.45;}
+}
+
+// ---------- ambience (v0.19) ----------
+// Rain: one looping recording whose level follows G.rain, quieter and duller indoors. After the outbreak someone screams
+// somewhere in the town now and then (more often at night), from a random direction; this device only, like the music.
+let rainLoop=null,nextCry=0;
+export function updateAmbience(m){
+  if(!ctx||ctx.state!=='running')return;
+  const t=ctx.currentTime;
+  if(!rainLoop&&bufs.rain&&m.rain>.01){
+    const src=ctx.createBufferSource();src.buffer=bufs.rain[0];src.loop=true;src.loopStart=.06;src.loopEnd=src.buffer.duration-.06;   // past the mp3 padding
+    const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=12000;const g=ctx.createGain();g.gain.value=0;
+    src.connect(f).connect(g).connect(sfxBus);src.start();rainLoop={src,f,g};
+  }
+  if(rainLoop){rainLoop.g.gain.setTargetAtTime(muted?0:m.rain*(m.inside?.3:.6),t,.6);rainLoop.f.frequency.setTargetAtTime(m.inside?700:12000,t,.3);}
+  if(!m.outbreak||!m.alive||muted||!bufs.scream){nextCry=0;return;}
+  if(!nextCry){nextCry=t+8+Math.random()*20;return;}
+  if(t>=nextCry){
+    const p=out((Math.random()*2-1)*.8);sample('scream',t,p,(m.inside?.06:.12)+Math.random()*.1,{rate:.85+Math.random()*.2,cut:m.inside?700:1300+Math.random()*1200});
+    nextCry=t+(m.night>.5?18+Math.random()*30:40+Math.random()*50);   // PLACEHOLDER: real seconds between distant screams
+  }
 }

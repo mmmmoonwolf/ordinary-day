@@ -4,6 +4,7 @@ import {G} from '../core/state.js';
 import {roadMat,puddleMat,lampHeadMat,glowMat,wallMats} from '../world/materials.js';
 import {sirenR,sirenB,flickers} from '../world/props.js';
 import {player} from '../entities/player.js';
+import {playLocal} from './audio.js';
 
 // ---------- sky / weather ----------
 // v0.16: a greyer, tired palette (overcast day, washed-out dusk) and a low morning haze
@@ -15,6 +16,7 @@ for(let i=0;i<RN;i++){rx.push(rnd(-48,48));ry.push(rnd(0,40));rz.push(rnd(-48,48
 const rainGeo=new THREE.BufferGeometry();rainGeo.setAttribute('position',new THREE.BufferAttribute(rainArr,3));
 const rainMat=new THREE.LineBasicMaterial({color:'#b9c6d0',transparent:true,opacity:0,depthWrite:false});
 const rainLines=new THREE.LineSegments(rainGeo,rainMat);rainLines.frustumCulled=false;scene.add(rainLines);
+let bolt=-1e9,nextBolt=0;
 const roadBase=new THREE.Color('#ffffff'),roadWet=new THREE.Color('#8f959b');
 export function updateSky(dt,now){
   const tod=G.min%1440,a=(tod-360)/780*Math.PI,sunH=Math.sin(a);
@@ -28,6 +30,9 @@ export function updateSky(dt,now){
   sun.position.copy(camTarget).addScaledVector(sunDir,110);sun.target.position.copy(camTarget);
   sun.intensity=day*(1.9-G.rain*1.1-haze*.35)+G.night*.28;sun.color.copy(C.moon).lerp(C.sunDay,day).lerp(C.sunLow,dusk*.7);
   hemi.intensity=.2+day*(.44-G.rain*.1);hemi.color.copy(C.hemiNight).lerp(C.hemiDay,day);
+  // v0.19 lightning in heavy rain: a double flash of the sky light, thunder after it (later and duller when far)
+  if(G.rain>.7){if(!nextBolt)nextBolt=now+rnd(6e3,2e4);else if(now>=nextBolt){bolt=now;nextBolt=now+rnd(14e3,4e4);playLocal('thunder',rnd(.2,2.4));}}else nextBolt=0;   // PLACEHOLDER: real ms between strikes
+  const bt=now-bolt;if(bt<380){const k=bt<90?1:bt<170?.15:bt<260?.75:.3*(1-(bt-260)/120);hemi.intensity+=k*(1.4+G.night*1.6);}
   const lampsOn=G.blackout?0:clamp((G.night-.3)/.3,0,1);   // blackout night (v0.8): no street lights or windows
   for(const m of wallMats)m.emissiveIntensity=G.night*(G.blackout?.08:1.15);
   lampHeadMat.emissiveIntensity=lampsOn*2.2;glowMat.opacity=lampsOn*.6;

@@ -43,6 +43,7 @@ function goDown(p){
 }
 export function die(p){
   p.hp=0;p.bleed=0;p.helping=null;p.alive=false;p.state='dead';p.deadT=0;p.endCause=p.endCause||'hurt';
+  sfx.scream(p.pos.x,p.pos.z);   // v0.19
   if(p.local){ctl.fireHeld=false;G.endCause=p.endCause;}
   if(players.some(q=>q.alive)){   // the others play on (v0.11): the dead watch a teammate and can be brought back with a Kit
     uiFor(p).say('คุณตายแล้ว · กำลังดูเพื่อนเล่นต่อ ถ้าเพื่อนมี Resurrection Kit ชุบคุณกลับมาได้','alarm',8);
