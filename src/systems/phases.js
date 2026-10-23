@@ -17,7 +17,7 @@ import {updateEvents} from './events.js';
 
 // ---------- story + phases ----------
 function startOutbreak(){
-  G.outbreak=true;
+  G.outbreak=true;sfx.outbreak();   // v0.21 siren
   let best=null,bd=1e9;for(const a of agents){if(a.state!=='human'||a.vendor)continue;const s=Math.abs(nearestPlayerDist(a.pos.x,a.pos.z)-16);if(s<bd){bd=s;best=a;}}
   if(best){becomeZombie(best,'walker');G.alertA=best;G.alertT=8;}
   say('มีคนกัดกันกลางถนน! ตอนกลางวันพวกมันยังเชื่องช้า ใช้เวลานี้หาของ','alarm',7);

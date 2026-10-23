@@ -66,7 +66,7 @@ export function startReload(p){
   const w=curWeapon(p),def=DEF[w.id];if(!def.gun||p.reloadT>0||!p.alive||p.bleed>0)return;
   if(w.mag>=def.mag)return;
   if(countAmmo(p,def.ammo)<=0){uiFor(p).feedOnce('noammo','ไม่มีกระสุน '+DEF[def.ammo].name+' ในกระเป๋า','warn');return;}
-  p.reloadT=def.reload;p.reloadFor=w;sfxFor(p).reload();
+  p.reloadT=def.reload;p.reloadFor=w;sfxFor(p).reload(def.model);
 }
 export function finishReload(p){const w=p.reloadFor,def=DEF[w.id];if(w!==curWeapon(p))return;w.mag+=takeAmmo(p,def.ammo,def.mag-w.mag);uiFor(p).updateLoadout(true);}
 export function fireGun(p,w,def){
@@ -96,7 +96,7 @@ export function meleeHit(p,def){
     if(d-(z.rad-.34)>def.range||d<1e-3)continue;if((dx*fx+dz*fz)/d<def.arc)continue;if(walledOff(p.pos.x,p.pos.z,z.pos.x,z.pos.z))continue;   // no hitting through a wall
     if(def.cleave){hurtZombie(z,def.dmg,dx/d,dz/d,def.kb,false,false,p);best=best||z;}else if(d<bd){bd=d;best=z;}}
   if(best&&!def.cleave){const dx=best.pos.x-p.pos.x,dz=best.pos.z-p.pos.z,d=Math.hypot(dx,dz);hurtZombie(best,def.dmg,dx/d,dz/d,def.kb,false,false,p);}
-  if(best){sfx.thud(best.pos.x,best.pos.z);wearMelee(p,def);}
+  if(best){sfx.hit(best.pos.x,best.pos.z);wearMelee(p,def);}
 }
 // melee weapons lose 1 durability per swing that connects and break at 0 (fists never break)
 function wearMelee(p,def){
