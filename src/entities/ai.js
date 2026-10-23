@@ -71,7 +71,7 @@ export function updateZombie(a,dt){
   }
   const isP=!!tgt&&tgt.state==='player';
   // lost sight of the player it was chasing behind a wall or a shut door: go where they were last seen
-  if(isP)a.seenP=tgt;else if(a.seenP){const p=a.seenP;a.seenP=null;if(!day&&p.alive&&walledOff(a.pos.x,a.pos.z,p.pos.x,p.pos.z))a.heard={x:p.pos.x,z:p.pos.z,t:20};}   // PLACEHOLDER memory (s)
+  if(isP){if(a.seenP!==tgt&&a.kind!=='sprinter'&&!(a.growlAt>G.min-20))sfx.growl(a.pos.x,a.pos.z);a.growlAt=G.min;a.seenP=tgt;}else if(a.seenP){const p=a.seenP;a.seenP=null;if(!day&&p.alive&&walledOff(a.pos.x,a.pos.z,p.pos.x,p.pos.z))a.heard={x:p.pos.x,z:p.pos.z,t:20};}   // PLACEHOLDER memory (s)
   if(isP&&a.kind==='sprinter'&&!a.shrieked){a.shrieked=true;sfx.shriek(a.pos.x,a.pos.z);}   // warn before it closes in
   const sp=C.speed*a.spd;
   if(!tgt){
