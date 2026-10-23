@@ -127,9 +127,10 @@ const { lootSpots } = await import('../src/world/city.js');
 const { fillDay, fillNight } = await import('../src/systems/drops.js');
 const { freeAt } = await import('../src/world/collision.js');
 els.bAgain.fire('click'); T.G.running = true; T.player.inv = 1e9;
+const PL = await import('../src/config/places.js');
 const amb = lootSpots.filter(sp => sp.zone === 'ambulance');
 if (amb.length !== 1 || !amb[0].drop || amb[0].drop.item.id !== 'resurrect') afail('no Resurrection Kit at the ambulance at the start');
-if (lootSpots.indexOf(amb[0]) !== 80 || lootSpots.slice(81).some(s => s.zone !== 'indoor')) afail('ambulance spot should stay at index 80, with only v0.6 indoor spots after it');
+if (lootSpots.indexOf(amb[0]) !== 80 || lootSpots.slice(81).some(s => s.zone !== 'indoor' && !PL.PLACE_W[s.zone])) afail('ambulance spot should stay at index 80, with only v0.6 indoor spots (some turned into shops in v0.17) after it');
 if (!freeAt(amb[0].x, amb[0].z, 0.4)) afail('ambulance kit sits inside a solid');
 T.player.pos.x = amb[0].x; T.player.pos.z = amb[0].z; step(5);
 if (!T.inv.bag.some(e => e.id === 'resurrect') || amb[0].drop) afail('walking onto the kit did not pick it up');
@@ -552,6 +553,16 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   const burned = Pr.breakables.filter(x => x.car && x.car.burned).length;
   if (!burned || !Pr.flickers.length || Pr.trees.length < 30) vfail('burned cars ' + burned + ', flickering lamps ' + Pr.flickers.length + ', trees ' + Pr.trees.length);
   console.log('v0.16: ' + Dc.decor.length + ' weeds / bushes / signs, ' + Pr.trees.length + ' trees, ' + burned + ' burned cars, ' + Pr.flickers.length + ' flickering lamps');
+  // v0.17: shops and the hospital
+  const placed = rooms.filter(r => r.place);
+  if (placed.length !== PL.PLACES.length || new Set(placed.map(r => r.place.type)).size !== PL.PLACES.length) vfail('places: ' + placed.map(r => r.place.type));
+  const hosp = rooms.findIndex(r => r.place && r.place.type === 'hospital'), gun = rooms.findIndex(r => r.place && r.place.type === 'gunshop');
+  if (!boxes.some(x => x.room === hosp) || boxes.some(x => x.room === hosp && x.kind !== 'medcab') || boxes.some(x => x.room === gun && x.kind !== 'gunrack')) vfail('shop furniture kinds');
+  let hm = 0, gw = 0; for (let i = 0; i < 2000; i++) { const it = Dr.rollLoot('day', 'hospital'); if (D5[it.id].kind === 'heal' || it.id === 'resurrect') hm++; const g2 = Dr.rollLoot('day', 'gunshop'); if (D5[g2.id].kind === 'weapon' || D5[g2.id].kind === 'ammo') gw++; }
+  if (hm < 1300 || gw < 1700) vfail('place tables: hospital medicine ' + hm + '/2000, gun shop guns+ammo ' + gw + '/2000');
+  const hw = Array.from({ length: 300 }, () => Dr.rollLoot('day', 'hardware')).filter(it => D5[it.id].kind === 'weapon'); if (hw.some(it => D5[it.id].gun)) vfail('a gun from the hardware store');
+  const pz = lootSpots.filter(s => PL.PLACE_W[s.zone]).length;
+  console.log('v0.17: ' + placed.map(r => r.place.type + ' ' + boxes.filter(x => x.room === rooms.indexOf(r)).length).join(', ') + ' furniture; ' + pz + ' shop floor spots; hospital rolls ' + Math.round(hm / 20) + '% medicine, gun shop ' + Math.round(gw / 20) + '% guns / ammo');
   console.log('v0.14.1: bag ' + g.bag.map(e => e.id + (e.n ? ' ×' + e.n : '')).join(', '));
 }
 

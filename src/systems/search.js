@@ -4,7 +4,8 @@ import {DEF} from '../config/items.js';
 import {POOLS,MED_W,FOOD_W} from '../config/loot.js';
 import {SEARCH_SECONDS,SEARCH_RANGE,SEARCH_NOISE,RESTOCK,BOX} from '../config/search.js';
 import {partyOf} from '../config/party.js';
-import {boxes,boxNear,roomAt} from '../world/interiors.js';
+import {boxes,boxNear,roomAt,rooms} from '../world/interiors.js';
+import {PLACE_RESTOCK} from '../config/places.js';
 import {makeItem,spawnDrop} from './drops.js';
 import {sfxFor} from './audio.js';
 import {uiFor} from '../ui/hud.js';
@@ -43,9 +44,9 @@ export function rollBox(kind){
   const n=Math.round(rnd(t.items[0]-.49,t.items[1]+.49)),out=[];
   for(let k=0;k<n;k++){
     const c=wpick(t.w);
-    out.push(makeItem(c==='food'?wpick(FOOD_W):c==='med'?wpick(MED_W.day):c==='bottle'?'bottle':c==='mat'?'planks':c==='weapon'?pick(POOLS.civ.weapons):pick(POOLS.civ.ammo)));
+    out.push(makeItem(c==='food'?wpick(FOOD_W):c==='med'?wpick(MED_W.day):c==='bottle'?'bottle':c==='mat'?'planks':c==='weapon'?pick(POOLS.civ.weapons):c==='melee'?pick(POOLS.civ.weapons.filter(id=>!DEF[id].gun)):pick(POOLS.civ.ammo)));
   }
   return out;
 }
 // 06:00: some emptied furniture has something in it again
-export function restockBoxes(){const k=Math.min(1,RESTOCK*partyOf(partySize(),'loot'));G.searched=G.searched.filter(()=>Math.random()>=k);}
+export function restockBoxes(){const f=partyOf(partySize(),'loot');G.searched=G.searched.filter(i=>Math.random()>=Math.min(1,(rooms[boxes[i].room]&&rooms[boxes[i].room].place?PLACE_RESTOCK:RESTOCK)*f));}   // shops refill sooner (v0.17)

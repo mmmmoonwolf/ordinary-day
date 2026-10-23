@@ -20,7 +20,12 @@ html,body{height:100%}
 body{background:var(--ground);color:var(--ink);font-family:var(--f-ui);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 #game{position:fixed;inset:0}
 #game canvas{display:block;width:100%;height:100%}
-.vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(120% 95% at 50% 45%,transparent 55%,rgba(0,0,0,.5) 100%)}
+/* v0.17 old film: faded colour on the 3D view, and a grain layer that jumps four times a second (settings: ภาพฟิล์มเก่า) */
+body.film #game canvas{filter:sepia(.22) saturate(.68) contrast(1.08) brightness(.93)}
+#grain{position:fixed;inset:-40px;pointer-events:none;opacity:0;background-size:180px 180px;animation:grain .5s steps(4) infinite}
+body.film #grain{opacity:.09}
+@keyframes grain{0%{transform:translate(0,0)}25%{transform:translate(-23px,17px)}50%{transform:translate(19px,-28px)}75%{transform:translate(-11px,-9px)}100%{transform:translate(0,0)}}
+.vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(120% 95% at 50% 45%,transparent 50%,rgba(0,0,0,.6) 100%)}
 #hurt{position:fixed;inset:0;pointer-events:none;background:radial-gradient(100% 80% at 50% 50%,transparent 35%,rgba(150,18,12,.8));opacity:0}
 .hud{position:fixed;inset:0;pointer-events:none}
 .hud button{pointer-events:auto;cursor:pointer;font-family:var(--f-ui);color:var(--ink)}
@@ -236,11 +241,12 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
   .tools{gap:3px}
   .counts{column-gap:6px;font-size:10px}
 }
-@media (prefers-reduced-motion:reduce){#msg,#hpfill,#tip{transition:none}#feed div{animation-duration:3s}#phase.dusk i{animation:none}}
+@media (prefers-reduced-motion:reduce){#grain{animation:none}#msg,#hpfill,#tip{transition:none}#feed div{animation-duration:3s}#phase.dusk i{animation:none}}
 </style>
 
 <div id="game"></div>
 <div class="vignette"></div>
+<div id="grain"></div>
 <div id="hurt"></div>
 <div class="hud">
   <div class="vitals">
@@ -327,6 +333,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
     <label class="setrow" for="vol_master"><span>เสียงรวม <b id="volN_master">100</b></span><input type="range" id="vol_master" min="0" max="100"></label>
     <label class="setrow" for="vol_music"><span>เพลง <b id="volN_music">60</b></span><input type="range" id="vol_music" min="0" max="100"></label>
     <label class="setrow" for="vol_sfx"><span>เสียงเอฟเฟกต์ <b id="volN_sfx">100</b></span><input type="range" id="vol_sfx" min="0" max="100"></label>
+    <label class="setrow check"><input type="checkbox" id="optFilm"> ภาพฟิล์มเก่า (สีซีด เกรนฟิล์ม)</label>
     <label class="setrow check"><input type="checkbox" id="optFps"> แสดง FPS (ช่วยแจ้งปัญหาเครื่องกระตุก)</label>
     <button class="go" id="setClose">กลับ</button>
   </div>

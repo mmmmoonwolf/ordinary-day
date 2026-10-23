@@ -38,6 +38,7 @@ function draw(now){
   for(const p of pois){
     if(p.type==='police')dot(p.x,p.z,2.2*s,'#66B0FF');
     else if(p.type==='army')dot(p.x,p.z,2.6*s,'#F0C46B');
+    else if(p.type==='place'){const [u,v]=xy(p.x,p.z),r=2.3*s;g.fillStyle=p.place.color;g.fillRect(u-r,v-r,r*2,r*2);g.lineWidth=dpr;g.strokeStyle='#16130d';g.strokeRect(u-r,v-r,r*2,r*2);}   // shops and the hospital (v0.17)
     else{const kit=lootSpots.some(sp=>sp.zone==='ambulance'&&sp.drop);const [u,v]=xy(p.x,p.z),r=2.6*s;
       g.fillStyle=kit?'#f2f0ea':'rgba(242,240,234,.35)';g.fillRect(u-r,v-r,r*2,r*2);g.fillStyle='#c9473a';g.fillRect(u-r*.2,v-r*.75,r*.4,r*1.5);g.fillRect(u-r*.75,v-r*.2,r*1.5,r*.4);}
   }
