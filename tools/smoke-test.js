@@ -129,10 +129,10 @@ const { lootSpots } = await import('../src/world/city.js');
 const { fillDay, fillNight } = await import('../src/systems/drops.js');
 const { freeAt } = await import('../src/world/collision.js');
 els.bAgain.fire('click'); T.G.running = true; T.player.inv = 1e9;
-const PL = await import('../src/config/places.js');
+const PL = await import('../src/config/places.js'), WD = await import('../src/config/world.js');
 const amb = lootSpots.filter(sp => sp.zone === 'ambulance');
 if (amb.length !== 1 || !amb[0].drop || amb[0].drop.item.id !== 'resurrect') afail('no Resurrection Kit at the ambulance at the start');
-if (lootSpots.indexOf(amb[0]) !== 80 || lootSpots.slice(81).some(s => s.zone !== 'indoor' && !PL.PLACE_W[s.zone])) afail('ambulance spot should stay at index 80, with only v0.6 indoor spots (some turned into shops in v0.17) after it');
+if (lootSpots.indexOf(amb[0]) !== 80 || lootSpots.slice(81).some(s => s.zone !== 'indoor' && !PL.PLACE_W[s.zone] && !WD.areaAt(s.x, s.z))) afail('ambulance spot should stay at index 80, with only v0.6 indoor spots (some turned into shops in v0.17) after it');
 if (!freeAt(amb[0].x, amb[0].z, 0.4)) afail('ambulance kit sits inside a solid');
 T.player.pos.x = amb[0].x; T.player.pos.z = amb[0].z; step(5);
 if (!T.inv.bag.some(e => e.id === 'resurrect') || amb[0].drop) afail('walking onto the kit did not pick it up');
@@ -609,6 +609,20 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     const z = Ag.makeAgent(-100, -2); Ag.becomeZombie(z, 'walker'); for (let i = 0; i < 600; i++) Mv.wander(z, 1.2, 1 / 30); Ag.removeAgent ? Ag.removeAgent(z) : 0;
     if (!W.inFarm(z.pos.x, z.pos.z)) vfail('a farm zombie wandered off: ' + JSON.stringify(z.pos));
     console.log('v0.22: farm ' + farmRooms.length + ' rooms (barn ' + I2.boxes.filter(b => b.kind === 'farm').length + ' shelves), ' + spots.length + ' loot spots, ' + Fm.attach.length + ' boarded windows, gate ' + thru.x.toFixed(0) + ', wall held at ' + wall.x.toFixed(1) + ', zombie wandered to ' + z.pos.x.toFixed(0) + ',' + z.pos.z.toFixed(0));
+  }
+  // v0.24: the suburb through the gate in the south wall
+  { const W = await import('../src/config/world.js'), Mv = await import('../src/entities/movement.js'), I2 = await import('../src/world/interiors.js'), Ag = await import('../src/entities/agents.js');
+    const sub = I2.rooms.filter(r => W.areaAt(r.b.cx, r.b.cz) === W.SUBURB), spots = lootSpots.filter(sp => W.areaAt(sp.x, sp.z) === W.SUBURB);
+    if (sub.length !== 5 || spots.length < 10) vfail('suburb: rooms ' + sub.length + ', loot spots ' + spots.length);
+    const walk = (x, z, tx, tz, n) => { const a = { pos: { x, z }, rad: .34, face: 0 }; for (let i = 0; i < n; i++) Mv.moveAgent(a, tx - a.pos.x, tz - a.pos.z, 4, 1 / 30); return a.pos; };
+    const thru = walk(0, 60, 0, 110, 500), wall = walk(15, 60, 15, 100, 400), back = walk(0, 110, 0, 40, 600);
+    if (thru.z < 105) vfail('could not walk through the south gate: ' + JSON.stringify(thru));
+    if (wall.z > W.WALL_Z) vfail('walked through the south wall: ' + JSON.stringify(wall));
+    if (back.z > 45) vfail('could not walk back into town: ' + JSON.stringify(back));
+    const via = I2.navStep(20, 60, 20, 110); if (!(Math.abs(via.x) < 1 && via.z < W.WALL_Z)) vfail('no way through the south gate: ' + JSON.stringify(via));
+    const z = Ag.makeAgent(0, 100); Ag.becomeZombie(z, 'walker'); for (let i = 0; i < 600; i++) Mv.wander(z, 1.2, 1 / 30);
+    if (W.areaAt(z.pos.x, z.pos.z) !== W.SUBURB) vfail('a suburb zombie wandered off: ' + JSON.stringify(z.pos));
+    console.log('v0.24: suburb ' + sub.length + ' rooms, ' + spots.length + ' loot spots, gate ' + thru.z.toFixed(0) + ', wall held at ' + wall.z.toFixed(1) + ', back to ' + back.z.toFixed(0) + ', zombie wandered to ' + z.pos.x.toFixed(0) + ',' + z.pos.z.toFixed(0));
   }
   // v0.23: gas cylinders blow up when shot (chain, blown list saved), Molotov fire, grenades, farm weapons, town extras
   { const Ex = await import('../src/world/extras.js'), Bl = await import('../src/systems/blast.js'), Th = await import('../src/systems/throw.js'), Cb = await import('../src/systems/combat.js'), It2 = await import('../src/config/items.js'), Cl2 = await import('../src/world/clutter.js'), Col2 = await import('../src/world/collision.js');

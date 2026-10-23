@@ -1,10 +1,10 @@
 import {$} from '../core/util.js';
 import {G} from '../core/state.js';
 import {DAY_START} from '../config/time.js';
-import {RC,FARM,WALL_X,GATE} from '../config/world.js';
+import {RC,AREAS,areaAt,beyond} from '../config/world.js';
 import {GOAL_NIGHTS,LZ,RESCUE_UNTIL,nightsSurvived} from '../config/goal.js';
 import {solids} from '../world/collision.js';
-import {LAYOUT,pois,lootSpots} from '../world/city.js';
+import {LAYOUT,pois,lootSpots,mapPaint} from '../world/city.js';
 import {rooms} from '../world/interiors.js';
 import {agents} from '../entities/agents.js';
 import {player,players} from '../entities/player.js';
@@ -20,9 +20,7 @@ function quad(c,x0,z0,x1,z1){const a=xy(x0,z0),b=xy(x1,z0),d=xy(x1,z1),e=xy(x0,z
 function buildBase(){
   base=document.createElement('canvas');base.width=base.height=px;const c=base.getContext('2d');
   c.fillStyle='#2c2d27';quad(c,cx-HALF*1.5,cz-HALF*1.5,cx+HALF*1.5,cz+HALF*1.5);c.fillStyle=C.road;quad(c,-68.5,-68.5,68.5,68.5);
-  // v0.22 the farm: grass, the dirt track through the gate, the field
-  c.fillStyle='#3f4630';quad(c,FARM.x0,FARM.z0,WALL_X,FARM.z1);c.fillStyle='#6a5a44';quad(c,-126,-2.6,WALL_X+1,2.6);c.fillStyle='#4e3e2c';quad(c,-127,8,-104,27);
-  c.fillStyle='#8a8a86';quad(c,WALL_X-.4,FARM.z0,WALL_X+.4,-GATE);quad(c,WALL_X-.4,GATE,WALL_X+.4,FARM.z1);
+  for(const m of mapPaint){c.fillStyle=m.color;for(const r of m.rects)quad(c,...r);}   // v0.22+ the areas outside the wall
   for(let i=0;i<4;i++)for(let j=0;j<4;j++){
     const cx=(RC[i]+RC[i+1])/2,cz=(RC[j]+RC[j+1])/2;
     c.fillStyle=LAYOUT[i+','+j]==='park'?C.park:C.block;quad(c,cx-12,cz-12,cx+12,cz+12);
@@ -68,7 +66,9 @@ export function updateMinimap(dt,now){
   const css=Math.round(cv.getBoundingClientRect().width||0);if(css<20||!player)return;
   dpr=Math.min(2,devicePixelRatio||1);
   if(Math.round(css*dpr)!==px){px=Math.round(css*dpr);cv.width=cv.height=px;base=null;}
-  const fx=player.pos.x<WALL_X-6?-99:player.pos.x>WALL_X+12?0:cx;if(fx!==cx){cx=fx;base=null;}   // follow the player out to the farm and back
+  {const px=player.pos.x,pz=player.pos.z,A=areaAt(px,pz);let t=null;   // follow the player out to an area and back
+    if(A&&beyond(A,px,pz)>6)t=A.mid;else{const cur=AREAS.find(a=>a.mid[0]===cx&&a.mid[1]===cz);if(!cur||beyond(cur,px,pz)<-12)t=[0,0];}
+    if(t&&(t[0]!==cx||t[1]!==cz)){cx=t[0];cz=t[1];base=null;}}
   if(!base)buildBase();   // size changes with the screen
   draw(now);
 }

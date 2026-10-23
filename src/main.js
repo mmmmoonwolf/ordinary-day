@@ -9,6 +9,7 @@ import {buildDecor} from './world/decor.js';
 import {buildClutter} from './world/clutter.js';
 import {buildFarm} from './world/farm.js';
 import {buildExtras} from './world/extras.js';
+import {buildSuburb} from './world/suburb.js';
 import {updateOcclusion} from './world/occlusion.js';
 import {agents,removeAgent} from './entities/agents.js';
 import {updateHuman,updateZombie,updateDead} from './entities/ai.js';
@@ -47,6 +48,7 @@ buildDecor();   // v0.16: weeds, signs and stains, own rng, after everything els
 buildClutter();   // v0.18: City Pack litter, wrecks and dumpsters, crowded rooms; own rng, after the decor
 buildFarm();   // v0.22: the farm west of town, through the gate; own rng, everything appended
 buildExtras();   // v0.23: bus stops, benches, signs, billboards, a building site, gas cylinders; own rng, appended
+buildSuburb();   // v0.24: the suburb south of town, through the gate; own rng, appended
 initInput();
 initSettings();
 $('verLabel').textContent='ORDINARY DAY · PROTOTYPE '+VERSION;

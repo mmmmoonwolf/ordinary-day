@@ -1,6 +1,6 @@
 import {rnd,pick} from '../core/util.js';
 import {collide,freeAt} from '../world/collision.js';
-import {FARM,WALL_X,inFarm} from '../config/world.js';
+import {areaAt} from '../config/world.js';
 import {nodeXZ,neighbors,nearestNode,same} from '../world/sidewalk.js';
 import {G} from '../core/state.js';
 import {roomAt,viaDoor,doorDist} from '../world/interiors.js';
@@ -27,17 +27,17 @@ export function followNodes(a,speed,dt){
 // walk the sidewalks, but first find the way out when inside a building (v0.6)
 export function wander(a,speed,dt){
   const k=roomAt(a.pos.x,a.pos.z);
-  if(k<0&&inFarm(a.pos.x,a.pos.z)){farmWander(a,speed,dt);return;}   // v0.22 no sidewalks out there
+  const A=k<0&&areaAt(a.pos.x,a.pos.z);if(A){areaWander(a,A,speed,dt);return;}   // v0.22 no sidewalks out there
   if(k<0){followNodes(a,speed,dt);return;}
   a.node=null;
   if(G.doors&&G.doors[k]&&!G.doors[k].open&&doorDist(k,a.pos.x,a.pos.z)<1.6){a.moving=0;return;}   // shut in: wait by the door
   const w=viaDoor(k,a.pos.x,a.pos.z,true);moveAgent(a,w.x-a.pos.x,w.z-a.pos.z,speed,dt);
 }
-// v0.22 a walker at the farm strolls between random free points of it
-function farmWander(a,speed,dt){
+// v0.22 a walker out in an area (the farm, the suburb) strolls between random free points of it
+function areaWander(a,A,speed,dt){
   a.node=null;
   a.farmTT=(a.farmTT||0)-dt;
-  if(!a.farmT||Math.hypot(a.farmT.x-a.pos.x,a.farmT.z-a.pos.z)<1||a.farmTT<=0){a.farmTT=6+Math.random()*6;for(let t=0;t<8;t++){const x=FARM.x0+3+Math.random()*(WALL_X-FARM.x0-6),z=FARM.z0+3+Math.random()*(FARM.z1-FARM.z0-6);if(freeAt(x,z,.6)&&roomAt(x,z,.5)<0){a.farmT={x,z};break;}}}
+  if(!a.farmT||Math.hypot(a.farmT.x-a.pos.x,a.farmT.z-a.pos.z)<1||a.farmTT<=0){a.farmTT=6+Math.random()*6;for(let t=0;t<8;t++){const x=A.x0+3+Math.random()*(A.x1-A.x0-6),z=A.z0+3+Math.random()*(A.z1-A.z0-6);if(areaAt(x,z)===A&&freeAt(x,z,.6)&&roomAt(x,z,.5)<0){a.farmT={x,z};break;}}}
   if(a.farmT)moveAgent(a,a.farmT.x-a.pos.x,a.farmT.z-a.pos.z,speed,dt);
 }
 export const d2=(a,b)=>{const x=a.pos.x-b.pos.x,z=a.pos.z-b.pos.z;return x*x+z*z;};

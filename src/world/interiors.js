@@ -1,6 +1,6 @@
 import {mulberry32} from '../core/util.js';
 import {scene} from '../core/renderer.js';
-import {RC,WALL_X,GATE} from '../config/world.js';
+import {RC,GATE,AREAS,beyond} from '../config/world.js';
 import {WALL_T,DOOR_W,STUB_H,DOOR_HP,PLANK_HP} from '../config/shelter.js';
 import {S,part} from './materials.js';
 import {concreteTex} from './textures.js';
@@ -149,7 +149,8 @@ export function roomAt(x,z,pad=0){for(let k=0;k<rooms.length;k++){const r=rooms[
 // room whose door it has to pass (-1 when it can walk straight)
 export function navStep(ax,az,tx,tz){
   const ra=roomAt(ax,az),rt=roomAt(tx,tz);
-  if(ra<0&&(ax<WALL_X)!==(tx<WALL_X)&&Math.abs(az)>GATE-1.2)return {x:WALL_X+(ax<WALL_X?-2.5:2.5),z:0,door:-1};   // v0.22 city <-> farm: through the gate in the west wall
+  if(ra<0)for(const A of AREAS){const a=beyond(A,ax,az)>0,t=beyond(A,tx,tz)>0;if(a===t)continue;const w=A.wall,lat=w.axis==='x'?az:ax,s=(w.v<0?-1:1)*(a?1:-1);   // v0.22 city <-> an area: through the gate in the wall
+    if(Math.abs(lat)>GATE-1.2)return w.axis==='x'?{x:w.v+s*2.5,z:0,door:-1}:{x:0,z:w.v+s*2.5,door:-1};}
   if(ra===rt)return {x:tx,z:tz,door:-1};
   return ra>=0?viaDoor(ra,ax,az,true):viaDoor(rt,ax,az,false);
 }
