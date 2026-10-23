@@ -15,7 +15,7 @@ import {playLocal} from '../systems/audio.js';
 import {send,isClient} from '../core/bus.js';
 import {FX} from '../systems/effects.js';
 import {throwPick} from '../systems/throw.js';
-const THROW_ICON={bottle:'🍾',molotov:'🔥',grenade:'💣'};
+const THROW_ICON={bottle:'🍾',molotov:'🔥',grenade:'💣',flare:'🎆'};
 import {clearTip} from './tips.js';
 
 // ---------- messages ----------

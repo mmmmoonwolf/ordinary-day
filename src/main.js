@@ -11,6 +11,8 @@ import {buildFarm} from './world/farm.js';
 import {buildExtras} from './world/extras.js';
 import {buildSuburb} from './world/suburb.js';
 import {buildRiver} from './world/river.js';
+import {buildCamp} from './world/camp.js';
+import {updateCamp} from './systems/camp.js';
 import {updateOcclusion} from './world/occlusion.js';
 import {agents,removeAgent} from './entities/agents.js';
 import {updateHuman,updateZombie,updateDead} from './entities/ai.js';
@@ -23,7 +25,7 @@ import {updateSky} from './systems/weather.js';
 import {reset} from './systems/game.js';
 import {autosave,initSave} from './systems/save.js';
 import {updateShelter} from './systems/doors.js';
-import {updateThrows} from './systems/throw.js';
+import {updateThrows,updateLures} from './systems/throw.js';
 import {updateFires} from './systems/blast.js';
 import {initAudio,updateMusic,updateAmbience} from './systems/audio.js';
 import {updateGoal} from './systems/goal.js';
@@ -51,6 +53,7 @@ buildFarm();   // v0.22: the farm west of town, through the gate; own rng, every
 buildExtras();   // v0.23: bus stops, benches, signs, billboards, a building site, gas cylinders; own rng, appended
 buildSuburb();   // v0.24: the suburb south of town, through the gate; own rng, appended
 buildRiver();   // v0.25: the river and the bridge east of town; own rng, appended
+buildCamp();   // v0.26: the survivors' camp in the woods across the river; own rng, appended
 initInput();
 initSettings();
 $('verLabel').textContent='ORDINARY DAY · PROTOTYPE '+VERSION;
@@ -74,7 +77,7 @@ function simStep(dt,now){
     else updateDead(a,dt);
     if(a.gone||(a.state==='dead'&&a.deadT>25)){removeAgent(a);agents.splice(i,1);}
   }
-  separate();updateThrows(dt);updateFires(dt);
+  separate();updateThrows(dt);updateLures(dt);updateFires(dt);if(G.running)updateCamp(dt);
 }
 reset();
 // character models load in the background; until then everyone is blocky (v0.13)

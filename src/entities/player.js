@@ -65,7 +65,8 @@ export function updatePlayer(p,dt){
   if(p.aimT>0)p.aimT-=dt;
   const w=curWeapon(p),def=DEF[w.id];
   const heavy=def.heavy&&(I.fire||p.aimT>0)?.7:1;
-  if(mag>.08){moveAgent(p,I.mx,I.mz,(I.slow&&!I.run?SNEAK_SPEED:(I.run?5.8:3.4)*Math.max(.45,mag))*heavy,dt,I.aim||p.aimT>0);
+  if(p.trapT>0){p.trapT-=dt;p.moving=0;}   // v0.26 caught in a bear trap
+  else if(mag>.08){moveAgent(p,I.mx,I.mz,(I.slow&&!I.run?SNEAK_SPEED:(I.run?5.8:3.4)*Math.max(.45,mag))*heavy,dt,I.aim||p.aimT>0);
     if(I.run&&G.phase==='night'){p.runNoise-=dt;if(p.runNoise<=0){p.runNoise=.5;makeNoise(p.pos.x,p.pos.z,5);}}}
   else p.moving=0;
   if(p.cool>0)p.cool-=dt;

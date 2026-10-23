@@ -2,6 +2,7 @@
 // v0.23 the farm's own weapons (rolled at the farm's loot spots and its barn shelves), and which throwable a 'throw' roll gives
 export const FARM_POOL={melee:['pitchfork_c','sickle_c','spade_c','pickaxe_c'],weapons:['dbshotgun_c']};
 export const THROW_W={bottle:78,molotov:15,grenade:7};   // PLACEHOLDER
+export const CAMP_GRADE={civ:40,pol:45,mil:15};   // v0.26 weapon and ammo grades at the camp, day or night (PLACEHOLDER)
 export const POOLS={
   civ:{weapons:['pistol_c','shotgun_c','smg_c','bat_c','knife_c','pipe_c'],ammo:['a9','a9','a12'],
     melee:['bat_c','knife_c','pipe_c','crowbar_c','crowbar_c','machete_c','golf_c','wrench_c','wrench_c','sledge_c','katana_c']},   // v0.18 'melee' finds (PLACEHOLDER mix)

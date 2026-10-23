@@ -21,8 +21,9 @@ export function boom(x,y,z,t,light){send('*','fx',['boom',x,y,z,t,light]);blast.
 // v0.23 burning ground (systems/blast.js): flickering flame sprites and a scorch, also on the other devices; fireSpots
 // is what the fire sound follows (systems/audio.js)
 export const fireSpots=[];
-let flameMat=null;
-const flameTex=()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d'),gr=g.createRadialGradient(32,40,2,32,36,30);gr.addColorStop(0,'rgba(255,240,180,1)');gr.addColorStop(.35,'rgba(255,150,40,.9)');gr.addColorStop(1,'rgba(160,30,0,0)');g.fillStyle=gr;g.beginPath();g.ellipse(32,36,22,28,0,0,7);g.fill();const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;return t;};
+let flameMat=null,flameT=null;
+const flameTex=()=>flameT||(flameT=drawFlame());
+const drawFlame=()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d'),gr=g.createRadialGradient(32,40,2,32,36,30);gr.addColorStop(0,'rgba(255,240,180,1)');gr.addColorStop(.35,'rgba(255,150,40,.9)');gr.addColorStop(1,'rgba(160,30,0,0)');g.fillStyle=gr;g.beginPath();g.ellipse(32,36,22,28,0,0,7);g.fill();const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;return t;};
 export function fireFx(x,z,r,sec){
   send('*','fx',['fire',x,z,r,sec]);
   if(!flameMat)flameMat=new THREE.SpriteMaterial({map:flameTex(),color:new THREE.Color('#ff8a3a').convertSRGBToLinear(),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false});
@@ -36,5 +37,12 @@ export function updateFireFx(dt,now){
     if(f.t<=0){scene.remove(f.g);fireSpots.splice(i,1);continue;}
     for(const s of f.fl){const k=s.userData.k*fade*(.75+.25*Math.sin(now/90+s.userData.ph));s.scale.set(.9*k,1.5*k,1);s.position.y=s.userData.y0+.45*k+.1;}}
 }
-export function clearFireFx(){for(const f of fireSpots)scene.remove(f.g);fireSpots.length=0;}
+export function clearFireFx(){for(let i=fireSpots.length-1;i>=0;i--){const f=fireSpots[i];if(f.keep)continue;scene.remove(f.g);fireSpots.splice(i,1);}}
+// v0.26 flames that never go out (the camp's fire and torches): drawn here on every device, not sent
+export function staticFlames(x,z,r,col,h=0){
+  const m=new THREE.SpriteMaterial({map:flameTex(),color:new THREE.Color(col).convertSRGBToLinear(),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false});
+  const g=new THREE.Group(),fl=[],n=Math.max(2,Math.round(3+r*4));
+  for(let i=0;i<n;i++){const s=new THREE.Sprite(m),a=Math.random()*6.28,d=Math.sqrt(Math.random())*r*.7;s.position.set(x+Math.cos(a)*d,h+.4,z+Math.sin(a)*d);s.userData.ph=Math.random()*6.28;s.userData.k=(.5+Math.random()*.5)*Math.min(1,.4+r);s.userData.y0=h;g.add(s);fl.push(s);}
+  scene.add(g);fireSpots.push({x,z,r,t:Infinity,g,fl,keep:true,camp:true});
+}
 export const FX={blood:addBlood,tracer,boom,fire:fireFx};

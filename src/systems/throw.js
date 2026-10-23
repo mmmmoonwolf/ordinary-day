@@ -3,12 +3,13 @@ import {scene} from '../core/renderer.js';
 import {groundY} from '../config/world.js';
 import {DEF} from '../config/items.js';
 import {THROW_RANGE,THROW_NOISE} from '../config/stealth.js';
-import {BLAST,FIRE,GRENADE_FUSE} from '../config/blast.js';
+import {BLAST,FIRE,GRENADE_FUSE,FLARE} from '../config/blast.js';
 import {rayWall} from '../world/collision.js';
 import {itemModel} from '../world/item-models.js';
 import {makeNoise} from '../entities/ai.js';
 import {countAmmo,takeAmmo} from './inventory.js';
 import {blast,ignite} from './blast.js';
+import {fireFx} from './effects.js';
 import {sfx} from './audio.js';
 import {uiFor} from '../ui/hud.js';
 
@@ -17,7 +18,7 @@ import {uiFor} from '../ui/hud.js';
 // flies in an arc and lands where aimed or at the first wall. A bottle breaks and its noise draws zombies; a Molotov
 // sets the ground on fire there; a grenade blows up a moment later (systems/blast.js). The player picks which one in the
 // bag (p.gear.throwId); with none picked, or none of it left, the first they have of bottle, Molotov, grenade.
-export const THROWS=['bottle','molotov','grenade'];
+export const THROWS=['bottle','flare','molotov','grenade'];
 export function throwPick(g){const has=id=>g.bag.some(e=>e.id===id&&e.n>0);return g.throwId&&has(g.throwId)?g.throwId:THROWS.find(has)||null;}
 const flying=[];
 export function throwBottle(p){
@@ -43,7 +44,12 @@ export function updateThrows(dt){
     if(k<1)continue;
     if(f.id==='grenade'){f.fuse=GRENADE_FUSE;f.m.rotation.set(0,0,Math.PI/2);f.m.position.y=groundY(x,z)+.06;sfx.thud(x,z);continue;}
     scene.remove(f.m);flying.splice(i,1);sfx.glass(x,z);
-    if(f.id==='molotov')ignite(x,z,FIRE.molotov[0],FIRE.molotov[1]);else makeNoise(x,z,THROW_NOISE);
+    if(f.id==='molotov')ignite(x,z,FIRE.molotov[0],FIRE.molotov[1]);
+    else if(f.id==='flare'){lures.push({x,z,t:FLARE.secs,next:0});fireFx(x,z,.25,FLARE.secs);}   // v0.26
+    else makeNoise(x,z,THROW_NOISE);
   }
 }
-export function clearThrows(){for(const f of flying)scene.remove(f.m);flying.length=0;}
+export function clearThrows(){for(const f of flying)scene.remove(f.m);flying.length=0;lures.length=0;}
+// v0.26 a burning flare calls every zombie in earshot to it, again and again until it goes out
+const lures=[];
+export function updateLures(dt){for(let i=lures.length-1;i>=0;i--){const l=lures[i];l.t-=dt;l.next-=dt;if(l.next<=0){l.next=FLARE.every;makeNoise(l.x,l.z,FLARE.noise);}if(l.t<=0)lures.splice(i,1);}}

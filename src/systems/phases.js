@@ -11,13 +11,14 @@ import {restockBoxes} from './search.js';
 import {planDaily} from './events.js';
 import {REFILL,refillScale} from '../config/loot.js';
 import {sfx} from './audio.js';
+import {campGuards} from './camp.js';
 import {diffOf} from '../config/difficulty.js';
 import {say,feed} from '../ui/hud.js';
 import {updateEvents} from './events.js';
 
 // ---------- story + phases ----------
 function startOutbreak(){
-  G.outbreak=true;sfx.outbreak();   // v0.21 siren
+  G.outbreak=true;sfx.outbreak();campGuards();   // v0.21 siren, v0.26 walkers left at the camp
   let best=null,bd=1e9;for(const a of agents){if(a.state!=='human'||a.vendor)continue;const s=Math.abs(nearestPlayerDist(a.pos.x,a.pos.z)-16);if(s<bd){bd=s;best=a;}}
   if(best){becomeZombie(best,'walker');G.alertA=best;G.alertT=8;}
   say('มีคนกัดกันกลางถนน! ตอนกลางวันพวกมันยังเชื่องช้า ใช้เวลานี้หาของ','alarm',7);
