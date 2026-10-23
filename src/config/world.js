@@ -3,16 +3,27 @@ export const RC=[-64,-32,0,32,64];
 export const OFF=5.3;
 export const LIM=67.4;
 export function nearestIdx(v){let b=0;for(let i=1;i<5;i++) if(Math.abs(v-RC[i])<Math.abs(v-RC[b])) b=i;return b;}
-// v0.22 the farm: a walkable area west of the city wall (x = WALL_X), reached through a gate where the z = 0 road leaves town
-export const WALL_X=-68.5, GATE=4;
-export const FARM={x0:-129,x1:-61,z0:-29,z1:29};   // x1 overlaps the city so the gate can be crossed; the wall in between is solid (world/farm.js)
-export const inFarm=(x,z)=>x<WALL_X&&x>FARM.x0&&z>FARM.z0&&z<FARM.z1;
-export function groundY(x,z){if(x<WALL_X)return .02;return (Math.abs(x-RC[nearestIdx(x)])>4 && Math.abs(z-RC[nearestIdx(z)])>4)?0.18:0.02;}
-// inside the walkable world, m metres clear of its edge: the city square or the farm
-export function inWorld(x,z,m=0){const L=LIM-m;return Math.abs(x)<L&&Math.abs(z)<L||x>FARM.x0+m&&x<FARM.x1&&z>FARM.z0+m&&z<FARM.z1-m;}
-// moves p back inside the world: to the nearer of the city square and the farm
+// v0.22+ areas outside the city wall, each reached through a gate where a middle road leaves town (world/farm.js,
+// world/suburb.js). wall: the city wall it lies beyond (axis 'x' or 'z', at v); the gate is GATE either side of 0 on the
+// other axis. The rect overlaps the city a little so the gate can be crossed; the wall in between is solid.
+// mid: where the minimap centres while a player is out there.
+export const GATE=4;
+export const AREAS=[
+  {id:'farm',x0:-129,x1:-61,z0:-29,z1:29,wall:{axis:'x',v:-68.5},mid:[-99,0]},
+  {id:'suburb',x0:-31,x1:31,z0:61,z1:129,wall:{axis:'z',v:68.5},mid:[0,99]},
+];
+export const FARM=AREAS[0],SUBURB=AREAS[1],WALL_X=FARM.wall.v,WALL_Z=SUBURB.wall.v;
+// past the area's wall (how far, < 0 still in town)
+export const beyond=(A,x,z)=>{const w=A.wall,p=w.axis==='x'?x:z;return w.v<0?w.v-p:p-w.v;};
+export function areaAt(x,z){for(const A of AREAS)if(beyond(A,x,z)>0&&x>A.x0&&x<A.x1&&z>A.z0&&z<A.z1)return A;return null;}
+export const inFarm=(x,z)=>areaAt(x,z)===FARM;
+export function groundY(x,z){if(areaAt(x,z))return .02;return (Math.abs(x-RC[nearestIdx(x)])>4 && Math.abs(z-RC[nearestIdx(z)])>4)?0.18:0.02;}
+// inside the walkable world, m metres clear of its edge: the city square or an area
+export function inWorld(x,z,m=0){const L=LIM-m;if(Math.abs(x)<L&&Math.abs(z)<L)return true;for(const A of AREAS)if(x>A.x0+m&&x<A.x1-m&&z>A.z0+m&&z<A.z1-m)return true;return false;}
+// moves p back inside the world: to the nearest of the city square and the areas
 export function clampWorld(p){
   if(inWorld(p.x,p.z))return;
-  const cx=Math.max(-LIM,Math.min(LIM,p.x)),cz=Math.max(-LIM,Math.min(LIM,p.z)),fx=Math.max(FARM.x0,Math.min(FARM.x1,p.x)),fz=Math.max(FARM.z0,Math.min(FARM.z1,p.z));
-  if(Math.hypot(p.x-cx,p.z-cz)<=Math.hypot(p.x-fx,p.z-fz)){p.x=cx;p.z=cz;}else{p.x=fx;p.z=fz;}
+  let bx=Math.max(-LIM,Math.min(LIM,p.x)),bz=Math.max(-LIM,Math.min(LIM,p.z)),bd=Math.hypot(p.x-bx,p.z-bz);
+  for(const A of AREAS){const x=Math.max(A.x0,Math.min(A.x1,p.x)),z=Math.max(A.z0,Math.min(A.z1,p.z)),d=Math.hypot(p.x-x,p.z-z);if(d<bd){bd=d;bx=x;bz=z;}}
+  p.x=bx;p.z=bz;
 }

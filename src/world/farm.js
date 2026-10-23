@@ -5,7 +5,7 @@ import {BARN} from '../config/places.js';
 import {S,box,grassMat,greyMat,unitBox} from './materials.js';
 import {mk,grain,stains,T,CORR} from './textures.js';
 import {solids,solid,freeAt} from './collision.js';
-import {buildings,occluders,lootSpots,pois,cityWall} from './city.js';
+import {buildings,occluders,lootSpots,pois,cityWall,mapPaint} from './city.js';
 import {addRoom,rooms,roomAt} from './interiors.js';
 import {decor} from './decor.js';
 import {solidAt,furnish} from './clutter.js';
@@ -34,7 +34,7 @@ function cornTex(){const [c,g]=mk(64,128);g.clearRect(0,0,64,128);
 function hayTex(){const [c,g]=mk(64,64);g.fillStyle='#a88f52';g.fillRect(0,0,64,64);for(let i=0;i<500;i++){g.fillStyle=`rgba(${190+Math.random()*50|0},${160+Math.random()*40|0},${90+Math.random()*30|0},.6)`;g.fillRect(Math.random()*64,Math.random()*64,1,3+Math.random()*5);}stains(g,64,64,5,'70,60,30',14,.5);return T(c);}
 
 // many boxes (or any geometry) put together into one mesh: [geometry, matrix] pairs
-function merge(parts,mat){
+export function merge(parts,mat){
   let nv=0,ni=0;for(const [geo] of parts){nv+=geo.attributes.position.count;ni+=geo.index.count;}
   const pos=new Float32Array(nv*3),nor=new Float32Array(nv*3),uv=new Float32Array(nv*2),idx=new Uint32Array(ni),v=new THREE.Vector3(),nm=new THREE.Matrix3();let ov=0,oi=0;
   for(const [geo,m] of parts){const p=geo.attributes.position,n=geo.attributes.normal,u=geo.attributes.uv;nm.getNormalMatrix(m);
@@ -43,14 +43,14 @@ function merge(parts,mat){
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('normal',new THREE.BufferAttribute(nor,3));g.setAttribute('uv',new THREE.BufferAttribute(uv,2));g.setIndex(new THREE.BufferAttribute(idx,1));g.computeBoundingSphere();
   const mesh=new THREE.Mesh(g,mat);mesh.castShadow=mesh.receiveShadow=true;return mesh;
 }
-const M=(x,y,z,sx,sy,sz,ry=0)=>new THREE.Matrix4().compose(new THREE.Vector3(x,y,z),new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),ry),new THREE.Vector3(sx,sy,sz));
+export const M=(x,y,z,sx,sy,sz,ry=0)=>new THREE.Matrix4().compose(new THREE.Vector3(x,y,z),new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),ry),new THREE.Vector3(sx,sy,sz));
 // a flat plane on the ground
-function ground(mat,x0,x1,z0,z1,y){const m=new THREE.Mesh(new THREE.PlaneGeometry(x1-x0,z1-z0),mat);m.rotation.x=-Math.PI/2;m.position.set((x0+x1)/2,y,(z0+z1)/2);m.receiveShadow=true;scene.add(m);return m;}
+export function ground(mat,x0,x1,z0,z1,y){const m=new THREE.Mesh(new THREE.PlaneGeometry(x1-x0,z1-z0),mat);m.rotation.x=-Math.PI/2;m.position.set((x0+x1)/2,y,(z0+z1)/2);m.receiveShadow=true;scene.add(m);return m;}
 
 // a wooden building with a pitched roof (ridge along its longer side); like the city's buildings it is one solid box,
 // fades when it hides the player (b.mats) and is cut away when it becomes a room (b.meshes)
-function shed(cx,cz,w,d,h,paint,roofCol){
-  const wall=S({map:tex[paint]||(tex[paint]=planksTex(paint)),roughness:.95}),roof=S({map:CORR,color:roofCol,roughness:.8,metalness:.25});
+export function shed(cx,cz,w,d,h,paint,roofCol,roofMap){
+  const wall=S({map:tex[paint]||(tex[paint]=planksTex(paint)),roughness:.95}),roof=S({map:roofMap||CORR,color:roofCol,roughness:.8,metalness:roofMap?0:.25});   // v0.24 houses in the suburb have shingles
   const geo=new THREE.BoxGeometry(w,h,d),uv=geo.attributes.uv;for(let i=0;i<uv.count;i++){const f=Math.floor(i/4);uv.setXY(i,uv.getX(i)*(f<2?d:w)/2.2,uv.getY(i)*h/2.2);}
   const body=new THREE.Mesh(geo,wall);body.position.set(cx,.02+h/2,cz);body.castShadow=body.receiveShadow=true;
   // gable roof: a prism along the long side, eaves out 0.4 m
@@ -64,7 +64,7 @@ function shed(cx,cz,w,d,h,paint,roofCol){
   buildings.push(b);b.box=solid(cx,cz,w/2,d/2);return b;
 }
 // dark window panes on a wall face (side [nx,nz]) with a Kenney barricade over some of them
-function windows(b,nx,nz,n,y,rng,boarded){
+export function windows(b,nx,nz,n,y,rng,boarded){
   const len=nx?b.d:b.w,g=new THREE.Group();scene.add(g);b.meshes.push(g);
   for(let i=0;i<n;i++){const t=(i+.5)/n*len-len/2,x=b.cx+nx*(b.w/2+.03)+(nz?t:0),z=b.cz+nz*(b.d/2+.03)+(nx?t:0);
     const pane=new THREE.Mesh(unitBox,S({color:'#14171a',roughness:.3,metalness:.2}));pane.scale.set(nx?.04:1.1,1.2,nx?1.1:.04);pane.position.set(x,y,z);g.add(pane);
@@ -76,6 +76,7 @@ export function buildFarm(){
   const w=cityWall.west;if(w){w.scale.z=68.75-GATE;w.position.z=-(68.75+GATE)/2;box(greyMat,.5,.9,68.75-GATE,WALL_X,.45,(68.75+GATE)/2);}
   solids.push({x0:WALL_X-.35,x1:WALL_X+.35,z0:FARM.z0-1,z1:-GATE},{x0:WALL_X-.35,x1:WALL_X+.35,z0:GATE,z1:FARM.z1+1});
   for(const s of [-1,1]){box(greyMat,.7,2.2,.7,WALL_X,1.1,s*(GATE+.35));}   // gate posts
+  mapPaint.push({color:'#3f4630',rects:[[FARM.x0,FARM.z0,WALL_X,FARM.z1]]},{color:'#6a5a44',rects:[[-126,-2.6,WALL_X+1,2.6]]},{color:'#4e3e2c',rects:[[-127,8,-104,27],[-102.5,-28.2,-92,-21.2]]},{color:'#2b3530',rects:[[-99.6,21,-91.4,27]]},{color:'#8a8a86',rects:[[WALL_X-.4,FARM.z0,WALL_X+.4,-GATE],[WALL_X-.4,GATE,WALL_X+.4,FARM.z1]]});   // the minimap
   // ground: overgrown grass, the dirt track and a lane to the barn, the field
   ground(grassMat,FARM.x0-6,WALL_X-.3,FARM.z0-6,FARM.z1+6,.008);
   const road=trackTex();road.repeat.set((WALL_X+2+126)/5.2,1);ground(S({map:road,roughness:1}),-126,WALL_X+2,-2.6,2.6,.014);
