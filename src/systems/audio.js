@@ -1,6 +1,7 @@
 import {clamp} from '../core/util.js';
 import {send} from '../core/bus.js';
 import {player,viewed} from '../entities/player.js';
+import {agents} from '../entities/agents.js';
 
 // ---------- audio ----------
 // Sounds are synthesized with WebAudio, except screams, rain and thunder (v0.19, recordings in assets/sounds/). Browsers
@@ -63,18 +64,22 @@ function play(len,x,z,range,build){
 // ---------- recordings (v0.19) ----------
 // Pixabay sound effects (README credits), cut, mono and level-matched in assets/sounds/. Until they have loaded, or when
 // one fails, the call plays nothing; the game never waits for them.
-export const FILES={scream:['scream_m1','scream_m2','scream_m3','scream_m4','scream_m5','scream_m6','scream_w1','scream_w2','scream_x1','scream_x2'],thunder:['thunder1','thunder2','thunder3'],rain:['rain']};
-const bufs={};let loading=false,lastScream=-9;
+export const FILES={scream:['scream_m1','scream_m2','scream_m3','scream_m4','scream_m5','scream_m6','scream_w1','scream_w2','scream_x1','scream_x2'],thunder:['thunder1','thunder2','thunder3'],rain:['rain'],
+  groan:['groan1','groan2','groan3','groan4','groan5'],zscream:['zscream1','zscream2','zscream3','zscream4','zscream5'],heart:['heart'],hurt:['hurt']};   // v0.20 zombies, heartbeat, the player hurt
+const bufs={};let loading=false,lastScream=-9,lastHurt=-9,lastGrowl=-9;
 function loadSounds(){
   if(loading||typeof fetch!=='function')return;loading=true;
   for(const k in FILES)for(const n of FILES[k])fetch('assets/sounds/'+n+'.mp3').then(r=>r.ok?r.arrayBuffer():Promise.reject(r.status))
     .then(b=>new Promise((ok,no)=>ctx.decodeAudioData(b,ok,no))).then(buf=>(bufs[k]||(bufs[k]=[])).push(buf)).catch(()=>{});
 }
 export const soundsLoaded=()=>Object.fromEntries(Object.keys(FILES).map(k=>[k,(bufs[k]||[]).length]));
+export const played={};   // how many times each kind has played (tests, bug reports)
+export const windLevel=()=>wind?wind.g.gain.value:0;
 export const rainLevel=()=>rainLoop?rainLoop.g.gain.value:0;
 // one recording of a kind, picked at random, slightly detuned; far away it is duller (lowpass)
 function sample(kind,t,dest,gain,o={}){
   const L=bufs[kind];if(!L||!L.length)return null;
+  played[kind]=(played[kind]||0)+1;
   const src=ctx.createBufferSource();src.buffer=L[Math.floor(Math.random()*L.length)];src.playbackRate.value=o.rate||1;
   const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=o.cut||16000;const g=ctx.createGain();g.gain.value=gain;
   src.connect(f).connect(g).connect(dest);src.start(t);return src;
@@ -90,11 +95,14 @@ const S={
   reload(){play(.4,undefined,0,1,(t,d)=>{noise(t,.03,{type:'highpass',f0:2500,peak:.25,dest:d});noise(t+.25,.04,{type:'highpass',f0:1800,peak:.3,dest:d});});},
   swing(){play(.15,undefined,0,1,(t,d)=>noise(t,.12,{type:'bandpass',f0:600,f1:2400,q:2,peak:.18,attack:.03,dest:d}));},
   thud(x,z){play(.12,x,z,20,(t,d,g)=>{tone(t,.1,{f0:120,f1:50,peak:.5*g,dest:d});noise(t,.06,{f0:700,peak:.25*g,dest:d});});},
-  hurt(){play(.2,undefined,0,1,(t,d)=>{tone(t,.16,{wave:'triangle',f0:170,f1:70,peak:.45,dest:d});noise(t,.1,{f0:500,peak:.3,dest:d});});},
+  hurt(){if(bufs.hurt){if(ctx.currentTime<lastHurt+.3)return;lastHurt=ctx.currentTime;play(.6,undefined,0,1,(t,d)=>sample('hurt',t,d,.75,{rate:.92+Math.random()*.16}));return;}   // v0.20 a recording
+    play(.2,undefined,0,1,(t,d)=>{tone(t,.16,{wave:'triangle',f0:170,f1:70,peak:.45,dest:d});noise(t,.1,{f0:500,peak:.3,dest:d});});},
   explode(x,z){play(1,x,z,70,(t,d,g)=>{noise(t,.9,{f0:900,f1:90,peak:1*g,dest:d});tone(t,.7,{f0:90,f1:28,peak:.9*g,dest:d});});},
   swell(x,z){play(1.3,x,z,30,(t,d,g)=>{tone(t,1.2,{wave:'sawtooth',f0:90,f1:420,peak:.16*g,attack:.4,dest:d});tone(t,1.2,{f0:180,f1:840,peak:.12*g,attack:.4,dest:d});});},
-  roar(x,z,len){len=len||1.3;play(len,x,z,90,(t,d,g)=>{tone(t,len,{wave:'sawtooth',f0:75,f1:42,peak:.4*g,attack:.12,dest:d});tone(t,len,{wave:'sawtooth',f0:79,f1:45,peak:.3*g,attack:.12,dest:d});noise(t,len,{f0:600,f1:200,peak:.35*g,attack:.1,dest:d});});},
-  shriek(x,z){play(.6,x,z,45,(t,d,g)=>{tone(t,.5,{wave:'sawtooth',f0:700,f1:1500,peak:.16*g,attack:.03,dest:d});noise(t,.45,{type:'bandpass',f0:2200,f1:3200,q:4,peak:.2*g,attack:.03,dest:d});});},
+  roar(x,z,len){len=len||1.3;if(bufs.zscream)play(2.5,x,z,90,(t,d,g)=>sample('zscream',t,d,g,{rate:.5+Math.random()*.08,cut:600+g*3000}));   // v0.20 a zombie scream played slow and deep, over the synth rumble
+    play(len,x,z,90,(t,d,g)=>{tone(t,len,{wave:'sawtooth',f0:75,f1:42,peak:.4*g,attack:.12,dest:d});tone(t,len,{wave:'sawtooth',f0:79,f1:45,peak:.3*g,attack:.12,dest:d});noise(t,len,{f0:600,f1:200,peak:.35*g,attack:.1,dest:d});});},
+  shriek(x,z){if(bufs.zscream){play(2.5,x,z,55,(t,d,g)=>sample('zscream',t,d,.9*g,{rate:1.12+Math.random()*.1,cut:2000+g*g*14000}));return;}   // v0.20
+    play(.6,x,z,45,(t,d,g)=>{tone(t,.5,{wave:'sawtooth',f0:700,f1:1500,peak:.16*g,attack:.03,dest:d});noise(t,.45,{type:'bandpass',f0:2200,f1:3200,q:4,peak:.2*g,attack:.03,dest:d});});},
   pickup(){play(.15,undefined,0,1,(t,d)=>{tone(t,.06,{f0:660,peak:.14,dest:d});tone(t+.06,.08,{f0:990,peak:.12,dest:d});});},
   crack(){play(.35,undefined,0,1,(t,d)=>{noise(t,.25,{type:'highpass',f0:1800,peak:.5,dest:d});tone(t,.2,{wave:'square',f0:220,f1:60,peak:.2,dest:d});});},
   door(x,z){play(.3,x,z,25,(t,d,g)=>{tone(t,.12,{wave:'triangle',f0:190,f1:95,peak:.35*g,dest:d});noise(t,.08,{f0:900,peak:.2*g,dest:d});});},
@@ -105,6 +113,8 @@ const S={
   // v0.19 a person bitten (or a player killed) screams, at most one every 0.7 s (the outbreak bites many at once);
   // heard far, duller with distance
   scream(x,z){if(!bufs.scream||ctx.currentTime<lastScream+.7)return;lastScream=ctx.currentTime;play(2.8,x,z,75,(t,d,g)=>sample('scream',t,d,.8*g,{rate:.92+Math.random()*.16,cut:1500+g*g*14000}));},
+  // v0.20 a zombie notices a player: a scream or a snarl, one every 1.2 s at most
+  growl(x,z){if(!bufs.groan||ctx.currentTime<lastGrowl+1.2)return;lastGrowl=ctx.currentTime;const k=Math.random()<.45&&bufs.zscream?'zscream':'groan';play(2.5,x,z,40,(t,d,g)=>sample(k,t,d,.8*g,{rate:.9+Math.random()*.2,cut:1500+g*g*14000}));},
   // thunder after a lightning flash (systems/weather.js); each device has its own storm, so it is not sent
   thunder(delay){if(ctx&&!muted&&bufs.thunder)sample('thunder',ctx.currentTime+delay,sfxBus,.75,{rate:.9+Math.random()*.2,cut:delay>1.2?2500:9000});},
   radio(){play(.3,undefined,0,1,(t,d)=>noise(t,.25,{type:'bandpass',f0:2600,q:3,peak:.1,attack:.02,dest:d}));},
@@ -158,17 +168,39 @@ export function updateMusic(m){
       o.connect(f).connect(g).connect(musicBus);o.start(t);o.stop(t+len+.1);}
     nextChord=t+len-.8;
   }
+  if(m.danger>0&&t>=nextBeat&&bufs.heart){sample('heart',t,musicBus,.35+.55*m.danger,{rate:1+m.danger*.2});nextBeat=t+1.1-m.danger*.45;}   // v0.20 a recorded beat
   if(m.danger>0&&t>=nextBeat){for(const k of [0,.22]){const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.setValueAtTime(70,t+k);o.frequency.exponentialRampToValueAtTime(40,t+k+.15);g.gain.setValueAtTime(.0001,t+k);g.gain.exponentialRampToValueAtTime(.25*m.danger,t+k+.02);g.gain.exponentialRampToValueAtTime(.0001,t+k+.2);o.connect(g).connect(musicBus);o.start(t+k);o.stop(t+k+.25);}
     nextBeat=t+1.1-m.danger*.45;}
 }
 
-// ---------- ambience (v0.19) ----------
+// ---------- ambience (v0.19, wind and moaning v0.20) ----------
 // Rain: one looping recording whose level follows G.rain, quieter and duller indoors. After the outbreak someone screams
 // somewhere in the town now and then (more often at night), from a random direction; this device only, like the music.
-let rainLoop=null,nextCry=0;
+let rainLoop=null,nextCry=0,wind=null,nextGust=0,nextGroan=0;
+// v0.20 wind, synthesized: noise through a wide band (the rush) and a narrow one (the whistle), in slow random gusts;
+// stronger at night and in the rain, muffled indoors. A distant scream comes in on a gust.
+function makeWind(){
+  const src=ctx.createBufferSource();src.buffer=noiseBuf;src.loop=true;
+  const rush=ctx.createBiquadFilter();rush.type='bandpass';rush.frequency.value=380;rush.Q.value=.6;
+  const whistle=ctx.createBiquadFilter();whistle.type='bandpass';whistle.frequency.value=850;whistle.Q.value=9;const wg=ctx.createGain();wg.gain.value=.5;
+  const gust=ctx.createGain();gust.gain.value=.5;const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=4000;const g=ctx.createGain();g.gain.value=0;
+  src.connect(rush).connect(gust);src.connect(whistle).connect(wg).connect(gust);gust.connect(lp).connect(g).connect(sfxBus);src.start();
+  return {rush,whistle,gust,lp,g};
+}
 export function updateAmbience(m){
   if(!ctx||ctx.state!=='running')return;
   const t=ctx.currentTime;
+  if(!wind)wind=makeWind();
+  wind.g.gain.setTargetAtTime(muted||!m.on?0:.09*(1+.6*m.night+.5*m.rain)*(m.inside?.45:1),t,1.2);   // PLACEHOLDER wind level
+  wind.lp.frequency.setTargetAtTime(m.inside?450:4000,t,.4);
+  if(t>=nextGust){const k=Math.random();wind.gust.gain.setTargetAtTime(.25+k*.9,t,.8+Math.random()*1.5);wind.rush.frequency.setTargetAtTime(260+k*380,t,1.2);wind.whistle.frequency.setTargetAtTime(650+k*500,t,1.5);nextGust=t+1.5+Math.random()*3.5;}
+  // zombies close by moan now and then, from where they are (this device only)
+  if(m.on&&bufs.groan&&t>=nextGroan){
+    const v=viewed();let best=null,n=0;
+    if(v)for(const a of agents)if(a.state==='zombie'&&Math.hypot(a.pos.x-v.pos.x,a.pos.z-v.pos.z)<24&&Math.random()<1/++n)best=a;   // one of them, at random
+    if(best)play(4,best.pos.x,best.pos.z,26,(tt,d,g)=>sample('groan',tt,d,.55*g,{rate:.8+Math.random()*.35,cut:m.inside?900:1200+g*g*12000}));
+    nextGroan=t+(n>4?1.2:2.2)+Math.random()*(n>4?1.8:3.5);   // PLACEHOLDER: more zombies, more moaning
+  }
   if(!rainLoop&&bufs.rain&&m.rain>.01){
     const src=ctx.createBufferSource();src.buffer=bufs.rain[0];src.loop=true;src.loopStart=.06;src.loopEnd=src.buffer.duration-.06;   // past the mp3 padding
     const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=12000;const g=ctx.createGain();g.gain.value=0;
@@ -178,7 +210,8 @@ export function updateAmbience(m){
   if(!m.outbreak||!m.alive||muted||!bufs.scream){nextCry=0;return;}
   if(!nextCry){nextCry=t+8+Math.random()*20;return;}
   if(t>=nextCry){
-    const p=out((Math.random()*2-1)*.8);sample('scream',t,p,(m.inside?.06:.12)+Math.random()*.1,{rate:.85+Math.random()*.2,cut:m.inside?700:1300+Math.random()*1200});
+    wind.gust.gain.setTargetAtTime(1.15,t,.4);nextGust=t+3;   // carried in on the wind
+    const p=out((Math.random()*2-1)*.8);sample('scream',t+.4,p,(m.inside?.06:.12)+Math.random()*.1,{rate:.85+Math.random()*.2,cut:m.inside?700:1300+Math.random()*1200});
     nextCry=t+(m.night>.5?18+Math.random()*30:40+Math.random()*50);   // PLACEHOLDER: real seconds between distant screams
   }
 }

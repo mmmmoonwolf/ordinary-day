@@ -95,8 +95,9 @@ function loop(now){
   // music mood: night, after the outbreak, and danger = zombies chasing the player (v0.8)
   const view=viewed();   // the player on this device, or the teammate they watch once dead (v0.11)
   let chasing=0;if(G.running&&view.alive)for(const a of agents)if(a.state==='zombie'&&a.seenP===view&&!a.retreat)chasing++;
-  updateMusic({night:G.night||0,outbreak:G.outbreak,danger:Math.min(1,chasing/4)});
-  updateAmbience({rain:G.running?G.rain||0:0,night:G.night||0,outbreak:G.running&&G.outbreak&&!G.over,alive:view.alive,inside:roomAt(view.pos.x,view.pos.z)>=0});   // v0.19 rain, distant screams
+  const low=G.running&&view.alive&&view.hp<35?.25+.75*(35-view.hp)/35:0;   // v0.20 the heart also races when hurt badly
+  updateMusic({night:G.night||0,outbreak:G.outbreak,danger:Math.max(low,Math.min(1,chasing/4))});
+  updateAmbience({on:G.running&&!G.over,rain:G.running?G.rain||0:0,night:G.night||0,outbreak:G.running&&G.outbreak&&!G.over,alive:view.alive,inside:roomAt(view.pos.x,view.pos.z)>=0});   // v0.19 rain, distant screams · v0.20 wind, moaning
   camTarget.x+=(view.pos.x-camTarget.x)*Math.min(1,dt*5);camTarget.z+=(view.pos.z-camTarget.z)*Math.min(1,dt*5);
   camera.position.copy(camTarget).add(camOffset);camera.lookAt(camTarget);
   ring.position.set(player.pos.x,player.y+.03,player.pos.z);ring.visible=player.alive;
