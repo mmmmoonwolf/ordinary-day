@@ -7,6 +7,7 @@ import {buildCity} from './world/city.js';
 import {buildInteriors,roomAt} from './world/interiors.js';
 import {buildDecor} from './world/decor.js';
 import {buildClutter} from './world/clutter.js';
+import {buildFarm} from './world/farm.js';
 import {updateOcclusion} from './world/occlusion.js';
 import {agents,removeAgent} from './entities/agents.js';
 import {updateHuman,updateZombie,updateDead} from './entities/ai.js';
@@ -42,6 +43,7 @@ buildCity();
 buildInteriors();   // after the city: its own rng, new loot spots appended
 buildDecor();   // v0.16: weeds, signs and stains, own rng, after everything else
 buildClutter();   // v0.18: City Pack litter, wrecks and dumpsters, crowded rooms; own rng, after the decor
+buildFarm();   // v0.22: the farm west of town, through the gate; own rng, everything appended
 initInput();
 initSettings();
 $('verLabel').textContent='ORDINARY DAY · PROTOTYPE '+VERSION;

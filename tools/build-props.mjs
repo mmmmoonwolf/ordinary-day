@@ -47,6 +47,11 @@ const PROPS = {
   c_planter: 'glb:City Pack/Planter & Bushes', c_manhole: 'glb:City Pack/Manhole Cover', c_roadbits: 'glb:City Pack/Road Bits', c_fence: 'glb:City Pack/Fence Piece',
   c_poster: 'glb:City Pack/Rock band poster', c_bus: 'glb:City Pack/Bus', c_van: 'glb:City Pack/Van', c_pickup: 'glb:City Pack/Pickup Truck', c_moto: 'glb:City Pack/Motorcycle',
   // dense rooms (v0.18, Quaternius Furniture, FBX)
+  // v0.22 the farm west of town: Kenney Retro Urban Kit and Building Kit (CC0, glTF with small external textures)
+  k_truck: 'glb:Kenney Retro/truck-grey', k_truck2: 'glb:Kenney Retro/truck-green-cargo', k_flat: 'glb:Kenney Retro/truck-flat', k_pallet: 'glb:Kenney Retro/pallet',
+  k_planks: 'glb:Kenney Retro/planks', k_fence: 'glb:Kenney Retro/wall-fence', k_barrier: 'glb:Kenney Retro/detail-barrier-strong-damaged', k_roadblock: 'glb:Kenney Retro/detail-barrier-type-a',
+  k_tree: 'glb:Kenney Retro/tree-large', k_pine: 'glb:Kenney Retro/tree-pine-large', k_shrub: 'glb:Kenney Retro/tree-shrub', k_lean: 'glb:Kenney Retro/roof-metal-type-a', k_bricks: 'glb:Kenney Retro/detail-bricks-type-a',
+  b_win_a: 'glb:Kenney Building/barricade-window-a', b_win_b: 'glb:Kenney Building/barricade-window-b', b_win_c: 'glb:Kenney Building/barricade-window-c', b_door: 'glb:Kenney Building/barricade-doorway-a',
   f_bed: 'Furnitures/Bed_Single', f_bedk: 'Furnitures/Bed_King', f_table: 'Furnitures/Table_RoundSmall', f_chair: 'Furnitures/Chair_1', f_chair2: 'Furnitures/Chair_2',
   f_toilet: 'Furnitures/Bathroom_Toilet', f_carpet: 'Furnitures/Carpet_2', f_plant: 'Furnitures/Houseplant_3', f_lamp: 'Furnitures/Light_Floor1',
   f_night: 'Furnitures/NightStand_1', f_tcan: 'Furnitures/Trashcan_Small1', f_stool: 'Furnitures/Stool',

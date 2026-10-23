@@ -2,10 +2,10 @@ import {rnd,pick} from '../core/util.js';
 import {renderer} from '../core/renderer.js';
 
 // ---------- textures ----------
-function mk(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return [c,c.getContext('2d')];}
-function grain(g,w,h,n,alpha,size){for(let i=0;i<n;i++){g.fillStyle=Math.random()<.5?`rgba(0,0,0,${alpha*Math.random()})`:`rgba(255,255,255,${alpha*Math.random()})`;const s=1+Math.random()*size;g.fillRect(Math.random()*w,Math.random()*h,s,s);}}
-function stains(g,w,h,n,rgb,maxR,alpha){for(let i=0;i<n;i++){const x=Math.random()*w,y=Math.random()*h,r=maxR*(.3+Math.random()*.7);const gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,`rgba(${rgb},${alpha*(.4+Math.random()*.6)})`);gr.addColorStop(1,`rgba(${rgb},0)`);g.fillStyle=gr;g.fillRect(x-r,y-r,r*2,r*2);}}
-function T(c,rx,ry){const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx||1,ry||1);t.encoding=THREE.sRGBEncoding;t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());return t;}
+export function mk(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return [c,c.getContext('2d')];}
+export function grain(g,w,h,n,alpha,size){for(let i=0;i<n;i++){g.fillStyle=Math.random()<.5?`rgba(0,0,0,${alpha*Math.random()})`:`rgba(255,255,255,${alpha*Math.random()})`;const s=1+Math.random()*size;g.fillRect(Math.random()*w,Math.random()*h,s,s);}}
+export function stains(g,w,h,n,rgb,maxR,alpha){for(let i=0;i<n;i++){const x=Math.random()*w,y=Math.random()*h,r=maxR*(.3+Math.random()*.7);const gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,`rgba(${rgb},${alpha*(.4+Math.random()*.6)})`);gr.addColorStop(1,`rgba(${rgb},0)`);g.fillStyle=gr;g.fillRect(x-r,y-r,r*2,r*2);}}
+export function T(c,rx,ry){const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx||1,ry||1);t.encoding=THREE.sRGBEncoding;t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());return t;}
 // v0.17: old walls, like a 1970s town: brick, flaking plaster or stained concrete, sash windows with two panes, many of
 // them boarded up or broken, grime running down under every sill and from the roof
 function bricks(g,base){

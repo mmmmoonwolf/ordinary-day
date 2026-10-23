@@ -1,6 +1,6 @@
 import {mulberry32} from '../core/util.js';
 import {scene} from '../core/renderer.js';
-import {RC} from '../config/world.js';
+import {RC,WALL_X,GATE} from '../config/world.js';
 import {WALL_T,DOOR_W,STUB_H,DOOR_HP,PLANK_HP} from '../config/shelter.js';
 import {S,part} from './materials.js';
 import {concreteTex} from './textures.js';
@@ -86,6 +86,12 @@ function makeRoom(b,[nx,nz],rng){
   for(const [px,pz] of [[cx+tx*.8,cz+tz*.8],[cx-nx*(depth/2-1.7),cz-nz*(depth/2-1.7)]])if(freeAt(px,pz,.5))lootSpots.push({x:px,z:pz,zone:'indoor',drop:null});
   return r;
 }
+// v0.22 an enterable building outside the city blocks (world/farm.js): door on side [nx,nz]; appended, so saved indices stay
+export function addRoom(b,side,rng,place){
+  const r=makeRoom(b,side,rng),k=rooms.length;rooms.push(r);
+  if(place){r.place=place;for(const x of boxes)if(x.room===k)x.kind=place.box;for(const s of lootSpots)if(s.zone==='indoor'&&roomAt(s.x,s.z)===k)s.zone=place.type;placeSign(r);pois.push({type:'place',place,x:b.cx,z:b.cz});}
+  return k;
+}
 export function buildInteriors(){
   const rng=mulberry32(606);
   for(let i=0;i<4;i++)for(let j=0;j<4;j++){
@@ -143,6 +149,7 @@ export function roomAt(x,z,pad=0){for(let k=0;k<rooms.length;k++){const r=rooms[
 // room whose door it has to pass (-1 when it can walk straight)
 export function navStep(ax,az,tx,tz){
   const ra=roomAt(ax,az),rt=roomAt(tx,tz);
+  if(ra<0&&(ax<WALL_X)!==(tx<WALL_X)&&Math.abs(az)>GATE-1.2)return {x:WALL_X+(ax<WALL_X?-2.5:2.5),z:0,door:-1};   // v0.22 city <-> farm: through the gate in the west wall
   if(ra===rt)return {x:tx,z:tz,door:-1};
   return ra>=0?viaDoor(ra,ax,az,true):viaDoor(rt,ax,az,false);
 }

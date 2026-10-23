@@ -1,6 +1,6 @@
 import {rnd,pick,clamp,wpick} from '../core/util.js';
 import {G} from '../core/state.js';
-import {LIM} from '../config/world.js';
+import {inWorld} from '../config/world.js';
 import {ZC} from '../config/zombies.js';
 import {POOLS,MED_W} from '../config/loot.js';
 import {collide} from '../world/collision.js';
@@ -53,7 +53,7 @@ export function updateZombie(a,dt){
   if(a.hitT>0){a.hitT-=dt;a.b.mats[0].emissive.setRGB(Math.max(0,a.hitT)*4,0,0);}
   if(a.retreat){let near=null,nd=1e9;for(const p of players){const d=Math.hypot(a.pos.x-p.pos.x,a.pos.z-p.pos.z);if(d<nd){nd=d;near=p;}}   // walk away from the nearest player
     const dx=a.pos.x-near.pos.x,dz=a.pos.z-near.pos.z,d=nd;moveAgent(a,dx,dz,Math.max(1.6,C.speed*.6),dt);
-    if(d>36||Math.abs(a.pos.x)>LIM-.5||Math.abs(a.pos.z)>LIM-.5){a.gone=true;}return;}
+    if(d>36||!inWorld(a.pos.x,a.pos.z,.5)){a.gone=true;}return;}
   if(a.kind==='boomer'&&a.fuse>0){a.fuse-=dt;const k=1.2-a.fuse;a.b.body.scale.setScalar(1+k*.22);a.b.mats[0].emissive.setRGB(.6*(.5+.5*Math.sin(k*30)),.1,.7*(.5+.5*Math.sin(k*30)));a.moving=0;if(a.fuse<=0)explode(a);return;}
   if(a.kind==='tyrant'&&a.wind>0){a.wind-=dt;warnRing.position.set(a.pos.x,a.y+.05,a.pos.z);const k=1-a.wind/.85;warnRing.scale.setScalar(3.2*k+.2);warnRing.material.opacity=.4+.5*k;a.moving=0;if(a.wind<=0)slam(a);return;}
   if(a.feed>0){a.feed-=dt;a.moving=0;return;}

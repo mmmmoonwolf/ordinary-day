@@ -11,6 +11,7 @@ export const BOX={
   drawer:{name:'ตู้ลิ้นชัก',items:[1,2],empty:.2,w:{med:35,ammo:30,food:15,weapon:6,melee:6,mat:8}},   // v0.18 melee
   sofa:{name:'โซฟา',items:[1,1],empty:.55,w:{ammo:45,food:30,med:25}},
   // v0.17 shops and the hospital (config/places.js)
+  farm:{name:'ชั้นของในโรงนา',items:[1,3],empty:.15,w:{food:45,melee:15,mat:20,ammo:10,bottle:10}},   // v0.22 the farm's barn and sheds
   medcab:{name:'ตู้ยา',items:[1,3],empty:.1,w:{med:85,food:5,bottle:10}},
   gunrack:{name:'ชั้นวางปืน',items:[1,3],empty:.15,w:{ammo:65,weapon:30,mat:5}},
   grocery:{name:'ชั้นวางสินค้า',items:[2,3],empty:.1,w:{food:85,bottle:15}},

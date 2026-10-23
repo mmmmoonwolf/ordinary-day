@@ -20,5 +20,8 @@ export const PLACE_W={
   diner:{food:85,throw:15},
   pharmacy:{med:85,food:15},
   hardware:{mat:50,throw:20,melee:20,bag:10},
+  farm:{food:60,mat:15,melee:10,throw:10,bag:5},   // v0.22 the farm (indoors and out), PLACEHOLDER
 };
+// v0.22 the farm west of town (world/farm.js): its barn is a place like the shops, but not one of the six above
+export const BARN={type:'farm',name:'โรงนา',sign:'FARM',color:'#b5654a',box:'farm'};
 export const PLACE_FILL=1.7, PLACE_RESTOCK=.6;
