@@ -11,8 +11,12 @@ export const GATE=4;
 export const AREAS=[
   {id:'farm',x0:-129,x1:-61,z0:-29,z1:29,wall:{axis:'x',v:-68.5},mid:[-99,0]},
   {id:'suburb',x0:-31,x1:31,z0:61,z1:129,wall:{axis:'z',v:68.5},mid:[0,99]},
+  {id:'river',x0:61,x1:151,z0:-31,z1:31,wall:{axis:'x',v:68.5},mid:[108,0]},
 ];
-export const FARM=AREAS[0],SUBURB=AREAS[1],WALL_X=FARM.wall.v,WALL_Z=SUBURB.wall.v;
+export const FARM=AREAS[0],SUBURB=AREAS[1],EAST=AREAS[2],WALL_X=FARM.wall.v,WALL_Z=SUBURB.wall.v;
+// v0.25 the river east of town: water from x0 to x1 (solid, walk round it), crossed only on the bridge (|z| < half)
+export const RIVER={x0:92,x1:104,bridge:3.6};
+export const riverSide=x=>x<RIVER.x0?-1:x>RIVER.x1?1:0;
 // past the area's wall (how far, < 0 still in town)
 export const beyond=(A,x,z)=>{const w=A.wall,p=w.axis==='x'?x:z;return w.v<0?w.v-p:p-w.v;};
 export function areaAt(x,z){for(const A of AREAS)if(beyond(A,x,z)>0&&x>A.x0&&x<A.x1&&z>A.z0&&z<A.z1)return A;return null;}

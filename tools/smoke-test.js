@@ -624,6 +624,24 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     if (W.areaAt(z.pos.x, z.pos.z) !== W.SUBURB) vfail('a suburb zombie wandered off: ' + JSON.stringify(z.pos));
     console.log('v0.24: suburb ' + sub.length + ' rooms, ' + spots.length + ' loot spots, gate ' + thru.z.toFixed(0) + ', wall held at ' + wall.z.toFixed(1) + ', back to ' + back.z.toFixed(0) + ', zombie wandered to ' + z.pos.x.toFixed(0) + ',' + z.pos.z.toFixed(0));
   }
+  // v0.25: the river east of town: only the bridge crosses it, walkers are sent over it, some hordes come that way
+  { const W = await import('../src/config/world.js'), Mv = await import('../src/entities/movement.js'), I2 = await import('../src/world/interiors.js'), Ev2 = await import('../src/systems/events.js'), EvC2 = await import('../src/config/events.js');
+    const walk = (x, z, tx, tz, n) => { const a = { pos: { x, z }, rad: .34, face: 0 }; for (let i = 0; i < n; i++) Mv.moveAgent(a, tx - a.pos.x, tz - a.pos.z, 4, 1 / 30); return a.pos; };
+    const over = walk(60, 0, 130, 0, 700), swim = walk(85, 15, 120, 15, 500);
+    if (over.x < 125) vfail('could not cross the bridge: ' + JSON.stringify(over));
+    if (swim.x > W.RIVER.x0) vfail('walked through the river: ' + JSON.stringify(swim));
+    const via = I2.navStep(85, 15, 120, 15); if (!(Math.abs(via.z) < 1 && via.x < W.RIVER.x0)) vfail('not sent to the bridge: ' + JSON.stringify(via));
+    const shack = I2.rooms.filter(r => W.areaAt(r.b.cx, r.b.cz) === W.EAST), spots = lootSpots.filter(sp => W.areaAt(sp.x, sp.z) === W.EAST);
+    // a bridge horde, walked by the zombie AI for a while: they come over the river and through the east gate
+    const a0 = T.agents.length, br = EvC2.HORDE.bridge; EvC2.HORDE.bridge = 1; const night = T.G.phase; T.G.phase = 'night'; Ev2.updateEvents && 0; const EvM = await import('../src/systems/events.js');
+    T.G.plan = [{ kind: 'horde', at: T.G.min - 1, done: false, warned: true }]; EvM.updateEvents(0); EvC2.HORDE.bridge = br;
+    const hz = T.agents.slice(a0).filter(a => a.march); const { updateZombie } = await import('../src/entities/ai.js');
+    for (let i = 0; i < 1800; i++) for (const a of hz) if (a.state === 'zombie' && !a.gone) updateZombie(a, 1 / 30);
+    const passed = hz.filter(a => a.pos.x < W.EAST.wall.v || a.gone).length; T.G.phase = night; T.G.plan = [];
+    if (!hz.length || passed < hz.length / 2) vfail('bridge horde: ' + hz.length + ' zombies, ' + passed + ' got into town; e.g. ' + (hz[0] && JSON.stringify(hz[0].pos)));
+    for (const a of hz) a.gone = true;
+    console.log('v0.25: bridge crossed to ' + over.x.toFixed(0) + ', river held at ' + swim.x.toFixed(1) + ', ' + shack.length + ' shack, ' + spots.length + ' loot spots, bridge horde ' + passed + '/' + hz.length + ' into town');
+  }
   // v0.23: gas cylinders blow up when shot (chain, blown list saved), Molotov fire, grenades, farm weapons, town extras
   { const Ex = await import('../src/world/extras.js'), Bl = await import('../src/systems/blast.js'), Th = await import('../src/systems/throw.js'), Cb = await import('../src/systems/combat.js'), It2 = await import('../src/config/items.js'), Cl2 = await import('../src/world/clutter.js'), Col2 = await import('../src/world/collision.js');
     const pl = T.player, bag0 = pl.gear.bag.slice(); pl.inv = 1e9; T.G.blown = []; Bl.applyTanks(); Bl.clearFires();
