@@ -14,6 +14,8 @@ import {recordRun} from '../systems/records.js';
 import {playLocal} from '../systems/audio.js';
 import {send,isClient} from '../core/bus.js';
 import {FX} from '../systems/effects.js';
+import {throwPick} from '../systems/throw.js';
+const THROW_ICON={bottle:'🍾',molotov:'🔥',grenade:'💣'};
 import {clearTip} from './tips.js';
 
 // ---------- messages ----------
@@ -65,7 +67,8 @@ export function updateLoadout(force){
   for(const c of chipEls){const s=c.dataset.slot;c.classList.toggle('on',inv.active===s);c.classList.toggle('empty',s!=='melee'&&!inv.eq[s]);c.title=inv.eq[s]?DEF[inv.eq[s].id].name+gradeTag(inv.eq[s].id):(s==='melee'?'มือเปล่า':'ว่าง');}
   $('healN').textContent=heals;$('bHeal').classList.toggle('empty',!heals);
   $('eatN').textContent=foods;$('bEat').classList.toggle('empty',!foods);
-  const bottles=inv.bag.reduce((s,e)=>s+(e.id==='bottle'?e.n:0),0);$('bThrow').hidden=!bottles;$('throwN').textContent=bottles;   // v0.7: only with bottles
+  const tid=throwPick(inv),tn=tid?inv.bag.reduce((s,e)=>s+(e.id===tid?e.n:0),0):0;$('bThrow').hidden=!tn;$('throwN').textContent=tn;   // v0.7 bottles, v0.23 the picked throwable
+  if(tid){$('throwIc').textContent=THROW_ICON[tid];$('bThrow').title='ขว้าง '+DEF[tid].name+' (Q)';}
   $('bReload').disabled=!def.gun;
   $('atkLabel').textContent=def.verb;
 }

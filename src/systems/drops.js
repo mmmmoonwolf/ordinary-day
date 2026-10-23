@@ -2,7 +2,7 @@ import {rnd,pick,wpick} from '../core/util.js';
 import {scene} from '../core/renderer.js';
 import {groundY} from '../config/world.js';
 import {DEF,STACKS,GRADES,gradeOf,itemColor,ringColor} from '../config/items.js';
-import {POOLS,GRADE_W,MED_W,CAT_W,FOOD_W,INDOOR_W,TAKEN} from '../config/loot.js';
+import {POOLS,GRADE_W,MED_W,CAT_W,FOOD_W,INDOOR_W,TAKEN,FARM_POOL,THROW_W} from '../config/loot.js';
 import {PLACE_W,PLACE_FILL} from '../config/places.js';
 import {itemModel} from '../world/item-models.js';
 import {lootSpots} from '../world/city.js';
@@ -18,7 +18,8 @@ export function rollLoot(phase,zone,forceGrade){
   if(c==='med')return makeItem(wpick(MED_W[phase]));
   if(c==='food')return makeItem(wpick(FOOD_W));
   if(c==='mat')return makeItem('planks');
-  if(c==='throw')return makeItem('bottle');
+  if(c==='throw')return makeItem(wpick(THROW_W));   // v0.23 sometimes a Molotov or a grenade
+  if(zone==='farm'&&(c==='melee'||c==='weapon'))return makeItem(pick(FARM_POOL[c==='melee'?'melee':'weapons']));   // v0.23 farm tools
   const g=forceGrade||wpick(phase==='day'?GRADE_W.day:(zone==='lot'?GRADE_W.nightLot:GRADE_W.night));
   if(c==='melee')return makeItem(pick(POOLS[g].melee||POOLS[g].weapons.filter(id=>!DEF[id].gun)));
   return makeItem(c==='weapon'?pick(POOLS[g].weapons):pick(POOLS[g].ammo));

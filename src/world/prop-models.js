@@ -5,7 +5,8 @@ import {breakables,trees} from './props.js';
 import {decor} from './decor.js';
 import {boxes,rooms} from './interiors.js';
 import {heavy,roomDecor} from './clutter.js';
-import {attach} from './farm.js';
+import {attach,farm} from './farm.js';
+import {live} from './live-props.js';
 
 // ---------- prop models (v0.14) ----------
 // Guns, knives, axes, food, water, medicine, backpacks, bottles and cars from Quaternius' packs (CC0; built into
@@ -142,13 +143,16 @@ function townMat(m,leaf){
   if(m.name==='Tree_Leaves'){const k='leaf'+leaf;return own[k]||(own[k]=Object.assign(m.clone(),{color:LEAVES[leaf].clone()}));}
   const c=TOWN_COL[m.name];if(!c)return m;return own[m.name]||(own[m.name]=Object.assign(m.clone(),{color:new THREE.Color(c).convertSRGBToLinear()}));
 }
+// v0.23 corn and wheat dried out: one straw colour over the models' greens
+const CROP=new THREE.Color('#a48f58').convertSRGBToLinear();
+function cropMat(m){return own['crop'+m.uuid]||(own['crop'+m.uuid]=Object.assign(m.clone(),{color:CROP.clone().lerp(m.color,.25)}));}
 const heavyCopy=h=>({id:h.id,x:h.x,y:h.y,z:h.z,ry:h.ry,fit:[h.ex*2,h.ez*2],shadow:true,mat:m=>m});
 function setTown(){
   const on=props.ready&&props.on;
   if(on&&!town){
     const H=i=>((i*2654435761)>>>0)/4294967296;   // a fixed 0..1 per tree, so the town looks the same every time
     const list=trees.map((t,i)=>{const leaf=Math.floor(H(i+7)*3);return {id:t.bare?'dead_'+(1+i%5):'tree_'+(1+i%4),x:t.x,y:t.g.position.y,z:t.z,ry:H(i)*6.28,size:t.bare?4.6+H(i+3)*1.6:5+H(i+3)*1.8,shadow:true,mat:m=>townMat(m,leaf)};});
-    for(const d of decor)list.push({id:d.id,x:d.x,y:d.y??groundY(d.x,d.z),z:d.z,ry:d.ry,size:d.size,by:d.by,shadow:d.shadow,mat:/^[cf]_/.test(d.id)?m=>m:m=>townMat(m,0)});
+    for(const d of decor)list.push({id:d.id,x:d.x,y:d.y??groundY(d.x,d.z),z:d.z,ry:d.ry,size:d.size,by:d.by,shadow:d.shadow,mat:d.crop?cropMat:/^[cf]_/.test(d.id)?m=>m:m=>townMat(m,0)});
     for(const h of heavy)if(h.room<0)list.push(heavyCopy(h));
     town=bake(list.filter(c=>tpl[c.id]));scene.add(town);   // a model missing from an old cached props.glb is left out
     // v0.18: the clutter in each room, in its cutaway group
@@ -157,7 +161,11 @@ function setTown(){
   if(town)town.visible=on;
   for(const t of trees)t.g.visible=!(on&&town);
   for(const r of rooms)if(r.clutter)r.clutter.visible=on;
+  if(farm.corn)farm.corn.visible=!(on&&town&&tpl.n_corn1);   // v0.23 the flat corn stays for "low" graphics
+  // v0.23 props that can disappear (gas cylinders): one model each over its plain stand-in
+  for(const e of live){if(on&&!e.model&&tpl[e.id]){e.model=propModel(e.id,e.axis??1,e.size,e.at||[.5,0,.5]);e.model.position.set(e.x,e.y,e.z);e.model.rotation.y=e.ry||0;e.group.add(e.model);}
+    if(e.model)e.model.visible=on&&!e.gone;if(e.fallback)e.fallback.visible=!e.gone&&!(on&&e.model);}
   // v0.22 models fixed to a farm building (window barricades), in its shell group so they hide with it
   for(const a of attach){if(on&&!a.model&&tpl[a.id]){a.model=propModel(a.id,2,a.size,[.5,.5,.5]);a.model.position.set(a.x,a.y,a.z);a.model.rotation.y=a.ry;a.group.add(a.model);}if(a.model)a.model.visible=on;}
-  for(const h of heavy)h.mesh.visible=!(on&&town&&tpl[h.id]);   // the plain box stays for "low" graphics and while loading
+  for(const h of heavy)h.mesh.visible=!(on&&town&&(!h.id||tpl[h.id]));   // the plain box stays for "low" graphics and while loading
 }

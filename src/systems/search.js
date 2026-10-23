@@ -1,7 +1,7 @@
 import {rnd,pick,wpick} from '../core/util.js';
 import {G} from '../core/state.js';
 import {DEF} from '../config/items.js';
-import {POOLS,MED_W,FOOD_W} from '../config/loot.js';
+import {POOLS,MED_W,FOOD_W,FARM_POOL,THROW_W} from '../config/loot.js';
 import {SEARCH_SECONDS,SEARCH_RANGE,SEARCH_NOISE,RESTOCK,BOX} from '../config/search.js';
 import {partyOf} from '../config/party.js';
 import {boxes,boxNear,roomAt,rooms} from '../world/interiors.js';
@@ -44,7 +44,7 @@ export function rollBox(kind){
   const n=Math.round(rnd(t.items[0]-.49,t.items[1]+.49)),out=[];
   for(let k=0;k<n;k++){
     const c=wpick(t.w);
-    out.push(makeItem(c==='food'?wpick(FOOD_W):c==='med'?wpick(MED_W.day):c==='bottle'?'bottle':c==='mat'?'planks':c==='weapon'?pick(POOLS.civ.weapons):c==='melee'?pick(POOLS.civ.melee):pick(POOLS.civ.ammo)));
+    out.push(makeItem(c==='food'?wpick(FOOD_W):c==='med'?wpick(MED_W.day):c==='bottle'?wpick(THROW_W):c==='mat'?'planks':c==='weapon'?pick(POOLS.civ.weapons):c==='melee'?pick(kind==='farm'?FARM_POOL.melee:POOLS.civ.melee):pick(POOLS.civ.ammo)));
   }
   return out;
 }

@@ -12,7 +12,8 @@ const MELEE={knife:.36,axe:.98};
 // -z and the gun's underside towards +x, so FLIP turns them: z -> -z (forward), x -> -y (down), y -> -x
 const WP={pistol:['w_glock',.32,.22],smg:['w_smg',.6,.25],rifle:['w_rifle',1.0,.3],shotgun:['w_shotgun',1.1,.3],sniper:['w_sniper',1.35,.28],
   knife:['w_knife',.36,.14],bat:['w_bat',1.0,.1],pipe:['w_pipe',1.1,.1],baton:['w_baton',.7,.16],axe:['w_axe',.95,.1],
-  crowbar:['w_crowbar',.9,.1],machete:['w_machete',.72,.16],golf:['w_golf',1.05,.08],wrench:['w_wrench',.5,.16],sledge:['w_sledge',1.0,.1],katana:['w_katana',1.05,.16]};
+  crowbar:['w_crowbar',.9,.1],machete:['w_machete',.72,.16],golf:['w_golf',1.05,.08],wrench:['w_wrench',.5,.16],sledge:['w_sledge',1.0,.1],katana:['w_katana',1.05,.16],
+  pitchfork:['w_pitchfork',1.5,.1],sickle:['w_sickle',.5,.25],spade:['w_spade',1.15,.1],pickaxe:['w_pickaxe',.95,.1],dbshotgun:['w_dbshotgun',1.05,.3]};   // v0.23
 const FLIP=new THREE.Matrix4().makeBasis(new THREE.Vector3(0,-1,0),new THREE.Vector3(-1,0,0),new THREE.Vector3(0,0,-1));
 export function weaponModel(model){
   if(hasProp(model)){
@@ -39,16 +40,21 @@ export function weaponModel(model){
     case 'wrench':add(pipeMat,.05,.05,.38,0,0,.15);add(pipeMat,.06,.12,.1,0,.03,.36);break;
     case 'sledge':add(batMat,.05,.05,.9,0,0,.38);add(gunMetal,.12,.12,.26,0,0,.84);break;
     case 'katana':add(blackMat,.04,.04,.24,0,0,.06);add(bladeMat,.02,.05,.78,0,0,.58);break;
+    case 'pitchfork':add(batMat,.04,.04,1.3,0,0,.55);add(pipeMat,.24,.02,.04,0,0,1.2);for(const x of [-.1,0,.1])add(pipeMat,.02,.02,.24,x,0,1.32);break;   // v0.23
+    case 'sickle':add(gripMat,.04,.04,.16,0,0,.04);add(bladeMat,.02,.04,.3,0,.08,.2);add(bladeMat,.02,.04,.2,0,.16,.36);break;
+    case 'spade':add(batMat,.04,.04,.9,0,0,.38);add(pipeMat,.2,.02,.28,0,0,.96);break;
+    case 'pickaxe':add(batMat,.05,.05,.9,0,0,.38);add(gunMetal,.05,.5,.06,0,0,.82);break;
+    case 'dbshotgun':add(gunMetal,.09,.06,.72,0,0,.42);add(gripMat,.07,.13,.32,0,-.03,-.06);break;
     case 'lmg':add(oliveMat,.1,.14,1.05,0,0,.38);add(gunMetal,.16,.16,.18,.07,-.12,.22);add(gripMat,.08,.13,.28,0,-.03,-.24);add(gunMetal,.04,.04,.3,0,-.1,.8);break;
   }
   return g;
 }
 // items on the ground with a prop model: [height, or width when `w`]
-const ITEM={canned:[.3],water:[.42],bandage:[.18],firstaid:[.42,'w'],backpack:[.55],bottle:[.36]};
+const ITEM={canned:[.3],water:[.42],bandage:[.18],firstaid:[.42,'w'],backpack:[.55],bottle:[.36],molotov:[.34,0,'w_molotov'],grenade:[.14,0,'w_grenade']};   // [size, by width, prop id when not the item id]
 export function itemModel(id){
   const d=DEF[id];
   if(d.kind==='weapon'){const m=weaponModel(d.model),p=hasProp(d.model)||(WP[d.model]&&hasProp(WP[d.model][0]));if(p){m.rotation.z=Math.PI/2;m.position.y=.06;}else m.position.y=d.gun?.2:.07;return m;}   // a prop weapon lies on its side
-  if(ITEM[id]&&hasProp(id)){const [s,w]=ITEM[id];return propModel(id,w?0:1,s,[.5,0,.5]);}
+  if(ITEM[id]&&hasProp(ITEM[id][2]||id)){const [s,w,pid]=ITEM[id];return propModel(pid||id,w?0:1,s,[.5,0,.5]);}
   const g=new THREE.Group();
   if(d.kind==='ammo'){g.add(part(cm(d.color),.32,.18,.24,0,.09,0));g.add(part(cm(d.color),.22,.14,.18,.12,.07,.22));}
   else if(id==='bandage'){g.add(part(whiteMat,.3,.12,.2,0,.06,0));g.add(part(whiteMat,.18,.1,.18,.2,.05,.18));}
@@ -60,6 +66,8 @@ export function itemModel(id){
   else if(id==='water'){g.add(part(cm('#9fd0ec'),.14,.42,.14,0,.21,0));g.add(part(cm('#2f6fb5'),.08,.07,.08,0,.45,0));g.add(part(cm('#9fd0ec'),.14,.42,.14,.2,.21,.12));}
   else if(id==='planks'){g.add(part(cm('#a9834f'),.7,.05,.16,0,.03,0));g.add(part(cm('#8f6d3f'),.7,.05,.16,.04,.08,.12));}
   else if(id==='bottle'){g.add(part(cm('#7fae8a'),.1,.26,.1,0,.13,0));g.add(part(cm('#7fae8a'),.05,.1,.05,0,.31,0));}
+  else if(id==='molotov'){g.add(part(cm('#6e8a52'),.1,.24,.1,0,.12,0));g.add(part(cm('#d8c9a8'),.04,.1,.04,0,.29,0));}   // v0.23
+  else if(id==='grenade'){g.add(part(cm('#4f5a36'),.11,.13,.11,0,.07,0));g.add(part(pipeMat,.03,.05,.05,0,.16,0));}
   else if(id==='backpack'){g.add(part(cm('#4f5a3a'),.46,.56,.3,0,.28,0));g.add(part(woodMat,.36,.24,.1,0,.2,.19));}
   return g;
 }

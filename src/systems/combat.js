@@ -11,6 +11,7 @@ import {agents} from '../entities/agents.js';
 import {players} from '../entities/player.js';
 import {hurtZombie,makeNoise} from '../entities/ai.js';
 import {addBlood,tracer} from './effects.js';
+import {tankOnRay,blowTank} from './blast.js';
 import {curWeapon,countAmmo,takeAmmo} from './inventory.js';
 import {clearSave} from './save.js';
 import {cureInfection} from './infection.js';
@@ -77,13 +78,14 @@ export function fireGun(p,w,def){
   const pel=def.pellets||1,pd=def.pellets?def.dmg*1.4/def.pellets:def.dmg;
   for(let k0=0;k0<pel;k0++){
     const ang=p.face+rnd(-def.spread,def.spread),dx=Math.sin(ang),dz=Math.cos(ang);
-    const wall=rayWall(ox,oz,dx,dz,def.range);
+    let wall=rayWall(ox,oz,dx,dz,def.range);const tank=tankOnRay(ox,oz,dx,dz,wall+.6);if(tank)wall=Math.min(wall,tank[0]);   // v0.23 a gas cylinder stops the bullet, and goes off
     const hits=[];
     for(const z of agents){if(z.state!=='zombie')continue;const rx=z.pos.x-ox,rz=z.pos.z-oz,t=rx*dx+rz*dz;if(t<-.3||t>wall)continue;if(Math.abs(rx*dz-rz*dx)<.45+(z.rad-.34))hits.push([Math.max(t,0),z]);}
     hits.sort((a,b)=>a[0]-b[0]);
     const n=Math.min(hits.length,def.pierce||1);let end=n?hits[n-1][0]:wall,armor=false;
     for(let k=0;k<n;k++){const [t,z]=hits[k];if(hurtZombie(z,def.falloff?pd*(1-t/def.range*.6):pd,dx,dz,def.pellets?.12:.25,true,false,p))armor=true;}
     tracer(ox,oz,ox+dx*end,oz+dz*end,armor?'#a9d4ff':null);
+    if(tank&&hits.length<(def.pierce||1))blowTank(tank[1],p);
   }
   muzzle.position.set(ox,1.4,oz);muzzle.intensity=4;
   makeNoise(p.pos.x,p.pos.z,def.noise);

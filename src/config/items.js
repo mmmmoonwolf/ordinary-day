@@ -36,6 +36,12 @@ melee('golf_c','Golf Club','civ',3,{dur:45,range:2.1,cd:.55,kb:1.4,arc:.3,model:
 melee('wrench_c','Pipe Wrench','civ',3,{dur:130,range:1.6,cd:.45,kb:.9,arc:.4,model:'wrench'});
 melee('sledge_c','Sledgehammer','civ',7,{dur:90,range:2.0,cd:.95,kb:2.2,arc:.25,cleave:true,verb:'ทุบ',model:'sledge'});
 melee('katana_c','Katana','civ',6,{dur:80,range:2.1,cd:.5,kb:.7,arc:.35,cleave:true,verb:'ฟัน',model:'katana'});
+// v0.23 farm tools and a double-barrel shotgun (Weapons Pack), found only at the farm (config/loot.js FARM_POOL). PLACEHOLDER numbers
+melee('pitchfork_c','Pitchfork','civ',5,{dur:80,range:2.3,cd:.6,kb:1.3,arc:.3,verb:'แทง',model:'pitchfork'});
+melee('sickle_c','Sickle','civ',4,{dur:70,range:1.7,cd:.38,kb:.5,arc:.45,cleave:true,verb:'ฟัน',model:'sickle'});
+melee('spade_c','Spade','civ',4,{dur:110,range:2.0,cd:.55,kb:1.6,arc:.3,cleave:true,model:'spade'});
+melee('pickaxe_c','Pickaxe','civ',7,{dur:90,range:1.9,cd:.85,kb:1.4,arc:.25,verb:'จาม',model:'pickaxe'});
+gun('dbshotgun_c','Double Barrel Shotgun','civ','primary',7,3,Object.assign({},PUMP,{mag:2,reload:2.0,pellets:8,model:'dbshotgun'}));
 Object.assign(DEF,{
   a9:{name:'9mm',kind:'ammo',find:[10,24],color:'#b8913a'},
   a556:{name:'5.56mm',kind:'ammo',find:[20,40],color:'#5f6b44'},
@@ -53,6 +59,9 @@ Object.assign(DEF,{
   // v0.7: planks board up doors, bottles are thrown to lure zombies with the noise
   planks:{name:'ไม้กระดาน',kind:'mat',color:'#a9834f'},
   bottle:{name:'ขวดแก้ว',kind:'throw',color:'#7fae8a'},
+  // v0.23 thrown to kill: a Molotov sets the ground on fire, a grenade blows up after a second (systems/throw.js, PLACEHOLDER numbers)
+  molotov:{name:'Molotov',kind:'throw',color:'#d8662f',fire:true},
+  grenade:{name:'Hand Grenade',kind:'throw',color:'#6b7a46',blast:true},
 });
 export const SLOTNAME={primary:'อาวุธหลัก',secondary:'อาวุธรอง',melee:'อาวุธประชิด'};
 export function gradeOf(id){return DEF[id].grade||null;}
