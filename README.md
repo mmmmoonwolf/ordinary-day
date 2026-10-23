@@ -134,7 +134,7 @@
 ```
 index.html                     HTML + CSS ของ HUD แล้วโหลด src/main.js
 assets/characters/             โมเดลตัวละคร 16 แบบ + ท่าทาง (anims.glb) จาก Quaternius
-assets/sounds/                 เสียงกรีดร้อง ฝน ฟ้าร้อง ซอมบี้ หัวใจ (mp3 โมโน จาก Pixabay, v0.19–v0.20)
+assets/sounds/                 เสียงจริงทั้งหมด 45 ไฟล์ (mp3 โมโน จาก Pixabay, v0.19–v0.21)
 assets/props/props.glb         โมเดลปืน ของ รถ เฟอร์นิเจอร์ และของในเมือง (Quaternius v0.14–v0.16, City Pack และ Weapons Pack v0.18)
 src/main.js                    จุดเริ่ม: สร้างเมือง ผูก input เริ่มเกม และวน loop
 src/core/                      util (rng, $), renderer (scene กล้อง แสง), state (G), controls (สถานะปุ่ม), bus (สิ่งที่ส่งไปเครื่องอื่น)
@@ -159,6 +159,7 @@ tools/build-props.mjs          แปลงปืน ของ และรถ�
 
 - ตัวละคร: [Quaternius](https://quaternius.com) — Ultimate Modular Men Pack และ Ultimate Modular Women Pack (CC0)
 - ปืน ของ รถ เฟอร์นิเจอร์ ต้นไม้ และป้ายถนน: [Quaternius](https://quaternius.com) — Guns, Survival, Food, Cars, Furniture, Trees, Nature และ Streets (CC0)
+- เสียงปืน รีโหลด ประตู ไซเรน เฮลิคอปเตอร์ ลม ไฟ เสียงเท้า และหมัด (v0.21): [Pixabay](https://pixabay.com/sound-effects/) (Pixabay Content License) — freesound_community (machine gun burst, 9mm pistol shot, shotgun reload), u_f09vejvoga (gun shot), Dragon Studio (cinematic shotgun, gun reload 2, footsteps on wood, helicopter, open door), squarebun (M4A1 reload), 11325622 (air raid siren, police siren), soundreality (civil defense siren, fire crackling), storegraphic (soft wind), universfield (punch)
 - เสียงซอมบี้ หัวใจ และเจ็บ (v0.20): [Pixabay](https://pixabay.com/sound-effects/) (Pixabay Content License) — Dragon Studio (zombie sound 2, female zombie screams), alex_jauk (zombie screaming), michael_t_p_l (zombie uttering), freesound_community (zombie moan, heart beat, male hurt)
 - เสียงกรีดร้อง ฝน และฟ้าร้อง (v0.19): [Pixabay](https://pixabay.com/sound-effects/) (Pixabay Content License) — "Woman Screaming SFX" โดย Dragon Studio, "Man Screaming" และ "Rain and Thunder" โดย freesound_community, "Frantic Screaming" โดย phobiix
 - ของในเมือง เฟอร์นิเจอร์ และอาวุธ (v0.18): City Pack และ Weapons Pack 002 · In Case of Zombies (ไฟล์ glTF ที่ผู้สร้างได้มา ส่วนใหญ่มาจาก [Poly Pizza](https://poly.pizza)) **ยังต้องตรวจสัญญาอนุญาตของแต่ละโมเดลก่อนเผยแพร่ทั่วไป**
@@ -172,6 +173,7 @@ tools/build-props.mjs          แปลงปืน ของ และรถ�
 
 | เวอร์ชัน | สิ่งที่เพิ่ม |
 | --- | --- |
+| v0.21 | **เสียงปืนและเมือง**: ปืนทุกแบบและรีโหลดเป็นเสียงจริง ตีโดนมีเสียง ประตูเปิดปิด ไซเรนเตือนก่อนมืดและตอนการระบาด รถตำรวจเปิดไซเรนตอนกลางคืน รถไหม้มีเสียงไฟปะทุ เสียงเฮลิคอปเตอร์จริง เสียงลมจริง และเสียงเท้าบนพื้นไม้ในตึก |
 | v0.20 | **เสียงซอมบี้และลม**: ซอมบี้ใกล้ ๆ ครางเป็นระยะ ซอมบี้ที่เห็นเราจะกรีดหรือขู่ Sprinter กรีดแหลม Tyrant คำรามทุ้ม · เสียงหัวใจเต้นตอนโดนไล่หรือเลือดน้อย · เสียงร้องเจ็บตอนโดนตี · เสียงลมพัดตลอดเวลา แรงขึ้นตอนกลางคืน และพาเสียงคนกรีดร้องไกล ๆ มาตามลม |
 | v0.19 | **เสียงจริงชุดแรก**: คนกรีดร้องตอนโดนซอมบี้กัดและตอนผู้เล่นตาย เสียงกรีดร้องไกล ๆ ทั่วเมืองหลังการระบาด (กลางคืนถี่ขึ้น) เสียงฝนตก (ในตึกเบาและทึบลง) ฟ้าแลบและฟ้าร้องตอนฝนหนัก · เสียงซอมบี้และปืนยังเป็นแบบเดิม |
 | v0.18 | **เมืองรก ห้องแน่น และเหตุการณ์ทุกวัน**: ขยะ กระดาษ ถังขยะใหญ่ รถบัสและรถกระบะจอดทิ้ง บันไดหนีไฟ แอร์ หัวดับเพลิง · ในตึกมีเตียง โต๊ะ เก้าอี้ พรม โคมไฟ กล่อง ของกองเต็มห้อง · อาวุธประชิดใหม่ 6 แบบ (Crowbar, Machete, Golf Club, Wrench, Sledgehammer, Katana) และปืนโมเดลใหม่ · วงแหวนของบนพื้นแยกสีตามประเภท · ทุกวันมีเหตุการณ์สุ่ม (สัญญาณกันขโมยรถ เสบียงที่ถูกทิ้ง รถส่งของคว่ำ หมอกหนา อากาศร้อน ผู้รอดชีวิตกวาดของ รถตำรวจคว่ำ) · ปิดการติดเชื้อและ Antibiotic ไว้ก่อน |
