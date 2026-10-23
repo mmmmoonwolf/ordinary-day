@@ -44,7 +44,7 @@ export function rollBox(kind){
   const n=Math.round(rnd(t.items[0]-.49,t.items[1]+.49)),out=[];
   for(let k=0;k<n;k++){
     const c=wpick(t.w);
-    out.push(makeItem(c==='food'?wpick(FOOD_W):c==='med'?wpick(MED_W.day):c==='bottle'?'bottle':c==='mat'?'planks':c==='weapon'?pick(POOLS.civ.weapons):c==='melee'?pick(POOLS.civ.weapons.filter(id=>!DEF[id].gun)):pick(POOLS.civ.ammo)));
+    out.push(makeItem(c==='food'?wpick(FOOD_W):c==='med'?wpick(MED_W.day):c==='bottle'?'bottle':c==='mat'?'planks':c==='weapon'?pick(POOLS.civ.weapons):c==='melee'?pick(POOLS.civ.melee):pick(POOLS.civ.ammo)));
   }
   return out;
 }

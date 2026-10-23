@@ -1,6 +1,7 @@
 // ---------- loot tables ----------
 export const POOLS={
-  civ:{weapons:['pistol_c','shotgun_c','smg_c','bat_c','knife_c','pipe_c'],ammo:['a9','a9','a12']},
+  civ:{weapons:['pistol_c','shotgun_c','smg_c','bat_c','knife_c','pipe_c'],ammo:['a9','a9','a12'],
+    melee:['bat_c','knife_c','pipe_c','crowbar_c','crowbar_c','machete_c','golf_c','wrench_c','wrench_c','sledge_c','katana_c']},   // v0.18 'melee' finds (PLACEHOLDER mix)
   pol:{weapons:['pistol_p','shotgun_p','smg_p','baton_p','rifle_p'],ammo:['a9','a12','a556']},
   mil:{weapons:['pistol_m','shotgun_m','smg_m','axe_m','rifle_m','sniper_m','lmg_m'],ammo:['a9','a12','a556','a556','a762']},
 };

@@ -6,6 +6,7 @@ import {RATE,SPEEDS} from './config/time.js';
 import {buildCity} from './world/city.js';
 import {buildInteriors} from './world/interiors.js';
 import {buildDecor} from './world/decor.js';
+import {buildClutter} from './world/clutter.js';
 import {updateOcclusion} from './world/occlusion.js';
 import {agents,removeAgent} from './entities/agents.js';
 import {updateHuman,updateZombie,updateDead} from './entities/ai.js';
@@ -40,6 +41,7 @@ import './ui/report.js';   // keeps the last script errors for bug reports
 buildCity();
 buildInteriors();   // after the city: its own rng, new loot spots appended
 buildDecor();   // v0.16: weeds, signs and stains, own rng, after everything else
+buildClutter();   // v0.18: City Pack litter, wrecks and dumpsters, crowded rooms; own rng, after the decor
 initInput();
 initSettings();
 $('verLabel').textContent='ORDINARY DAY · PROTOTYPE '+VERSION;
@@ -82,7 +84,7 @@ function loop(now){
     muzzle.intensity=Math.max(0,muzzle.intensity-dt*60);boomLight.intensity=Math.max(0,boomLight.intensity-dt*20);
     if(blast.userData.t>0){blast.userData.t-=dt;const k=1-blast.userData.t/.4;blast.scale.setScalar(.5+k*4);blast.material.opacity=Math.max(0,.75*(1-k));}else blast.material.opacity=0;
     for(const d of drops)d.m.rotation.y+=dt*.6;
-    const pulse=.45+.3*Math.sin(now/280);for(const k in ringMats)ringMats[k].opacity=pulse;for(const k in glowMats)glowMats[k].opacity=.1+.1*Math.sin(now/280);
+    const pulse=.62+.25*Math.sin(now/280);for(const k in ringMats)ringMats[k].opacity=pulse;for(const k in glowMats)glowMats[k].opacity=.14+.1*Math.sin(now/280);
     updateSky(dt,now);
     updateGoal(dt,now);
     updateTips(dt);

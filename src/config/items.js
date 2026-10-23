@@ -28,6 +28,14 @@ melee('axe_m','Axe','mil',8,{dur:100,range:2.1,cd:.72,kb:1.2,arc:.25,cleave:true
 gun('rifle_m','Assault Rifle','mil','primary',6,7,Object.assign({},AR));
 gun('sniper_m','Sniper Rifle','mil','primary',10,2,{ammo:'a762',mag:5,reload:2.8,range:46,spread:.004,noise:42,pierce:3,model:'sniper'});
 gun('lmg_m','Light Machine Gun','mil','primary',7,9,{ammo:'a556',auto:true,mag:100,reload:4.2,range:30,spread:.08,noise:44,heavy:true,model:'lmg'});
+// v0.18 melee weapons from the Weapons Pack: not in Draft 01, so every number here, the DMG rating included, is a PLACEHOLDER.
+// Found by searching tool shelves, drawers and the hardware store ('melee' loot, POOLS.civ.melee), not in the street tables
+melee('crowbar_c','Crowbar','civ',4,{dur:120,range:1.8,cd:.5,kb:1.1,arc:.35,model:'crowbar'});
+melee('machete_c','Machete','civ',5,{dur:70,range:1.9,cd:.45,kb:.6,arc:.4,cleave:true,verb:'ฟัน',model:'machete'});
+melee('golf_c','Golf Club','civ',3,{dur:45,range:2.1,cd:.55,kb:1.4,arc:.3,model:'golf'});
+melee('wrench_c','Pipe Wrench','civ',3,{dur:130,range:1.6,cd:.45,kb:.9,arc:.4,model:'wrench'});
+melee('sledge_c','Sledgehammer','civ',7,{dur:90,range:2.0,cd:.95,kb:2.2,arc:.25,cleave:true,verb:'ทุบ',model:'sledge'});
+melee('katana_c','Katana','civ',6,{dur:80,range:2.1,cd:.5,kb:.7,arc:.35,cleave:true,verb:'ฟัน',model:'katana'});
 Object.assign(DEF,{
   a9:{name:'9mm',kind:'ammo',find:[10,24],color:'#b8913a'},
   a556:{name:'5.56mm',kind:'ammo',find:[20,40],color:'#5f6b44'},

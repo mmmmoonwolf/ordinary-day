@@ -583,6 +583,18 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   }
   T.G.alarm = { x: 5, z: 5, until: T.G.min + 10, next: T.G.min }; Ev.updateEvents(0); if (!(T.G.alarm.next > T.G.min)) vfail('car alarm did not call');
   T.G.alarm = null; T.G.site = null; T.G.fog = 0; T.G.heat = 0; T.G.plan = [];
+  // v0.18: a dirtier town and crowded rooms; the new solids stay off the loot, the doorways, the landing zone and each other
+  const Cl = await import('../src/world/clutter.js'), Col = await import('../src/world/collision.js'), Gl = await import('../src/config/goal.js');
+  const inBox = (q, x, z, m) => x > q.x0 - m && x < q.x1 + m && z > q.z0 - m && z < q.z1 + m;
+  for (const h of Cl.heavy) {
+    if (lootSpots.some(s => inBox(h.box, s.x, s.z, .3))) vfail('clutter ' + h.id + ' on a loot spot');
+    if (rooms.some(r => inBox(h.box, r.dx, r.dz, 1))) vfail('clutter ' + h.id + ' in a doorway');
+    if (inBox(h.box, Gl.LZ.x, Gl.LZ.z, 6)) vfail('clutter ' + h.id + ' on the landing zone');
+    if (Col.solids.some(q => q !== h.box && inBox(q, (h.box.x0 + h.box.x1) / 2, (h.box.z0 + h.box.z1) / 2, Math.max(h.ex, h.ez) - .3) && !(q.x1 <= h.box.x0 || q.x0 >= h.box.x1 || q.z1 <= h.box.z0 || q.z0 >= h.box.z1))) vfail('clutter ' + h.id + ' overlaps another solid');
+  }
+  const kinds = id => Cl.heavy.filter(h => h.id === id).length, inside = Cl.roomDecor.reduce((n, l) => n + (l ? l.length : 0), 0);
+  if (kinds('c_bus') + kinds('c_van') + kinds('c_pickup') < 4 || kinds('c_dumpster') < 4 || inside < rooms.length * 8) vfail('clutter: wrecks ' + (kinds('c_bus') + kinds('c_van') + kinds('c_pickup')) + ', dumpsters ' + kinds('c_dumpster') + ', room pieces ' + inside);
+  console.log('v0.18: clutter ' + Cl.heavy.filter(h => h.room < 0).length + ' solids outside (bus ' + kinds('c_bus') + ', vans ' + kinds('c_van') + ', pickups ' + kinds('c_pickup') + ', dumpsters ' + kinds('c_dumpster') + '), ' + Cl.heavy.filter(h => h.room >= 0).length + ' beds / tables and ' + inside + ' pieces in ' + rooms.length + ' rooms, ' + Dc.decor.length + ' decor');
   console.log('v0.18: infection off, no Antibiotic, ' + rc.length + ' ring colours, events ran: ' + ran.join(', '));
   console.log('v0.14.1: bag ' + g.bag.map(e => e.id + (e.n ? ' ×' + e.n : '')).join(', '));
 }
