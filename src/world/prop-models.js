@@ -58,11 +58,12 @@ export function setPropsOn(on){const was=props.on;props.on=on;setCars();setFurni
 // furniture (v0.15): each box along a wall of an enterable building becomes a row of modules, scaled to the box's height
 // (or depth, whichever is smaller), stretched along the wall to fill it, backs against the wall, fronts into the room.
 // They sit in the room's cutaway group, so they show only when the player is inside, like the boxes did.
-const FURN={kitchen:['f_fridge','f_kdrawers','f_ksink','f_koven','f_kcab','f_k3'],shelf:['f_bookshelf','f_shelf'],drawer:['f_drawer1','f_drawer5','f_drawer2'],sofa:['f_couch']};
+const FURN={kitchen:['f_fridge','f_kdrawers','f_ksink','f_koven','f_kcab','f_k3'],shelf:['f_bookshelf','f_shelf'],drawer:['f_drawer1','f_drawer5','f_drawer2'],sofa:['f_couch'],
+  medcab:['f_drawer5','f_shelf','f_drawer1'],gunrack:['f_shelf','f_bookshelf'],grocery:['f_shelf','f_fridge','f_shelf'],tools:['f_shelf','f_drawer2']};   // v0.17 shops
 const sizeOf=id=>{bb.setFromObject(tpl[id]);return bb.getSize(new THREE.Vector3());};
 function furnModel(b){
   const ids=FURN[b.kind];if(!ids.every(id=>tpl[id]))return null;
-  const ref=sizeOf(ids[b.kind==='kitchen'?1:0]),s=Math.min(b.h/ref.y,b.d/ref.z);
+  const ref=sizeOf(ids[b.kind==='kitchen'?1:0]),s=Math.min(Math.max(b.h,b.kind==='gunrack'||b.kind==='grocery'||b.kind==='tools'?1.5:0)/ref.y,b.d/ref.z);   // shop shelves stand at least 1.5 m
   const row=[];let len=0;
   for(let k=0;len<b.L;k++){const id=b.kind==='sofa'?(b.L<1.9&&tpl.f_couch_m?'f_couch_m':'f_couch'):ids[k%ids.length],w=sizeOf(id).x*s;if(row.length&&len+w/2>b.L)break;row.push([id,w]);len+=w;}
   const g=new THREE.Group(),[sx,sz]=b.n,th=Math.atan2(-sx,-sz),ax=Math.cos(th),az=-Math.sin(th),k=b.L/len;

@@ -3,8 +3,10 @@ import {scene} from '../core/renderer.js';
 import {RC} from '../config/world.js';
 import {WALL_T,DOOR_W,STUB_H,DOOR_HP,PLANK_HP} from '../config/shelter.js';
 import {S,part} from './materials.js';
+import {concreteTex} from './textures.js';
 import {solids,freeAt,rayWall} from './collision.js';
-import {buildings,lootSpots,LAYOUT} from './city.js';
+import {buildings,lootSpots,LAYOUT,pois} from './city.js';
+import {PLACES} from '../config/places.js';
 
 // ---------- enterable buildings (v0.6) ----------
 // One building per city block gets a door. Its solid footprint becomes four walls with a doorway, and while the
@@ -12,7 +14,7 @@ import {buildings,lootSpots,LAYOUT} from './city.js';
 // knee-high walls and furniture. Built after buildCity() with its own rng, so the seeded city stays the same
 // and the new loot spots go after every existing one.
 export const rooms=[];
-const floorMats=['#7a6650','#6d6a62','#806c55','#5f6a6e'].map(c=>S({color:c,roughness:.85}));
+const floorMats=['#6e5c48','#5f5b52','#6d5a46','#565b5c'].map(c=>S({map:concreteTex(),color:c,roughness:.95}));   // v0.17: worn, stained floors
 const furnMats=['#6b5a46','#4c5560','#7d4b3c','#8b8577','#3f4a3a'].map(c=>S({color:c,roughness:.8}));
 const doorMat=S({color:'#5a3d26',roughness:.7}),holeMat=S({color:'#141210',roughness:1}),brokenMat=S({color:'#3a2a1c',roughness:.9});
 const plankMat=S({color:'#a9834f',roughness:.85});
@@ -76,7 +78,7 @@ function makeRoom(b,[nx,nz],rng){
   const fw=(a,thick)=>nx?[dx+nx*a-thick,dx+nx*a+thick,dz-DOOR_W/2,dz+DOOR_W/2]:[dx-DOOR_W/2,dx+DOOR_W/2,dz+nz*a-thick,dz+nz*a+thick];
   r.extDoor=slab(doorMat,...fw(.04,.04),y0,y0+2.3);r.extHole=slab(holeMat,...fw(.02,.02),y0,y0+2.3);
   const sg=nx?[dx+nx*.08-.06,dx+nx*.08+.06,dz-.7,dz+.7]:[dx-.7,dx+.7,dz+nz*.08-.06,dz+nz*.08+.06];
-  r.ext.add(r.extDoor,r.extHole,slab(signMat,...sg,y0+2.55,y0+2.9));
+  r.sign=slab(signMat,...sg,y0+2.55,y0+2.9);r.ext.add(r.extDoor,r.extHole,r.sign);r.sg=[nx,nz,dx,dz,y0];
   for(const m of r.cut.children)m.castShadow=m.receiveShadow=true;
   r.cut.visible=false;scene.add(r.cut,r.ext);b.meshes.push(r.ext);
   // two loot spots inside, appended after every existing spot so saved spot indices stay valid
@@ -93,8 +95,42 @@ export function buildInteriors(){
     for(const b of buildings){if(blockOf(b.cx)!==i||blockOf(b.cz)!==j||b.w<6.8||b.d<6.8)continue;const s=doorSide(b,bcx,bcz);if(s&&b.w*b.d>area){area=b.w*b.d;pick=b;side=s;}}
     if(pick)rooms.push(makeRoom(pick,side,rng));
   }
+  // v0.17: the biggest rooms become the shops and the hospital (config/places.js); their furniture and floor loot spots
+  // take the place's goods. Nothing is added or reordered, so saves keep their indices
+  const big=rooms.map((r,k)=>[r.b.w*r.b.d,k]).sort((a,b)=>b[0]-a[0]||a[1]-b[1]);
+  PLACES.forEach((P,n)=>{
+    if(!big[n])return;const k=big[n][1],r=rooms[k];r.place=P;
+    for(const b of boxes)if(b.room===k)b.kind=P.box;
+    for(const s of lootSpots)if(s.zone==='indoor'&&roomAt(s.x,s.z)===k)s.zone=P.type;
+    placeSign(r);pois.push({type:'place',place:P,x:r.b.cx,z:r.b.cz});
+    shopShelves(r,k);
+  });
 }
 
+// shops are mostly shelves: two more along the door wall, one each side of the doorway, clear of it (v0.17). Appended to
+// `boxes` after every room's own furniture, so G.searched indices from v0.15 saves stay the same
+function shopShelves(r,k){
+  const [nx,nz]=r.n,[tx,tz]=r.t,depth=.55,h=1.6,L=Math.min(2.6,r.half-DOOR_W/2-1.7);if(L<1.1)return;
+  for(const s of [-1,1]){
+    const a=s*(DOOR_W/2+1.2+L/2),cx=r.dx-nx*(WALL_T+depth/2)+tx*a,cz=r.dz-nz*(WALL_T+depth/2)+tz*a;
+    const hw=nx?depth/2:L/2,hd=nx?L/2:depth/2;
+    if(!freeAt(cx,cz,.2)||lootSpots.some(p=>Math.abs(p.x-cx)<hw+.6&&Math.abs(p.z-cz)<hd+.6))continue;
+    const box=pushBox(cx-hw,cx+hw,cz-hd,cz+hd),y0=.18,mesh=slab(furnMats[1],cx-hw,cx+hw,cz-hd,cz+hd,y0,y0+h);
+    r.furniture.push(box);r.cut.add(mesh);mesh.castShadow=mesh.receiveShadow=true;
+    boxes.push({room:k,kind:r.place.box,box,mesh,x:cx,z:cz,n:[nx,nz],L,d:depth,h,y0,cut:r.cut,model:null});
+  }
+}
+// an old painted board over the door with the place's name, lit a little at night (v0.17)
+function placeSign(r){
+  const P=r.place,c=document.createElement('canvas');c.width=512;c.height=96;const g=c.getContext('2d');
+  g.fillStyle='#2b241c';g.fillRect(0,0,512,96);g.strokeStyle='rgba(220,205,170,.5)';g.lineWidth=6;g.strokeRect(6,6,500,84);
+  g.fillStyle=P.color;g.font='bold 58px Georgia, "Times New Roman", serif';g.textAlign='center';g.textBaseline='middle';g.fillText(P.sign,256,52,470);
+  for(let i=0;i<500;i++){g.fillStyle=`rgba(${Math.random()<.5?0:200},${Math.random()<.5?0:190},${Math.random()<.5?0:160},${Math.random()*.18})`;g.fillRect(Math.random()*512,Math.random()*96,2+Math.random()*4,1+Math.random()*3);}   // weathered
+  const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;
+  const [nx,nz,dx,dz,y0]=r.sg,m=new THREE.Mesh(new THREE.PlaneGeometry(3.4,.64),S({map:t,emissive:'#ffffff',emissiveMap:t,emissiveIntensity:.45,roughness:.9}));
+  m.position.set(dx+nx*.1,y0+2.75,dz+nz*.1);m.rotation.y=Math.atan2(nx,nz);m.castShadow=false;
+  r.sign.visible=false;r.ext.add(m);r.placeSign=m;
+}
 // the furniture in room k nearest to (x,z) whose edge is within r, or -1 (v0.15)
 export function boxNear(x,z,k,r){
   let best=-1,bd=r;

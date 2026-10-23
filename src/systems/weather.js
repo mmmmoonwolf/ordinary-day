@@ -7,7 +7,8 @@ import {player} from '../entities/player.js';
 
 // ---------- sky / weather ----------
 // v0.16: a greyer, tired palette (overcast day, washed-out dusk) and a low morning haze
-const C={night:new THREE.Color('#0c121b'),day:new THREE.Color('#a3aaab'),dusk:new THREE.Color('#ad8466'),rain:new THREE.Color('#686f73'),sunDay:new THREE.Color('#f3eadb'),sunLow:new THREE.Color('#f0a874'),moon:new THREE.Color('#7787ab'),hemiDay:new THREE.Color('#c3c8c6'),hemiNight:new THREE.Color('#2e394f')};
+// v0.17: darker still, a dirty yellow-grey like old film stock
+const C={night:new THREE.Color('#0a0d12'),day:new THREE.Color('#8f9089'),dusk:new THREE.Color('#9a7458'),rain:new THREE.Color('#5d605e'),sunDay:new THREE.Color('#ecdcc0'),sunLow:new THREE.Color('#e39a62'),moon:new THREE.Color('#6a7590'),hemiDay:new THREE.Color('#b4b3a8'),hemiNight:new THREE.Color('#262d3c')};
 const tmpC=new THREE.Color(),sunDir=new THREE.Vector3(),moonDir=new THREE.Vector3(-.5,.9,.35).normalize();
 const RN=isTouch?900:1600,rainArr=new Float32Array(RN*6),rx=[],ry=[],rz=[];
 for(let i=0;i<RN;i++){rx.push(rnd(-48,48));ry.push(rnd(0,40));rz.push(rnd(-48,48));}
@@ -25,8 +26,8 @@ export function updateSky(dt,now){
   const haze=tod>300&&tod<600?clamp(1-Math.abs(tod-420)/180,0,1):0;scene.fog.near=118-haze*22-G.rain*10;scene.fog.far=235-haze*45-G.rain*25;   // morning haze, rain
   sunDir.set(Math.cos(a)*.85,Math.max(sunH,.1)+.12,.45).normalize().lerp(moonDir,G.night).normalize();
   sun.position.copy(camTarget).addScaledVector(sunDir,110);sun.target.position.copy(camTarget);
-  sun.intensity=day*(2.25-G.rain*1.2-haze*.35)+G.night*.32;sun.color.copy(C.moon).lerp(C.sunDay,day).lerp(C.sunLow,dusk*.7);
-  hemi.intensity=.22+day*(.5-G.rain*.1);hemi.color.copy(C.hemiNight).lerp(C.hemiDay,day);
+  sun.intensity=day*(1.9-G.rain*1.1-haze*.35)+G.night*.28;sun.color.copy(C.moon).lerp(C.sunDay,day).lerp(C.sunLow,dusk*.7);
+  hemi.intensity=.2+day*(.44-G.rain*.1);hemi.color.copy(C.hemiNight).lerp(C.hemiDay,day);
   const lampsOn=G.blackout?0:clamp((G.night-.3)/.3,0,1);   // blackout night (v0.8): no street lights or windows
   for(const m of wallMats)m.emissiveIntensity=G.night*(G.blackout?.08:1.15);
   lampHeadMat.emissiveIntensity=lampsOn*2.2;glowMat.opacity=lampsOn*.6;
