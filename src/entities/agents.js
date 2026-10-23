@@ -2,12 +2,13 @@ import {rnd,pick} from '../core/util.js';
 import {scene} from '../core/renderer.js';
 import {G} from '../core/state.js';
 import {isNightTod} from '../config/time.js';
-import {groundY} from '../config/world.js';
+import {groundY,FARM,WALL_X,inFarm} from '../config/world.js';
 import {ZC} from '../config/zombies.js';
 import {S,part,eyeMat,vestMat} from '../world/materials.js';
 import {nodeXZ,nearestNode,randomNode} from '../world/sidewalk.js';
 import {vendorSpots} from '../world/city.js';
-import {nearestPlayerDist} from './player.js';
+import {nearestPlayerDist,players} from './player.js';
+import {freeAt} from '../world/collision.js';
 import {zombify,undress} from './skins.js';
 
 // ---------- characters ----------
@@ -69,6 +70,9 @@ export function spawnPopulation(){
 }
 export function spawnEdge(kind){
   if(agents.length>=95&&kind!=='tyrant')return null;
+  // v0.22 with a player at the farm, half the zombies come out of the fields along its far edges instead
+  if(players.some(p=>p.alive&&inFarm(p.pos.x,p.pos.z))&&Math.random()<.5)for(let t=0;t<12;t++){const e=Math.random(),x=e<.5?FARM.x0+1.5:FARM.x0+3+Math.random()*(WALL_X-FARM.x0-6),z=e<.5?FARM.z0+3+Math.random()*(FARM.z1-FARM.z0-6):(e<.75?FARM.z0+1.5:FARM.z1-1.5);
+    if(nearestPlayerDist(x,z)<24||!freeAt(x,z,.5))continue;const a=makeAgent(x,z);becomeZombie(a,kind);agents.push(a);return a;}
   for(let tries=0;tries<24;tries++){const n=randomNode();if(n.i!==0&&n.i!==4&&n.j!==0&&n.j!==4&&tries<18)continue;const [x,z]=nodeXZ(n);
     if(nearestPlayerDist(x,z)<28&&tries<23)continue;const a=makeAgent(x,z);becomeZombie(a,kind);agents.push(a);return a;}
   return null;

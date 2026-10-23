@@ -5,6 +5,7 @@ import {breakables,trees} from './props.js';
 import {decor} from './decor.js';
 import {boxes,rooms} from './interiors.js';
 import {heavy,roomDecor} from './clutter.js';
+import {attach} from './farm.js';
 
 // ---------- prop models (v0.14) ----------
 // Guns, knives, axes, food, water, medicine, backpacks, bottles and cars from Quaternius' packs (CC0; built into
@@ -60,11 +61,11 @@ export function setPropsOn(on){const was=props.on;props.on=on;setCars();setFurni
 // (or depth, whichever is smaller), stretched along the wall to fill it, backs against the wall, fronts into the room.
 // They sit in the room's cutaway group, so they show only when the player is inside, like the boxes did.
 const FURN={kitchen:['f_fridge','f_kdrawers','f_ksink','f_koven','f_kcab','f_k3'],shelf:['f_bookshelf','f_shelf'],drawer:['f_drawer1','f_drawer5','f_drawer2'],sofa:['f_couch'],
-  medcab:['f_drawer5','f_shelf','f_drawer1'],gunrack:['f_shelf','f_bookshelf'],grocery:['f_shelf','f_fridge','f_shelf'],tools:['f_shelf','f_drawer2']};   // v0.17 shops
+  medcab:['f_drawer5','f_shelf','f_drawer1'],gunrack:['f_shelf','f_bookshelf'],grocery:['f_shelf','f_fridge','f_shelf'],tools:['f_shelf','f_drawer2'],farm:['f_shelf','f_drawer2','f_shelf']};   // v0.22 the barn   // v0.17 shops
 const sizeOf=id=>{bb.setFromObject(tpl[id]);return bb.getSize(new THREE.Vector3());};
 function furnModel(b){
   const ids=FURN[b.kind];if(!ids.every(id=>tpl[id]))return null;
-  const ref=sizeOf(ids[b.kind==='kitchen'?1:0]),s=Math.min(Math.max(b.h,b.kind==='gunrack'||b.kind==='grocery'||b.kind==='tools'?1.5:0)/ref.y,b.d/ref.z);   // shop shelves stand at least 1.5 m
+  const ref=sizeOf(ids[b.kind==='kitchen'?1:0]),s=Math.min(Math.max(b.h,b.kind==='gunrack'||b.kind==='grocery'||b.kind==='tools'||b.kind==='farm'?1.5:0)/ref.y,b.d/ref.z);   // shop shelves stand at least 1.5 m
   const row=[];let len=0;
   for(let k=0;len<b.L;k++){const id=b.kind==='sofa'?(b.L<1.9&&tpl.f_couch_m?'f_couch_m':'f_couch'):ids[k%ids.length],w=sizeOf(id).x*s;if(row.length&&len+w/2>b.L)break;row.push([id,w]);len+=w;}
   const g=new THREE.Group(),[sx,sz]=b.n,th=Math.atan2(-sx,-sz),ax=Math.cos(th),az=-Math.sin(th),k=b.L/len;
@@ -156,5 +157,7 @@ function setTown(){
   if(town)town.visible=on;
   for(const t of trees)t.g.visible=!(on&&town);
   for(const r of rooms)if(r.clutter)r.clutter.visible=on;
+  // v0.22 models fixed to a farm building (window barricades), in its shell group so they hide with it
+  for(const a of attach){if(on&&!a.model&&tpl[a.id]){a.model=propModel(a.id,2,a.size,[.5,.5,.5]);a.model.position.set(a.x,a.y,a.z);a.model.rotation.y=a.ry;a.group.add(a.model);}if(a.model)a.model.visible=on;}
   for(const h of heavy)h.mesh.visible=!(on&&town&&tpl[h.id]);   // the plain box stays for "low" graphics and while loading
 }

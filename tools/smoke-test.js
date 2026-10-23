@@ -556,7 +556,7 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   if (!burned || !Pr.flickers.length || Pr.trees.length < 30) vfail('burned cars ' + burned + ', flickering lamps ' + Pr.flickers.length + ', trees ' + Pr.trees.length);
   console.log('v0.16: ' + Dc.decor.length + ' weeds / bushes / signs, ' + Pr.trees.length + ' trees, ' + burned + ' burned cars, ' + Pr.flickers.length + ' flickering lamps');
   // v0.17: shops and the hospital
-  const placed = rooms.filter(r => r.place);
+  const placed = rooms.filter(r => r.place && r.place.type !== 'farm');   // the farm's barn (v0.22) is a place of its own
   if (placed.length !== PL.PLACES.length || new Set(placed.map(r => r.place.type)).size !== PL.PLACES.length) vfail('places: ' + placed.map(r => r.place.type));
   const hosp = rooms.findIndex(r => r.place && r.place.type === 'hospital'), gun = rooms.findIndex(r => r.place && r.place.type === 'gunshop');
   if (!boxes.some(x => x.room === hosp) || boxes.some(x => x.room === hosp && x.kind !== 'medcab') || boxes.some(x => x.room === gun && x.kind !== 'gunrack')) vfail('shop furniture kinds');
@@ -594,6 +594,22 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   }
   const kinds = id => Cl.heavy.filter(h => h.id === id).length, inside = Cl.roomDecor.reduce((n, l) => n + (l ? l.length : 0), 0);
   if (kinds('c_bus') + kinds('c_van') + kinds('c_pickup') < 4 || kinds('c_dumpster') < 4 || inside < rooms.length * 8) vfail('clutter: wrecks ' + (kinds('c_bus') + kinds('c_van') + kinds('c_pickup')) + ', dumpsters ' + kinds('c_dumpster') + ', room pieces ' + inside);
+  // v0.22: the farm through the gate in the west wall
+  { const W = await import('../src/config/world.js'), Mv = await import('../src/entities/movement.js'), Fm = await import('../src/world/farm.js'), I2 = await import('../src/world/interiors.js'), Ag = await import('../src/entities/agents.js');
+    const farmRooms = I2.rooms.filter(r => W.inFarm(r.b.cx, r.b.cz)), barn = farmRooms.find(r => r.place && r.place.type === 'farm');
+    const spots = lootSpots.filter(sp => W.inFarm(sp.x, sp.z)), fb = I2.boxes.filter(b => W.inFarm(b.x, b.z));
+    if (farmRooms.length !== 3 || !barn || spots.length < 8 || !fb.length) vfail('farm: rooms ' + farmRooms.length + ', barn ' + !!barn + ', loot spots ' + spots.length + ', furniture ' + fb.length);
+    const walk = (x, z, tx, tz, n) => { const a = { pos: { x, z }, rad: .34, face: 0 }; for (let i = 0; i < n; i++) Mv.moveAgent(a, tx - a.pos.x, tz - a.pos.z, 4, 1 / 30); return a.pos; };
+    const thru = walk(-60, 0, -100, 0, 400), wall = walk(-60, 12, -100, 12, 400), out = walk(-100, 0, -160, 0, 400);
+    if (thru.x > -95) vfail('could not walk through the gate: ' + JSON.stringify(thru));
+    if (wall.x < W.WALL_X) vfail('walked through the west wall: ' + JSON.stringify(wall));
+    if (out.x < W.FARM.x0 - .1) vfail('walked off the farm: ' + JSON.stringify(out));
+    const via = I2.navStep(-60, 15, -100, 15); if (!(Math.abs(via.z) < 1 && via.x > W.WALL_X)) vfail('no way through the gate: ' + JSON.stringify(via));
+    // a zombie wandering out there stays on the farm
+    const z = Ag.makeAgent(-100, -2); Ag.becomeZombie(z, 'walker'); for (let i = 0; i < 600; i++) Mv.wander(z, 1.2, 1 / 30); Ag.removeAgent ? Ag.removeAgent(z) : 0;
+    if (!W.inFarm(z.pos.x, z.pos.z)) vfail('a farm zombie wandered off: ' + JSON.stringify(z.pos));
+    console.log('v0.22: farm ' + farmRooms.length + ' rooms (barn ' + I2.boxes.filter(b => b.kind === 'farm').length + ' shelves), ' + spots.length + ' loot spots, ' + Fm.attach.length + ' boarded windows, gate ' + thru.x.toFixed(0) + ', wall held at ' + wall.x.toFixed(1) + ', zombie wandered to ' + z.pos.x.toFixed(0) + ',' + z.pos.z.toFixed(0));
+  }
   // v0.19: every recording the game asks for is in assets/sounds/
   { const Au = await import('../src/systems/audio.js'), fs = await import('fs'); const miss = Object.values(Au.FILES).flat().filter(n => !fs.existsSync(new URL('../assets/sounds/' + n + '.mp3', import.meta.url)));
     if (miss.length) vfail('missing sounds: ' + miss); else console.log('v0.19: ' + Object.values(Au.FILES).flat().length + ' recordings (' + Object.entries(Au.FILES).map(([k, l]) => k + ' ' + l.length).join(', ') + ')'); }

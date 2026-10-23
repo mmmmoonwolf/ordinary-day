@@ -1,10 +1,10 @@
 import {clamp} from '../core/util.js';
-import {LIM} from '../config/world.js';
+import {inWorld,clampWorld} from '../config/world.js';
 
 // solid boxes on the ground plane, used for movement, bullets and loot placement
 export const solids=[];
 export function solid(cx,cz,hw,hd){const b={x0:cx-hw,x1:cx+hw,z0:cz-hd,z1:cz+hd};solids.push(b);return b;}
-export function freeAt(x,z,m){for(const b of solids)if(x>b.x0-m&&x<b.x1+m&&z>b.z0-m&&z<b.z1+m)return false;return Math.abs(x)<LIM&&Math.abs(z)<LIM;}
+export function freeAt(x,z,m){for(const b of solids)if(x>b.x0-m&&x<b.x1+m&&z>b.z0-m&&z<b.z1+m)return false;return inWorld(x,z);}
 export function collide(p,r){
   for(const b of solids){
     if(p.x<b.x0-r||p.x>b.x1+r||p.z<b.z0-r||p.z>b.z1+r)continue;
@@ -13,7 +13,7 @@ export function collide(p,r){
     if(dd<1e-9){const l=p.x-b.x0,rr=b.x1-p.x,t=p.z-b.z0,bb=b.z1-p.z,m=Math.min(l,rr,t,bb);if(m===l)p.x=b.x0-r;else if(m===rr)p.x=b.x1+r;else if(m===t)p.z=b.z0-r;else p.z=b.z1+r;}
     else{const d=Math.sqrt(dd);p.x=qx+dx/d*r;p.z=qz+dz/d*r;}
   }
-  p.x=clamp(p.x,-LIM,LIM);p.z=clamp(p.z,-LIM,LIM);
+  clampWorld(p);   // the city square or the farm (v0.22)
 }
 export function rayWall(ox,oz,dx,dz,max){
   let best=max;

@@ -1,7 +1,7 @@
 import {$} from '../core/util.js';
 import {G} from '../core/state.js';
 import {DAY_START} from '../config/time.js';
-import {RC} from '../config/world.js';
+import {RC,FARM,WALL_X,GATE} from '../config/world.js';
 import {GOAL_NIGHTS,LZ,RESCUE_UNTIL,nightsSurvived} from '../config/goal.js';
 import {solids} from '../world/collision.js';
 import {LAYOUT,pois,lootSpots} from '../world/city.js';
@@ -13,13 +13,16 @@ import {player,players} from '../entities/player.js';
 // The whole city, turned to match the isometric camera (screen up = world -x,-z), so the map reads like the view.
 // Streets, blocks and buildings are drawn once into `base`; landmarks, nearby zombies and the player are redrawn every 0.1 s.
 const HALF=58,HEAR=18;   // world half-size shown (the far road corners fall just outside); zombies are only shown within HEAR metres, like hearing them
-let cv=null,g=null,base=null,px=0,dpr=1,acc=0;
+let cv=null,g=null,base=null,px=0,dpr=1,acc=0,cx=0,cz=0;   // (cx,cz): the world point in the middle of the map, the city or the farm (v0.22)
 const C={road:'#3a3d40',block:'#5b5e5f',park:'#4d5b39',building:'#9a978e',room:'#4a4640'};
-function xy(x,z){const k=px/2/(HALF*Math.SQRT2);return [px/2+(x-z)/Math.SQRT2*k,px/2+(x+z)/Math.SQRT2*k];}
+function xy(x,z){x-=cx;z-=cz;const k=px/2/(HALF*Math.SQRT2);return [px/2+(x-z)/Math.SQRT2*k,px/2+(x+z)/Math.SQRT2*k];}
 function quad(c,x0,z0,x1,z1){const a=xy(x0,z0),b=xy(x1,z0),d=xy(x1,z1),e=xy(x0,z1);c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(b[0],b[1]);c.lineTo(d[0],d[1]);c.lineTo(e[0],e[1]);c.closePath();c.fill();}
 function buildBase(){
   base=document.createElement('canvas');base.width=base.height=px;const c=base.getContext('2d');
-  c.fillStyle=C.road;quad(c,-HALF,-HALF,HALF,HALF);
+  c.fillStyle='#2c2d27';quad(c,cx-HALF*1.5,cz-HALF*1.5,cx+HALF*1.5,cz+HALF*1.5);c.fillStyle=C.road;quad(c,-68.5,-68.5,68.5,68.5);
+  // v0.22 the farm: grass, the dirt track through the gate, the field
+  c.fillStyle='#3f4630';quad(c,FARM.x0,FARM.z0,WALL_X,FARM.z1);c.fillStyle='#6a5a44';quad(c,-126,-2.6,WALL_X+1,2.6);c.fillStyle='#4e3e2c';quad(c,-127,8,-104,27);
+  c.fillStyle='#8a8a86';quad(c,WALL_X-.4,FARM.z0,WALL_X+.4,-GATE);quad(c,WALL_X-.4,GATE,WALL_X+.4,FARM.z1);
   for(let i=0;i<4;i++)for(let j=0;j<4;j++){
     const cx=(RC[i]+RC[i+1])/2,cz=(RC[j]+RC[j+1])/2;
     c.fillStyle=LAYOUT[i+','+j]==='park'?C.park:C.block;quad(c,cx-12,cz-12,cx+12,cz+12);
@@ -65,6 +68,7 @@ export function updateMinimap(dt,now){
   const css=Math.round(cv.getBoundingClientRect().width||0);if(css<20||!player)return;
   dpr=Math.min(2,devicePixelRatio||1);
   if(Math.round(css*dpr)!==px){px=Math.round(css*dpr);cv.width=cv.height=px;base=null;}
+  const fx=player.pos.x<WALL_X-6?-99:player.pos.x>WALL_X+12?0:cx;if(fx!==cx){cx=fx;base=null;}   // follow the player out to the farm and back
   if(!base)buildBase();   // size changes with the screen
   draw(now);
 }
