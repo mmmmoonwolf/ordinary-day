@@ -1,7 +1,7 @@
 import {rnd,pick,wpick} from '../core/util.js';
 import {scene} from '../core/renderer.js';
 import {G} from '../core/state.js';
-import {RC,LIM} from '../config/world.js';
+import {RC,LIM,RIVER} from '../config/world.js';
 import {GOAL_NIGHTS} from '../config/goal.js';
 import {POOLS,MED_W} from '../config/loot.js';
 import {EVENT_CHANCE,AIRDROP_ITEMS,HORDE,DAILY} from '../config/events.js';
@@ -61,6 +61,10 @@ function airdrop(){
 // ---------- horde ----------
 function horde(){
   const day=Math.floor(G.min/1440)+1,k2=partyOf(partySize(),'horde'),n=Math.round(Math.min(HORDE.max,HORDE.base+day)*k2),ri=1+Math.floor(Math.random()*3),alongX=Math.random()<.5,s=Math.random()<.5?1:-1;
+  if(Math.random()<HORDE.bridge){   // v0.25 out of the woods, over the bridge, in through the east gate and across the town
+    for(let k=0;k<n&&agents.length<HORDE.cap;k++){const a=makeAgent(RIVER.x1+12+(k>>1)*1.6,k&1?1.4:-1.4);becomeZombie(a,k%5===4?'boomer':'zombie');a.march={x:-(LIM-1),z:k&1?1.4:-1.4};agents.push(a);}
+    sfx.roar(RIVER.x1+10,0,1.6);say('ฝูงซอมบี้ข้ามสะพานฝั่งตะวันออกเข้ามาแล้ว! หลบให้พ้นถนนกลางเมือง','alarm',6);return;
+  }
   for(let k=0;k<n&&agents.length<HORDE.cap;k++){
     const back=LIM-2-(k>>1)*1.6,side=(k&1?1.4:-1.4);
     const x=alongX?-s*back:RC[ri]+side,z=alongX?RC[ri]+side:-s*back;

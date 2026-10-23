@@ -1,6 +1,6 @@
 import {mulberry32} from '../core/util.js';
 import {scene} from '../core/renderer.js';
-import {RC,GATE,AREAS,beyond} from '../config/world.js';
+import {RC,GATE,AREAS,beyond,RIVER,riverSide} from '../config/world.js';
 import {WALL_T,DOOR_W,STUB_H,DOOR_HP,PLANK_HP} from '../config/shelter.js';
 import {S,part} from './materials.js';
 import {concreteTex} from './textures.js';
@@ -151,6 +151,7 @@ export function navStep(ax,az,tx,tz){
   const ra=roomAt(ax,az),rt=roomAt(tx,tz);
   if(ra<0)for(const A of AREAS){const a=beyond(A,ax,az)>0,t=beyond(A,tx,tz)>0;if(a===t)continue;const w=A.wall,lat=w.axis==='x'?az:ax,s=(w.v<0?-1:1)*(a?1:-1);   // v0.22 city <-> an area: through the gate in the wall
     if(Math.abs(lat)>GATE-1.2)return w.axis==='x'?{x:w.v+s*2.5,z:0,door:-1}:{x:0,z:w.v+s*2.5,door:-1};}
+  {const sa=riverSide(ax),st=riverSide(tx);if(ra<0&&sa&&st&&sa!==st&&Math.abs(az)>RIVER.bridge-1.2)return {x:sa<0?RIVER.x0-2.5:RIVER.x1+2.5,z:0,door:-1};}   // v0.25 across the river: over the bridge
   if(ra===rt)return {x:tx,z:tz,door:-1};
   return ra>=0?viaDoor(ra,ax,az,true):viaDoor(rt,ax,az,false);
 }

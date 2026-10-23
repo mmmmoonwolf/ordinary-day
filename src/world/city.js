@@ -29,7 +29,7 @@ function building(cx,cz,w,d,floors){
 }
 function blockB(i,j){return {cx:(RC[i]+RC[i+1])/2,cz:(RC[j]+RC[j+1])/2};}
 export const vendorSpots=[];
-export const cityWall={west:null,south:null};
+export const cityWall={west:null,south:null,east:null};
 // v0.22+ ground of the areas outside the wall for the minimap: {color, rects: [[x0, z0, x1, z1], ...]} (ui/minimap.js)
 export const mapPaint=[];
 export const LAYOUT={'1,2':'market','2,1':'park','0,3':'park','3,0':'lot','3,3':'lot'};
@@ -46,7 +46,7 @@ export function buildCity(){
     if(rand()<.5)m.position.set(RC[ri]+across,0.035,along);else m.position.set(along,0.035,RC[ri]+across);
     m.scale.set(R(.8,2.6),1,R(.6,1.8));m.rotation.y=R(0,3);m.receiveShadow=true;scene.add(m);
   }
-  for(const s of [-1,1]){const h=box(greyMat,137,0.9,0.5,0,0.45,s*68.5),w=box(greyMat,0.5,0.9,137,s*68.5,0.45,0);if(s<0)cityWall.west=w;else cityWall.south=h;}   // v0.22 world/farm.js cuts the gate into the west wall
+  for(const s of [-1,1]){const h=box(greyMat,137,0.9,0.5,0,0.45,s*68.5),w=box(greyMat,0.5,0.9,137,s*68.5,0.45,0);if(s<0)cityWall.west=w;else{cityWall.south=h;cityWall.east=w;}}   // v0.22 world/farm.js cuts the gate into the west wall
 
   // ---------- blocks ----------
   for(let i=0;i<4;i++)for(let j=0;j<4;j++){

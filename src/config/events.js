@@ -3,7 +3,7 @@
 // neither gets an airdrop. A horde is HORDE.base + day zombies (at most HORDE.max), skipped past HORDE.cap agents.
 export const EVENT_CHANCE={airdrop:.6,horde:.5,blackout:.35};
 export const AIRDROP_ITEMS=6;
-export const HORDE={base:5,max:12,cap:115};
+export const HORDE={base:5,max:12,cap:115,bridge:.35};   // v0.25 bridge: share of hordes that come over the bridge from the east (PLACEHOLDER)
 // v0.18 random events, every day from day 1 (PLACEHOLDERS). Drawn at the start and at each 06:00 (so they go on after
 // day 7): one a day, two from day TWO_FROM. weights pick the kind, [from,to] the in-game time window (minutes of the day).
 export const DAILY={twoFrom:4,weights:{alarm:20,stash:20,truck:14,fog:12,heat:12,raid:10,crash:12},
