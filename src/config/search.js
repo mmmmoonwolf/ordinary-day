@@ -8,7 +8,7 @@ export const SEARCH_SECONDS=2, SEARCH_RANGE=.9, SEARCH_NOISE=7, RESTOCK=.35;
 export const BOX={
   kitchen:{name:'ตู้ครัว',items:[1,3],empty:.1,w:{food:70,bottle:15,mat:5,med:10}},
   shelf:{name:'ชั้นวางของ',items:[1,2],empty:.25,w:{food:20,ammo:20,med:20,mat:20,bottle:20}},
-  drawer:{name:'ตู้ลิ้นชัก',items:[1,2],empty:.2,w:{med:35,ammo:30,food:15,weapon:10,mat:10}},
+  drawer:{name:'ตู้ลิ้นชัก',items:[1,2],empty:.2,w:{med:35,ammo:30,food:15,weapon:6,melee:6,mat:8}},   // v0.18 melee
   sofa:{name:'โซฟา',items:[1,1],empty:.55,w:{ammo:45,food:30,med:25}},
   // v0.17 shops and the hospital (config/places.js)
   medcab:{name:'ตู้ยา',items:[1,3],empty:.1,w:{med:85,food:5,bottle:10}},

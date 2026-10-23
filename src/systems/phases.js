@@ -8,6 +8,7 @@ import {players,nearestPlayerDist,partySize} from '../entities/player.js';
 import {partyOf} from '../config/party.js';
 import {fillDay,fillNight,takeByOthers} from './drops.js';
 import {restockBoxes} from './search.js';
+import {planDaily} from './events.js';
 import {REFILL,refillScale} from '../config/loot.js';
 import {sfx} from './audio.js';
 import {diffOf} from '../config/difficulty.js';
@@ -51,6 +52,7 @@ function onDay(){
   for(let i=0;i<walkers.length-18;i++)walkers[i].retreat=true;
   G.armorNight=false;G.tyrantPending=false;G.nightSpawnNext=1e9;
   restockBoxes();   // v0.15
+  planDaily(day);   // v0.18 random events for the day
   if(takeByOthers(players)>0)feed('ของที่ทิ้งไว้ไกล ๆ บางส่วนถูกผู้รอดชีวิตคนอื่นเก็บไปแล้ว','warn');
   fillDay(Math.min(1,REFILL.day*refillScale(day)*partyOf(partySize(),'loot')));
 }

@@ -7,6 +7,7 @@ import {d2} from '../entities/movement.js';
 import {player} from '../entities/player.js';
 import {lootSpots} from '../world/city.js';
 import {DEF,durPct} from '../config/items.js';
+import {INFECTION} from '../config/zombies.js';
 
 // ---------- tips ----------
 // Short hints for new players, each shown the first time its situation happens (remembered per browser).
@@ -19,9 +20,9 @@ const near=(kind,r)=>agents.some(a=>a.state==='zombie'&&a.kind===kind&&!a.retrea
 const T=(touch,desk)=>isTouch?touch:desk;
 // [key, condition, text] in the order they usually come up
 const TIPS=[
-  ['loot',()=>G.min>=7*60+36,()=>'วงแหวนบนพื้นคือของที่เก็บได้ ใกล้ ๆ มีอาวุธประชิดรออยู่ '+T('แตะปุ่มเก็บ','กด E')+' เพื่อหยิบ ส่วนกระสุนและยาแค่เดินทับ'],
+  ['loot',()=>G.min>=7*60+36,()=>'วงแหวนเรืองแสงบนพื้นคือของที่เก็บได้ สีบอกประเภท: แดงอาวุธ เหลืองกระสุน เขียวยา ส้มอาหาร ฟ้าน้ำ ม่วงกระเป๋า ใกล้ ๆ มีอาวุธประชิดรออยู่ '+T('แตะปุ่มเก็บ','กด E')+' เพื่อหยิบ ส่วนกระสุน ยา และอาหารแค่เดินทับ'],
   ['ambulance',()=>G.min>=8*60+25,()=>'มีรถพยาบาลจอดทิ้งไว้ฝั่งตะวันตกของตลาด หลังรถมี Resurrection Kit ชุบชีวิตได้ 1 ครั้ง'],
-  ['outbreak',()=>G.outbreak,()=>'Walker ตอนกลางวันเดินช้าและไม่ไล่ แต่ยืนติดตัวจะโดนกัดและอาจติดเชื้อ'],
+  ['outbreak',()=>G.outbreak,()=>'Walker ตอนกลางวันเดินช้าและไม่ไล่ แต่ยืนติดตัวจะโดนกัด'+(INFECTION.on?'และอาจติดเชื้อ':'')],
   ['dusk',()=>G.phase==='day'&&G.min%1440>=DUSK_WARN,()=>'เตรียมกระสุนกับยาก่อนมืด กลางคืนซอมบี้เร็วและหูไว '+T('ปุ่ม ❚❚','กด P')+' หยุดเกมได้ทุกเมื่อ'],
   ['shelter',()=>player.nearDoor>=0||G.phase==='night',()=>'ตึกที่มีป้ายไฟเหนือประตูเข้าไปหลบได้ '+T('แตะปุ่มประตู','กด E')+' ปิดประตู ซอมบี้ข้างนอกจะมองไม่เห็น แต่ถ้าได้ยินเสียงจะมาพังประตู'],
   ['places',()=>G.min>=9*60+50,()=>'ป้ายสีบนแผนที่คือโรงพยาบาล ร้านปืน ร้านขายของชำ ร้านอาหาร ร้านขายยา และร้านเครื่องมือ ค้นตู้ในร้านได้ของตามประเภทร้านและของกลับมาเร็วกว่าบ้านทั่วไป'],   // v0.17

@@ -1,7 +1,7 @@
 import {rnd,pick,wpick} from '../core/util.js';
 import {scene} from '../core/renderer.js';
 import {groundY} from '../config/world.js';
-import {DEF,STACKS,gradeOf,itemColor} from '../config/items.js';
+import {DEF,STACKS,GRADES,gradeOf,itemColor,ringColor} from '../config/items.js';
 import {POOLS,GRADE_W,MED_W,CAT_W,FOOD_W,INDOOR_W,TAKEN} from '../config/loot.js';
 import {PLACE_W,PLACE_FILL} from '../config/places.js';
 import {itemModel} from '../world/item-models.js';
@@ -20,13 +20,15 @@ export function rollLoot(phase,zone,forceGrade){
   if(c==='mat')return makeItem('planks');
   if(c==='throw')return makeItem('bottle');
   const g=forceGrade||wpick(phase==='day'?GRADE_W.day:(zone==='lot'?GRADE_W.nightLot:GRADE_W.night));
-  if(c==='melee')return makeItem(pick(POOLS[g].weapons.filter(id=>!DEF[id].gun)));
+  if(c==='melee')return makeItem(pick(POOLS[g].melee||POOLS[g].weapons.filter(id=>!DEF[id].gun)));
   return makeItem(c==='weapon'?pick(POOLS[g].weapons):pick(POOLS[g].ammo));
 }
 
 // ---------- drops on the ground ----------
-const ringGeo=new THREE.RingGeometry(.34,.46,24).rotateX(-Math.PI/2);
-export const ringMats={};const ringMat=c=>ringMats[c]||(ringMats[c]=new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.7,depthWrite:false}));
+const ringGeo=new THREE.RingGeometry(.32,.48,24).rotateX(-Math.PI/2);
+export const ringMats={};const ringMat=c=>ringMats[c]||(ringMats[c]=new THREE.MeshBasicMaterial({color:new THREE.Color(c).convertSRGBToLinear(),transparent:true,opacity:.9,depthWrite:false,toneMapped:false}));   // full colour, not dimmed by the tone mapping or washed out by the sRGB output (v0.18)
+const glowGeo=new THREE.CircleGeometry(.62,24).rotateX(-Math.PI/2);
+export const glowMats={};const glowMat=c=>glowMats[c]||(glowMats[c]=new THREE.MeshBasicMaterial({color:new THREE.Color(c).convertSRGBToLinear(),transparent:true,opacity:.18,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false}));   // a soft disc of light under the ring
 export const drops=[];
 // the nearest spot to (x,z) the player can stand on, on the same side of any wall: a drop that lands in a car,
 // a wall or furniture would be out of reach (v0.6.1)
@@ -40,8 +42,9 @@ let nextNid=1;
 export function spawnDrop(item,x,z,sp,nid){
   if(!sp)[x,z]=reachableSpot(x,z);
   const g=new THREE.Group();const m=itemModel(item.id);m.rotation.y=Math.random()*6.28;g.add(m);
-  const r=new THREE.Mesh(ringGeo,ringMat(itemColor(item.id)));r.position.y=.015;g.add(r);
-  if(gradeOf(item.id)==='mil'){const r2=new THREE.Mesh(ringGeo,ringMat(itemColor(item.id)));r2.scale.setScalar(1.45);r2.position.y=.016;g.add(r2);}
+  const col=ringColor(item.id),r=new THREE.Mesh(ringGeo,ringMat(col));r.position.y=.015;g.add(r);
+  const glow=new THREE.Mesh(glowGeo,glowMat(col));glow.position.y=.012;g.add(glow);
+  const gr=gradeOf(item.id);if(gr==='pol'||gr==='mil'){const r2=new THREE.Mesh(ringGeo,ringMat(GRADES[gr].color));r2.scale.setScalar(1.4);r2.position.y=.016;g.add(r2);}
   g.position.set(x,groundY(x,z)+.01,z);scene.add(g);
   const d={nid:nid||nextNid++,item,g,m,x,z,spot:sp||null};drops.push(d);if(sp)sp.drop=d;return d;
 }

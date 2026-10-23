@@ -3,7 +3,8 @@ import {groundY} from '../config/world.js';
 import {loadGltf} from '../core/gltf.js';
 import {breakables,trees} from './props.js';
 import {decor} from './decor.js';
-import {boxes} from './interiors.js';
+import {boxes,rooms} from './interiors.js';
+import {heavy,roomDecor} from './clutter.js';
 
 // ---------- prop models (v0.14) ----------
 // Guns, knives, axes, food, water, medicine, backpacks, bottles and cars from Quaternius' packs (CC0; built into
@@ -105,29 +106,32 @@ function partsOf(id){
   bb.setFromObject(tpl[id]);const size=bb.getSize(new THREE.Vector3());
   return partsCache[id]={out,size,anchor:new THREE.Vector3((bb.min.x+bb.max.x)/2,bb.min.y,(bb.min.z+bb.max.z)/2)};
 }
-// copies [{id,x,y,z,ry,size,shadow,mat(material)}] -> a group of merged meshes
+// copies [{id,x,y,z,ry,size,shadow,mat(material)}] -> a group of merged meshes. size is the height, or the width with by:'w'
+// (v0.18, flat things); fit:[w,d] instead scales the model into that footprint, turned a quarter if its long side is the other way
 function bake(list){
   const buckets=new Map(),M=new THREE.Matrix4(),P=new THREE.Matrix4(),Q=new THREE.Quaternion(),U=new THREE.Vector3(0,1,0);
   for(const c of list){
-    const pr=partsOf(c.id),k=c.size/(pr.size.y||1);
-    P.compose(new THREE.Vector3(c.x,c.y,c.z),Q.setFromAxisAngle(U,c.ry),new THREE.Vector3(k,k,k)).multiply(new THREE.Matrix4().makeTranslation(-pr.anchor.x,-pr.anchor.y,-pr.anchor.z));
+    const pr=partsOf(c.id),z=pr.size;let k=c.size/((c.by==='w'?Math.max(z.x,z.z):z.y)||1),ry=c.ry;
+    if(c.fit){const sw=Math.abs(Math.sin(ry))>.5,mx=sw?z.z:z.x,mz=sw?z.x:z.z,turn=(mx>mz)!==(c.fit[0]>c.fit[1]);if(turn)ry+=Math.PI/2;k=Math.min(c.fit[0]/(turn?mz:mx),c.fit[1]/(turn?mx:mz));}
+    P.compose(new THREE.Vector3(c.x,c.y,c.z),Q.setFromAxisAngle(U,ry),new THREE.Vector3(k,k,k)).multiply(new THREE.Matrix4().makeTranslation(-pr.anchor.x,-pr.anchor.y,-pr.anchor.z));
     const key0=Math.floor((c.x+70)/46)+','+Math.floor((c.z+70)/46)+(c.shadow?'s':'');
     for(const p of pr.out){const mat=c.mat?c.mat(p.mat):p.mat,key=key0+mat.uuid;let b=buckets.get(key);if(!b)buckets.set(key,b={mat,shadow:c.shadow,items:[]});b.items.push([p.geo,M.multiplyMatrices(P,p.rel).clone()]);}
   }
   const g=new THREE.Group();
   for(const b of buckets.values()){
     let nv=0,ni=0;for(const [geo] of b.items){nv+=geo.attributes.position.count;ni+=geo.index?geo.index.count:geo.attributes.position.count;}
-    const pos=new Float32Array(nv*3),nor=new Float32Array(nv*3),idx=new Uint32Array(ni);let ov=0,oi=0;
+    const pos=new Float32Array(nv*3),nor=new Float32Array(nv*3),idx=new Uint32Array(ni),hasUv=b.items.every(([geo])=>geo.attributes.uv),uv=hasUv?new Float32Array(nv*2):null;let ov=0,oi=0;
     for(const [geo,m] of b.items){
-      const pa=geo.attributes.position,na=geo.attributes.normal,rp=reader(pa),rn=na?reader(na):null;nm.getNormalMatrix(m);
+      const pa=geo.attributes.position,na=geo.attributes.normal,rp=reader(pa),rn=na?reader(na):null,ru=hasUv?reader(geo.attributes.uv):null;nm.getNormalMatrix(m);   // textured models (City Pack) keep their uv
       for(let i=0;i<pa.count;i++){
         v3.set(rp(i,0),rp(i,1),rp(i,2)).applyMatrix4(m);pos.set([v3.x,v3.y,v3.z],(ov+i)*3);
+        if(ru){uv[(ov+i)*2]=ru(i,0);uv[(ov+i)*2+1]=ru(i,1);}
         if(rn){n3.set(rn(i,0),rn(i,1),rn(i,2)).applyMatrix3(nm).normalize();nor.set([n3.x,n3.y,n3.z],(ov+i)*3);}else nor[(ov+i)*3+1]=1;
       }
       if(geo.index)for(let i=0;i<geo.index.count;i++)idx[oi++]=geo.index.getX(i)+ov;else for(let i=0;i<pa.count;i++)idx[oi++]=ov+i;
       ov+=pa.count;
     }
-    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('normal',new THREE.BufferAttribute(nor,3));geo.setIndex(new THREE.BufferAttribute(idx,1));geo.computeBoundingSphere();
+    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('normal',new THREE.BufferAttribute(nor,3));geo.setIndex(new THREE.BufferAttribute(idx,1));if(uv)geo.setAttribute('uv',new THREE.BufferAttribute(uv,2));geo.computeBoundingSphere();
     const mesh=new THREE.Mesh(geo,b.mat);mesh.castShadow=b.shadow;mesh.receiveShadow=true;g.add(mesh);
   }
   return g;
@@ -137,14 +141,20 @@ function townMat(m,leaf){
   if(m.name==='Tree_Leaves'){const k='leaf'+leaf;return own[k]||(own[k]=Object.assign(m.clone(),{color:LEAVES[leaf].clone()}));}
   const c=TOWN_COL[m.name];if(!c)return m;return own[m.name]||(own[m.name]=Object.assign(m.clone(),{color:new THREE.Color(c).convertSRGBToLinear()}));
 }
+const heavyCopy=h=>({id:h.id,x:h.x,y:h.y,z:h.z,ry:h.ry,fit:[h.ex*2,h.ez*2],shadow:true,mat:m=>m});
 function setTown(){
   const on=props.ready&&props.on;
   if(on&&!town){
     const H=i=>((i*2654435761)>>>0)/4294967296;   // a fixed 0..1 per tree, so the town looks the same every time
     const list=trees.map((t,i)=>{const leaf=Math.floor(H(i+7)*3);return {id:t.bare?'dead_'+(1+i%5):'tree_'+(1+i%4),x:t.x,y:t.g.position.y,z:t.z,ry:H(i)*6.28,size:t.bare?4.6+H(i+3)*1.6:5+H(i+3)*1.8,shadow:true,mat:m=>townMat(m,leaf)};});
-    for(const d of decor)list.push({id:d.id,x:d.x,y:groundY(d.x,d.z),z:d.z,ry:d.ry,size:d.size,shadow:d.shadow,mat:m=>townMat(m,0)});
-    if(list.every(c=>tpl[c.id])){town=bake(list);scene.add(town);}
+    for(const d of decor)list.push({id:d.id,x:d.x,y:d.y??groundY(d.x,d.z),z:d.z,ry:d.ry,size:d.size,by:d.by,shadow:d.shadow,mat:/^[cf]_/.test(d.id)?m=>m:m=>townMat(m,0)});
+    for(const h of heavy)if(h.room<0)list.push(heavyCopy(h));
+    town=bake(list.filter(c=>tpl[c.id]));scene.add(town);   // a model missing from an old cached props.glb is left out
+    // v0.18: the clutter in each room, in its cutaway group
+    rooms.forEach((r,k)=>{const l=(roomDecor[k]||[]).map(d=>({...d,mat:m=>m}));for(const h of heavy)if(h.room===k)l.push(heavyCopy(h));const ok=l.filter(c=>tpl[c.id]);if(ok.length){r.clutter=bake(ok);r.cut.add(r.clutter);}});
   }
   if(town)town.visible=on;
   for(const t of trees)t.g.visible=!(on&&town);
+  for(const r of rooms)if(r.clutter)r.clutter.visible=on;
+  for(const h of heavy)h.mesh.visible=!(on&&town&&tpl[h.id]);   // the plain box stays for "low" graphics and while loading
 }

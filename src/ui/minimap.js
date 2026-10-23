@@ -44,6 +44,7 @@ function draw(now){
   }
   const tod=G.min%1440;
   if(nightsSurvived(G.min)>=GOAL_NIGHTS&&tod>=DAY_START&&tod<RESCUE_UNTIL){const [u,v]=xy(LZ.x,LZ.z);g.beginPath();g.arc(u,v,(4+Math.sin(now/250))*s,0,Math.PI*2);g.lineWidth=1.6*s;g.strokeStyle='#e2a64a';g.stroke();}
+  if(G.site){const [u,v]=xy(G.site.x,G.site.z),r=(2.6+.7*Math.sin(now/170))*s;g.beginPath();g.moveTo(u,v-r);g.lineTo(u+r,v);g.lineTo(u,v+r);g.lineTo(u-r,v);g.closePath();g.fillStyle={stash:'#b77dff',truck:'#ffa43a',crash:'#66B0FF'}[G.site.kind]||'#fff';g.fill();g.lineWidth=dpr;g.strokeStyle='#16130d';g.stroke();}   // a random event's place (v0.18)
   if(G.drop){const [u,v]=xy(G.drop.x,G.drop.z),r=(2.4+.6*Math.sin(now/180))*s;g.fillStyle='#7fd16a';g.fillRect(u-r,v-r,r*2,r*2);g.lineWidth=dpr;g.strokeStyle='#16130d';g.strokeRect(u-r,v-r,r*2,r*2);}   // airdrop crate (v0.8)
   for(const a of agents){
     if(a.state!=='zombie'||a.retreat)continue;
