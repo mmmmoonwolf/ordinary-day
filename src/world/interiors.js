@@ -3,7 +3,7 @@ import {scene} from '../core/renderer.js';
 import {RC,GATE,AREAS,beyond,RIVER,riverSide} from '../config/world.js';
 import {WALL_T,DOOR_W,STUB_H,DOOR_HP,PLANK_HP} from '../config/shelter.js';
 import {S,part} from './materials.js';
-import {concreteTex,withThaiFont,THAI_FONT} from './textures.js';
+import {concreteTex} from './textures.js';
 import {solids,freeAt,rayWall} from './collision.js';
 import {buildings,lootSpots,LAYOUT,pois} from './city.js';
 import {PLACES} from '../config/places.js';
@@ -129,14 +129,11 @@ function shopShelves(r,k){
 }
 // an old painted board over the door with the place's name, lit a little at night (v0.17)
 function placeSign(r){
-  const P=r.place,c=document.createElement('canvas');c.width=512;c.height=96;const g=c.getContext('2d'),t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;
-  const spots=[];for(let i=0;i<500;i++)spots.push([Math.random(),Math.random(),Math.random(),Math.random()*512,Math.random()*96,2+Math.random()*4,1+Math.random()*3]);
-  withThaiFont(()=>{   // v0.33 in Thai
-    g.fillStyle='#2b241c';g.fillRect(0,0,512,96);g.strokeStyle='rgba(220,205,170,.5)';g.lineWidth=6;g.strokeRect(6,6,500,84);
-    g.fillStyle=P.color;g.font='700 60px '+THAI_FONT;g.textAlign='center';g.textBaseline='middle';g.fillText(P.sign,256,50,470);
-    for(const [a,b,k,x,y,w,h] of spots){g.fillStyle=`rgba(${a<.5?0:200},${b<.5?0:190},${b<.5?0:160},${k*.18})`;g.fillRect(x,y,w,h);}   // weathered
-    t.needsUpdate=true;
-  });
+  const P=r.place,c=document.createElement('canvas');c.width=512;c.height=96;const g=c.getContext('2d');
+  g.fillStyle='#2b241c';g.fillRect(0,0,512,96);g.strokeStyle='rgba(220,205,170,.5)';g.lineWidth=6;g.strokeRect(6,6,500,84);
+  g.fillStyle=P.color;g.font='bold 58px Georgia, "Times New Roman", serif';g.textAlign='center';g.textBaseline='middle';g.fillText(P.sign,256,52,470);
+  for(let i=0;i<500;i++){g.fillStyle=`rgba(${Math.random()<.5?0:200},${Math.random()<.5?0:190},${Math.random()<.5?0:160},${Math.random()*.18})`;g.fillRect(Math.random()*512,Math.random()*96,2+Math.random()*4,1+Math.random()*3);}   // weathered
+  const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;
   const [nx,nz,dx,dz,y0]=r.sg,m=new THREE.Mesh(new THREE.PlaneGeometry(3.4,.64),S({map:t,emissive:'#ffffff',emissiveMap:t,emissiveIntensity:.45,roughness:.9}));
   m.position.set(dx+nx*.1,y0+2.75,dz+nz*.1);m.rotation.y=Math.atan2(nx,nz);m.castShadow=false;
   r.sign.visible=false;r.ext.add(m);r.placeSign=m;

@@ -1,15 +1,15 @@
 // ---------- places (v0.17) ----------
-// PLACEHOLDERS. Six of the enterable buildings are not homes: biggest first they become a hospital, a gun shop, a minimart,
-// a curry-and-rice shop, a pharmacy and a hardware store. Each has a sign over the door and a mark on the map; its furniture holds that
+// PLACEHOLDERS. Six of the enterable buildings are not homes: biggest first they become a hospital, a gun shop, a grocery,
+// a diner, a pharmacy and a hardware store. Each has a sign over the door and a mark on the map; its furniture holds that
 // trade's goods (config/search.js BOX[box]) and its floor loot spots roll from PLACE_W, fill PLACE_FILL times as often as
 // other spots and their furniture refills with PLACE_RESTOCK instead of RESTOCK.
 export const PLACES=[
-  {type:'hospital',name:'โรงพยาบาล',sign:'โรงพยาบาล',color:'#d9534a',box:'medcab'},
-  {type:'gunshop',name:'ร้านปืน',sign:'ปืน · กระสุน',color:'#d8b04e',box:'gunrack'},
-  {type:'grocery',name:'มินิมาร์ท',sign:'มินิมาร์ท 24 ชม.',color:'#8fbf6a',box:'grocery'},
-  {type:'diner',name:'ร้านข้าวแกง',sign:'ข้าวแกง · ตามสั่ง',color:'#e5864e',box:'kitchen'},
-  {type:'pharmacy',name:'ร้านขายยา',sign:'ร้านขายยา',color:'#7fb8ef',box:'medcab'},
-  {type:'hardware',name:'ร้านเครื่องมือ',sign:'วัสดุก่อสร้าง',color:'#c49a62',box:'tools'},
+  {type:'hospital',name:'โรงพยาบาล',sign:'HOSPITAL',color:'#d9534a',box:'medcab'},
+  {type:'gunshop',name:'ร้านปืน',sign:'GUNSMITH',color:'#d8b04e',box:'gunrack'},
+  {type:'grocery',name:'ร้านขายของชำ',sign:'GROCER',color:'#8fbf6a',box:'grocery'},
+  {type:'diner',name:'ร้านอาหาร',sign:'CAFÉ',color:'#e5864e',box:'kitchen'},
+  {type:'pharmacy',name:'ร้านขายยา',sign:'PHARMACY',color:'#7fb8ef',box:'medcab'},
+  {type:'hardware',name:'ร้านเครื่องมือ',sign:'HARDWARE',color:'#c49a62',box:'tools'},
 ];
 // category weights for the floor loot spots of each place (day and night alike; weapon and ammo grades still follow the
 // phase, so the gun shop has police and military guns only at night, like everywhere else)
@@ -24,5 +24,5 @@ export const PLACE_W={
   camp:{weapon:28,ammo:30,med:20,food:10,throw:8,bag:4},   // v0.26 the camp: grades better than the street (systems/drops.js CAMP_GRADE)   // v0.22 the farm (indoors and out), PLACEHOLDER
 };
 // v0.22 the farm west of town (world/farm.js): its barn is a place like the shops, but not one of the six above
-export const BARN={type:'farm',name:'โรงนา',sign:'โรงนา',color:'#b5654a',box:'farm'};
+export const BARN={type:'farm',name:'โรงนา',sign:'FARM',color:'#b5654a',box:'farm'};
 export const PLACE_FILL=1.7, PLACE_RESTOCK=.6;

@@ -141,8 +141,11 @@ const S={
   outbreak(){if(bufs.siren_outbreak)play(9.1,undefined,0,1,(t,d)=>sample('siren_outbreak',t,d,.3,{cut:2500}));},   // v0.21 a civil defence siren far off when it starts
   night(){play(2.4,undefined,0,1,(t,d)=>{tone(t,2.2,{wave:'sawtooth',f0:55,f1:48,peak:.18,attack:.6,dest:d});tone(t,2.2,{f0:110,f1:96,peak:.1,attack:.6,dest:d});});},
   dawn(){play(1.4,undefined,0,1,(t,d)=>{tone(t,.5,{f0:523,peak:.12,dest:d});tone(t+.25,.6,{f0:659,peak:.11,dest:d});tone(t+.5,.8,{f0:784,peak:.1,dest:d});});},
-  // v0.33 a temple bell far off, struck three times at first light: a low tone with a few out-of-tune partials that ring on
-  bell(){play(7,undefined,0,1,(t,d)=>{for(let k=0;k<3;k++){const s=t+k*2.1;[[1,4,.11],[2.01,3,.05],[2.76,2.2,.04],[5.43,1.2,.02]].forEach(([m,len,pk])=>tone(s,len,{f0:174*m,peak:pk,attack:.004,dest:d}));}});},
+  // v0.34 the church bell in the old town, tolling four times at first light: a deep strike with out-of-tune partials that
+  // ring on (it was a temple bell in v0.33)
+  bell(){play(11,undefined,0,1,(t,d)=>{for(let k=0;k<4;k++){const s=t+k*2.6;[[1,5,.12],[2.4,3.2,.05],[3.01,2.4,.04],[4.2,1.6,.025],[5.43,1,.015]].forEach(([m,len,pk])=>tone(s,len,{f0:110*m,peak:pk,attack:.003,dest:d}));}});},
+  // v0.34 crows somewhere over the roofs by day: two or three hoarse caws
+  crow(x,z){play(1.6,x,z,60,(t,d,g)=>{const n=2+Math.floor(Math.random()*2);for(let k=0;k<n;k++){const s=t+k*(.32+Math.random()*.12),f=520+Math.random()*120;tone(s,.2,{wave:'sawtooth',f0:f,f1:f*.62,peak:.07*g,attack:.02,dest:d});noise(s,.18,{type:'bandpass',f0:f*2.2,q:3,peak:.09*g,attack:.02,dest:d});}});},
   win(){play(2.2,undefined,0,1,(t,d)=>{[523,659,784,1047].forEach((f,i)=>tone(t+i*.22,.9,{wave:'triangle',f0:f,peak:.14,dest:d}));});},
   // helicopter rotor: a looping chopped noise whose level follows the distance to the LZ (0 stops it)
   rotor(level,x,z){
@@ -198,7 +201,7 @@ export function updateMusic(m){
 // ---------- ambience (v0.19, wind and moaning v0.20) ----------
 // Rain: one looping recording whose level follows G.rain, quieter and duller indoors. After the outbreak someone screams
 // somewhere in the town now and then (more often at night), from a random direction; this device only, like the music.
-let rainLoop=null,nextCry=0,wind=null,nextGust=0,nextGroan=0,lastPos=null,stride=0;
+let rainLoop=null,nextCry=0,wind=null,nextGust=0,nextGroan=0,nextCrow=0,lastPos=null,stride=0;
 const loops={};
 // one looping recording that follows its source: level by distance (range), panned; silent when `on` is false
 function near(kind,on,at,range,level,t){
@@ -242,6 +245,8 @@ export function updateAmbience(m){
     const moved=lastPos?Math.hypot(v.pos.x-lastPos.x,v.pos.z-lastPos.z):0;lastPos={x:v.pos.x,z:v.pos.z};
     if(m.inside&&v.alive&&moved<1){stride+=moved;if(stride>.75&&bufs.step){stride=0;play(.45,v.pos.x,v.pos.z,20,(tt,d,g)=>sample('step',tt,d,(v.sneak?.12:.32)*g,{rate:.9+Math.random()*.2}));}}else stride=0;
   }
+  // v0.34 crows by day outdoors, off somewhere over the roofs (this device only)
+  if(m.on&&!m.inside&&m.night<.5&&t>=nextCrow){const v=viewed();if(v){const a=Math.random()*6.28;S.crow(v.pos.x+Math.cos(a)*25,v.pos.z+Math.sin(a)*25);}nextCrow=t+14+Math.random()*30;}   // PLACEHOLDER how often
   // zombies close by moan now and then, from where they are (this device only)
   if(m.on&&bufs.groan&&t>=nextGroan){
     const v=viewed();let best=null,n=0;

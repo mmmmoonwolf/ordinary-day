@@ -664,19 +664,16 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     for (const a of [z, z2, z3]) a.gone = true; T.G.traps = []; Cs.applyTraps();
     console.log('v0.26: camp ' + tents + ' tents, ' + Cw.camp.traps.length + ' traps (caught a zombie and the player, saved), fire burns, ' + Math.round(good / 6) + '% police / military loot, ' + guards + ' guards, flare calls zombies');
   }
-  // v0.33: the Thai town: signs, poles, spirit houses, scooters and carts built, none of their collision boxes on a loot
-  // spot or a doorway, shop boards in Thai, a temple bell at dawn
-  { const Th3 = await import('../src/world/thai.js'), Cl3 = await import('../src/world/collision.js'), I4 = await import('../src/world/interiors.js'), Ct = await import('../src/world/city.js'), Pl3 = await import('../src/config/places.js');
-    const th = Th3.thai, n0 = Cl3.solids.length;
-    if (th.poles.length < 60 || th.shrines.length < 8 || th.scooters < 30 || th.carts < 5 || th.signs < 30) vfail('thai town: ' + JSON.stringify({ poles: th.poles.length, shrines: th.shrines.length, scooters: th.scooters, carts: th.carts, signs: th.signs }));
-    const near = (x, z, m) => Cl3.solids.filter(b => x > b.x0 - m && x < b.x1 + m && z > b.z0 - m && z < b.z1 + m);
-    const poleOn = th.poles.filter(([x, z]) => Ct.lootSpots.some(s => Math.hypot(s.x - x, s.z - z) < 1) || I4.rooms.some(r => Math.hypot(r.dx - x, r.dz - z) < 2.5)).length;
-    const shrineOn = th.shrines.filter(([x, z]) => Ct.lootSpots.some(s => Math.hypot(s.x - x, s.z - z) < 1)).length;
-    if (poleOn || shrineOn) vfail('thai town blocks loot spots or doors: poles ' + poleOn + ', shrines ' + shrineOn);
-    if (Pl3.PLACES.some(P => /[A-Z]/.test(P.sign)) || !/[ก-๙]/.test(Pl3.BARN.sign)) vfail('shop boards not in Thai');
+  // v0.34: the old town: shop boards, balconies, posters, columns, body bags, barriers built; none of their collision
+  // boxes on a loot spot or a doorway; a church bell at dawn
+  { const Ot = await import('../src/world/oldtown.js'), Cl3 = await import('../src/world/collision.js'), I4 = await import('../src/world/interiors.js'), Ct = await import('../src/world/city.js');
+    const o = Ot.oldtown, n0 = Cl3.solids.length;
+    if (o.signs < 25 || o.balconies < 30 || o.posters < 20 || o.columns.length < 4 || o.bags < 8 || o.cases < 15 || o.barriers.length < 5) vfail('old town: ' + JSON.stringify({ ...o, columns: o.columns.length, barriers: o.barriers.length }));
+    const on = [...o.columns, ...o.barriers].filter(([x, z]) => Ct.lootSpots.some(s => Math.hypot(s.x - x, s.z - z) < 1) || I4.rooms.some(r => Math.hypot(r.dx - x, r.dz - z) < 2.5)).length;
+    if (on) vfail('old town blocks ' + on + ' loot spots or doors');
     let rang = 0; const Au = await import('../src/systems/audio.js'), Ph3 = await import('../src/systems/phases.js'), keep = Au.sfx.bell, m1 = T.G.min, ph1 = T.G.phase; Au.sfx.bell = () => rang++; T.G.min = 1440 + 6 * 60 + 1; T.G.phase = 'night'; Ph3.runEvents(); Au.sfx.bell = keep; T.G.min = m1; T.G.phase = ph1;
-    if (!rang) vfail('no temple bell at dawn');
-    console.log('v0.33: ' + th.signs + ' shop signs, ' + th.poles.length + ' power poles, ' + th.shrines.length + ' spirit houses, ' + th.scooters + ' scooters, ' + th.carts + ' food carts; ' + n0 + ' solids; bell at dawn');
+    if (!rang) vfail('no church bell at dawn');
+    console.log('v0.34: ' + o.signs + ' shop boards, ' + o.hang + ' hanging signs, ' + o.balconies + ' balconies, ' + o.posters + ' posters, ' + o.sheets + ' HELP sheets, ' + o.columns.length + ' columns, ' + o.bags + ' body bags, ' + o.cases + ' suitcases, ' + o.barriers.length + ' barriers, ' + o.sandbags + ' sandbags, ' + o.memorials + ' memorials; ' + n0 + ' solids; bell at dawn');
   }
   // v0.32: the slow first morning, the outbreak seen happening, the goal line
   { const Ob = await import('../src/ui/objective.js'), Tm = await import('../src/config/time.js'), Ph = await import('../src/systems/phases.js');
