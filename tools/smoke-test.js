@@ -664,6 +664,27 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     for (const a of [z, z2, z3]) a.gone = true; T.G.traps = []; Cs.applyTraps();
     console.log('v0.26: camp ' + tents + ' tents, ' + Cw.camp.traps.length + ' traps (caught a zombie and the player, saved), fire burns, ' + Math.round(good / 6) + '% police / military loot, ' + guards + ' guards, flare calls zombies');
   }
+  // v0.30: vaulting: Space over a bench lands on the far side, a building wall only hops, running into a car vaults it
+  { const Col3 = await import('../src/world/collision.js'), Vt = await import('../src/systems/vault.js'), H2 = await import('../src/config/handling.js'), City = await import('../src/world/city.js');
+    const pl = T.player, x0 = pl.pos.x, z0 = pl.pos.z, inv0 = pl.inv; pl.inv = 1e9; pl.reloadT = 0; delete pl.trapT;   // a player never caught in a trap has no trapT
+    const lows = Col3.solids.filter(b => b.low), kinds = lows.length;
+    // a low box with room on both sides along x
+    let done = null;
+    for (const b of lows) {
+      const w = b.x1 - b.x0; if (w > 2.2) continue; const cz = (b.z0 + b.z1) / 2, sx = b.x0 - .9;
+      if (!Col3.freeAt(sx, cz, .36) || !Col3.freeAt(b.x1 + .9, cz, .36)) continue;
+      pl.pos.x = sx; pl.pos.z = cz; Object.assign(pl.input, { mx: 0, mz: 0, mag: 0, run: false, stance: 0, ads: false, jumpQ: .25, face: Math.PI / 2, fire: false, fireQ: 0 }); pl.face = Math.PI / 2;
+      P.updatePlayer(pl, 1 / 60); const went = !!pl.vault; let peak = 0;
+      for (let i = 0; i < 60; i++) { P.updatePlayer(pl, 1 / 60); peak = Math.max(peak, pl.airH); }
+      if (went) { done = { from: sx, to: pl.pos.x, x1: b.x1, peak }; break; }
+    }
+    // a building wall: no vault, only a hop
+    const bd = City.buildings[0]; pl.pos.x = bd.cx - bd.w / 2 - .6; pl.pos.z = bd.cz; pl.face = Math.PI / 2; Object.assign(pl.input, { jumpQ: .25, mag: 0 }); P.updatePlayer(pl, 1 / 60);
+    const wallVault = !!pl.vault, hopped = pl.hop > 0; for (let i = 0; i < 40; i++) P.updatePlayer(pl, 1 / 60);
+    pl.vault = null; pl.airH = 0; pl.hop = 0; pl.pos.x = x0; pl.pos.z = z0; pl.inv = inv0; Object.assign(pl.input, { jumpQ: 0, mag: 0, run: false });
+    if (kinds < 50 || !done || done.to < done.x1 + .2 || done.peak < H2.VAULT.height * .8 || wallVault || !hopped) vfail('vault: ' + kinds + ' low boxes, ' + JSON.stringify(done) + ', vaulted a building ' + wallVault + ', hopped ' + hopped);
+    console.log('v0.30: ' + kinds + ' low obstacles; vaulted one from x ' + done.from.toFixed(1) + ' to ' + done.to.toFixed(1) + ' (far side ' + done.x1.toFixed(1) + ', ' + done.peak.toFixed(2) + ' m up); a building wall only hops');
+  }
   // v0.29: aiming down the sights tightens the spread, bursts widen it, prone is slow and hard to notice
   { const Cb3 = await import('../src/systems/combat.js'), H = await import('../src/config/handling.js'), It4 = await import('../src/config/items.js'), Ai3 = await import('../src/entities/ai.js');
     const pl = T.player, def = It4.DEF.rifle_p, hip = Cb3.spreadOf(Object.assign({}, pl, { ads: false, stance: 0, bloom: 0 }), def), aim = Cb3.spreadOf(Object.assign({}, pl, { ads: true, stance: 2, bloom: 0 }), def), burst = Cb3.spreadOf(Object.assign({}, pl, { ads: false, stance: 0, bloom: H.BLOOM.max }), def);

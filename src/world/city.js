@@ -71,7 +71,7 @@ export function buildCity(){
         const rg=scaleUV(new THREE.BoxGeometry(18.6,.08,3.5),()=>[6,1]);
         const roof=new THREE.Mesh(rg,S({map:CORR,color:'#8f9ba2',roughness:.7,metalness:.3}));roof.position.set(B.cx,2.75,z+.3);roof.rotation.x=.1;roof.castShadow=roof.receiveShadow=true;scene.add(roof);
         for(const px of [-8.8,-3,3,8.8]){box(darkMetal,.12,2.6,.12,B.cx+px,1.4,z-1.35);box(darkMetal,.12,2.9,.12,B.cx+px,1.5,z+1.95);}
-        solid(B.cx,z,8.6,.75);vendorSpots.push([B.cx+R(-6,-1),z+1.25],[B.cx+R(1,6),z+1.25]);
+        solid(B.cx,z,8.6,.75).low=true;vendorSpots.push([B.cx+R(-6,-1),z+1.25],[B.cx+R(1,6),z+1.25]);
       }
       container(B.cx-5,B.cz-8.5,true);container(B.cx+3,B.cz-8.5,true);
       for(let k=0;k<6;k++)spot(B.cx+R(-8,8),B.cz+(k%2?-1.5:4.5),'market');
@@ -79,7 +79,7 @@ export function buildCity(){
       const gm=new THREE.Mesh(new THREE.PlaneGeometry(20.4,20.4),grassMat);gm.rotation.x=-Math.PI/2;gm.position.set(B.cx,.185,B.cz);gm.receiveShadow=true;scene.add(gm);
       for(const [x,z] of [[-6,-6],[6,-5],[-5,5],[6,6],[0,-7],[-7,0],[7,0],[0,7]])if(rand()<.8)tree(B.cx+x+R(-1,1),B.cz+z+R(-1,1),rand()<.5);
       bench(B.cx-2.5,B.cz-2.5,true);bench(B.cx+2.5,B.cz+2.5,true);bench(B.cx+2.8,B.cz-2.2,false);
-      box(greyMat,3,.5,3,B.cx,.35,B.cz);solid(B.cx,B.cz,1.5,1.5);
+      box(greyMat,3,.5,3,B.cx,.35,B.cz);solid(B.cx,B.cz,1.5,1.5).low=true;
       for(let k=0;k<5;k++)spot(B.cx+R(-9,9),B.cz+R(-9,9),'park');
     } else {
       for(const [x,z,ax] of [[-5,-6,true],[2.5,-6,true],[-6.5,2.5,false],[6.5,3,false],[0,4,true]])if(rand()<.8)container(B.cx+x,B.cz+z,ax);

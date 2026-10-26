@@ -103,7 +103,7 @@ export function buildFarm(){
   {const sm=S({map:CORR,color:'#9aa0a2',roughness:.6,metalness:.4}),s=new THREE.Mesh(new THREE.CylinderGeometry(2.4,2.4,10,18),sm);s.position.set(-122,5.02,-17);const top=new THREE.Mesh(new THREE.ConeGeometry(2.6,1.6,18),sm);top.position.set(-122,10.8,-17);s.castShadow=top.castShadow=true;s.receiveShadow=true;scene.add(s,top);solid(-122,-17,2.2,2.2);}
   // hay bales (solid), the Kenney trucks and junk (world/clutter.js solidAt: a plain box until the models load)
   {const hm=S({map:hayTex(),roughness:1}),cyl=new THREE.CylinderGeometry(.62,.62,1.2,14);cyl.rotateZ(Math.PI/2);const parts=[];
-    for(const [x,z,a] of [[-117,-7.5,0],[-118.4,-7.4,.2],[-117.7,-6.2,1.4],[-99,-12.5,1.57],[-100.2,-12.6,1.5],[-92,6.5,.3],[-112,6,0],[-113.3,6.1,0]]){parts.push([cyl,M(x,.64,z,1,1,1,a)]);solid(x,z,.62,.62);}
+    for(const [x,z,a] of [[-117,-7.5,0],[-118.4,-7.4,.2],[-117.7,-6.2,1.4],[-99,-12.5,1.57],[-100.2,-12.6,1.5],[-92,6.5,.3],[-112,6,0],[-113.3,6.1,0]]){parts.push([cyl,M(x,.64,z,1,1,1,a)]);solid(x,z,.62,.62).low=true;}
     scene.add(merge(parts,hm));}
   solidAt('k_truck',-93,-6.2,1.15,2.6,Math.PI/2,2.6,-1);solidAt('k_flat',-124,-6,1.15,2.6,0,2.6,-1);solidAt('k_truck2',-74,9.5,1.1,1.6,Math.PI,2.2,-1);
   // fences: posts and two rails around the field and along the farm's edge; trees and junk (no collision)

@@ -26,7 +26,7 @@ export function solidAt(id,x,z,hw,hd,ry,h,k){
   const sw=Math.abs(Math.sin(ry))>.5,ex=sw?hd:hw,ez=sw?hw:hd;
   for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)if(!freeAt(x+a*ex,z+b*ez,.15))return false;
   if(!clearOf(x,z,Math.max(ex,ez)+.8))return false;
-  const box={x0:x-ex,x1:x+ex,z0:z-ez,z1:z+ez};solids.push(box);
+  const box={x0:x-ex,x1:x+ex,z0:z-ez,z1:z+ez,low:h<=1.3};solids.push(box);   // v0.30 low ones can be vaulted
   const y0=k>=0?.18:groundY(x,z),mesh=part(fallMat,ex*2,h,ez*2,x,y0+h/2,z);mesh.castShadow=mesh.receiveShadow=true;
   if(k>=0)rooms[k].cut.add(mesh);else scene.add(mesh);
   heavy.push({id,x,z,ry,ex,ez,box,mesh,room:k,y:y0});return true;
