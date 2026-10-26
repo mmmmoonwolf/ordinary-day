@@ -40,7 +40,7 @@ export function pollInput(p){
   I.slow=false;I.sneak=joy.id!==null&&mag>.08&&mag<.45;
   // v0.29 C crouches, Z goes prone (toggles; running stands up), right mouse or 🎯 aims down the sights
   if(I.run&&mag>.08)ctl.stance=0;
-  I.stance=ctl.stance;I.ads=ctl.ads||ctl.adsTouch;
+  I.stance=ctl.stance;I.ads=ctl.ads||ctl.adsTouch;if(ctl.jumpQ>0){I.jumpQ=ctl.jumpQ;ctl.jumpQ=0;}   // v0.30
   view.breathKey=false;if(isScoped(p)){view.breathKey=I.run;I.run=false;}   // through the scope Shift holds the breath
   I.aim=mouse.active;I.face=null;
   if(view.fps){I.face=view.yaw+view.sway;I.aim=!isTouch;I.aimDist=40;}   // v0.28 face where the view looks; on a phone aim assist still helps
@@ -70,7 +70,7 @@ export function initInput(){
     if(e.code==='KeyC'&&!e.repeat){ctl.stance=ctl.stance===1?0:1;return;}   // v0.29
     if(e.code==='KeyZ'&&!e.repeat){ctl.stance=ctl.stance===2?0:2;return;}
     keys[e.code]=true;
-    if(e.code==='Space'){e.preventDefault();if(!e.repeat){ctl.fireHeld=true;ctl.fireQ=.2;}}
+    if(e.code==='Space'){e.preventDefault();if(!e.repeat){if(view.fps)ctl.jumpQ=.25;else{ctl.fireHeld=true;ctl.fireQ=.2;}}}   // v0.30 first person: Space vaults / hops
     if(e.code==='Digit1')act('slot','primary');if(e.code==='Digit2')act('slot','secondary');if(e.code==='Digit3')act('slot','melee');
     if(e.code==='KeyR')act('reload');if(e.code==='KeyH')act('heal');if(e.code==='KeyG')act('eat');
     if(e.code==='KeyE'||e.code==='KeyF')usePick();
@@ -129,6 +129,6 @@ export function initInput(){
   $('bAgain').addEventListener('click',()=>{reset();ctl.stance=0;ctl.adsTouch=false;$('overlay').hidden=true;G.running=true;});
   if(isTouch){$('atkKey').textContent='กดค้าง';}
   $('keys').innerHTML=isTouch
-    ?'<kbd>นิ้วซ้าย</kbd><span>ลากเพื่อเดิน ดันสุดเพื่อวิ่ง</span><kbd>ปุ่มโจมตี</kbd><span>กดค้างเพื่อยิงต่อเนื่อง เล็งให้อัตโนมัติ</span><kbd>1 2 3</kbd><span>สลับอาวุธหลัก รอง ประชิด</span><kbd>👁</kbd><span>มุมมองบุคคลที่หนึ่ง (ทดลอง) นิ้วขวาลากเพื่อหันมอง ปุ่ม 🎯 เล็งศูนย์ ปุ่มท่าทาง ยืน หมอบ นอน</span><kbd>กระเป๋า</kbd><span>ติดตั้ง ใช้ หรือทิ้งของ (เกมหยุดระหว่างเปิด)</span>'
-    :'<kbd>W A S D</kbd><span>เดิน (Shift วิ่ง กลางคืนเสียงวิ่งเรียกซอมบี้)</span><kbd>เมาส์</kbd><span>เล็ง · คลิกค้างเพื่อโจมตี</span><kbd>1 2 3</kbd><span>สลับอาวุธหลัก รอง ประชิด</span><kbd>R · E · H</kbd><span>รีโหลด · เก็บของ · ใช้ยา</span><kbd>Tab</kbd><span>เปิดกระเป๋า (เกมหยุดระหว่างเปิด)</span><kbd>V</kbd><span>มุมมองบุคคลที่หนึ่ง (ทดลอง) เมาส์หันมอง</span><kbd>คลิกขวา</kbd><span>เล็งศูนย์ (ปืน) · Sniper มองผ่านกล้อง กด Shift กลั้นหายใจ</span><kbd>C · Z</kbd><span>หมอบ · นอนราบ (เดินช้า เสียงเบา ซอมบี้เห็นยาก ยิงแม่นขึ้น)</span>';
+    ?'<kbd>นิ้วซ้าย</kbd><span>ลากเพื่อเดิน ดันสุดเพื่อวิ่ง</span><kbd>ปุ่มโจมตี</kbd><span>กดค้างเพื่อยิงต่อเนื่อง เล็งให้อัตโนมัติ</span><kbd>1 2 3</kbd><span>สลับอาวุธหลัก รอง ประชิด</span><kbd>👁</kbd><span>มุมมองบุคคลที่หนึ่ง (ทดลอง) นิ้วขวาลากเพื่อหันมอง ปุ่ม 🎯 เล็งศูนย์ ปุ่มท่าทาง ยืน หมอบ นอน</span><kbd>ดันจอยสุด</kbd><span>วิ่งชนของเตี้ย เช่นม้านั่ง รถ โต๊ะ แล้วกระโดดข้าม ซอมบี้ต้องเดินอ้อม</span><kbd>กระเป๋า</kbd><span>ติดตั้ง ใช้ หรือทิ้งของ (เกมหยุดระหว่างเปิด)</span>'
+    :'<kbd>W A S D</kbd><span>เดิน (Shift วิ่ง กลางคืนเสียงวิ่งเรียกซอมบี้)</span><kbd>เมาส์</kbd><span>เล็ง · คลิกค้างเพื่อโจมตี</span><kbd>1 2 3</kbd><span>สลับอาวุธหลัก รอง ประชิด</span><kbd>R · E · H</kbd><span>รีโหลด · เก็บของ · ใช้ยา</span><kbd>Tab</kbd><span>เปิดกระเป๋า (เกมหยุดระหว่างเปิด)</span><kbd>V</kbd><span>มุมมองบุคคลที่หนึ่ง (ทดลอง) เมาส์หันมอง</span><kbd>คลิกขวา</kbd><span>เล็งศูนย์ (ปืน) · Sniper มองผ่านกล้อง กด Shift กลั้นหายใจ</span><kbd>C · Z</kbd><span>หมอบ · นอนราบ (เดินช้า เสียงเบา ซอมบี้เห็นยาก ยิงแม่นขึ้น)</span><kbd>Shift + เดินชน</kbd><span>วิ่งชนของเตี้ย (ม้านั่ง รถ เคาน์เตอร์ โต๊ะ) แล้วกระโดดข้าม · มุมบุคคลที่หนึ่งกด Space</span>';
 }

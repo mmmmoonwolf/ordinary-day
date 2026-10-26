@@ -13,7 +13,8 @@ import {aimAssist,finishReload,fireGun,meleeHit,die} from '../systems/combat.js'
 import {updateInfection,cureInfection} from '../systems/infection.js';
 import {updateNeeds} from '../systems/needs.js';
 import {LOW_NEED} from '../config/needs.js';
-import {STANCE,ADS,BLOOM} from '../config/handling.js';
+import {STANCE,ADS,BLOOM,VAULT} from '../config/handling.js';
+import {startVault,updateVault} from '../systems/vault.js';
 import {sfxFor} from '../systems/audio.js';
 import {nearDoor,nearFixDoor} from '../systems/doors.js';
 import {nearBoxOf,keepSearching} from '../systems/search.js';
@@ -29,11 +30,11 @@ export let player;
 export function setPlayer(p){player=p;}
 const LOOKS=[{shirt:'#c4612a',pants:'#24272c',skin:'#d8a882',hair:'#15130f'},{shirt:'#3d6fb6',pants:'#2d2a26',skin:'#b98762',hair:'#2a1d12'},
   {shirt:'#4f8f4a',pants:'#33302a',skin:'#e0b896',hair:'#5a3a1e'},{shirt:'#c9a227',pants:'#22252a',skin:'#8d5e3c',hair:'#0f0d0b'}];
-export const freshInput=()=>({mx:0,mz:0,mag:0,run:false,sneak:false,slow:false,aim:false,face:null,aimDist:0,fire:false,fireQ:0,ads:false,stance:0});   // v0.29 aiming down the sights, 0 standing / 1 crouched / 2 prone
+export const freshInput=()=>({mx:0,mz:0,mag:0,run:false,sneak:false,slow:false,aim:false,face:null,aimDist:0,fire:false,fireQ:0,ads:false,stance:0,jumpQ:0});   // v0.30 jumpQ: Space in first person (vault or hop)   // v0.29 aiming down the sights, 0 standing / 1 crouched / 2 prone
 export function makePlayer(i=0){
   const p=makeAgent(OFF+i*1.3,OFF,LOOKS[i%LOOKS.length]);
   Object.assign(p,{state:'player',id:i,name:'ผู้เล่น '+(i+1),local:false,away:false,token:null,hp:100,maxHp:100,alive:true,swing:0,swingDur:.4,hitDone:true,lastHit:-99,face:Math.PI*1.25,cool:0,reloadT:0,recoil:0,aimT:0,held:null,heldId:'fist',down:0,inv:0,
-    infect:0,infWarn:0,food:100,water:100,needWarn:0,starving:false,room:-1,nearDoor:-1,bleed:0,reviveT:0,helping:null,helpT:0,nearDown:null,fixDoor:-1,nearBox:-1,searching:-1,searchT:0,searchHit:0,near:null,full:null,sneak:false,stance:0,ads:false,bloom:0,runNoise:0,stay:null,endCause:null,gear:freshGear(),input:freshInput()});
+    infect:0,infWarn:0,food:100,water:100,needWarn:0,starving:false,room:-1,nearDoor:-1,bleed:0,reviveT:0,helping:null,helpT:0,nearDown:null,fixDoor:-1,nearBox:-1,searching:-1,searchT:0,searchHit:0,near:null,full:null,sneak:false,stance:0,ads:false,bloom:0,vault:null,hop:0,airH:0,runNoise:0,stay:null,endCause:null,gear:freshGear(),input:freshInput()});
   return p;
 }
 // players that zombies can go after (v0.12: not one whose device has dropped out of the game, p.away)
@@ -52,12 +53,14 @@ export const partySize=()=>Math.max(1,players.filter(p=>p.alive&&!p.away).length
 export function nearestPlayerDist(x,z){let d=1e9;for(const p of players)if(p.alive)d=Math.min(d,Math.hypot(p.pos.x-x,p.pos.z-z));return d;}
 function nearestPickable(p){let best=null,bd=1.6;for(const d of drops){const k=DEF[d.item.id].kind;if(k!=='weapon'&&k!=='bag')continue;const dist=Math.hypot(d.x-p.pos.x,d.z-p.pos.z);if(dist<bd){bd=dist;best=d;}}return best;}
 export function updatePlayer(p,dt){
+  if(p.vault&&(!p.alive||p.bleed>0||p.down>0)){p.vault=null;p.airH=0;}   // v0.30 knocked down mid-vault
   if(!p.alive){updateDead(p,dt);return;}
   if(p.inv>0)p.inv-=dt;
   if(p.down>0){p.down-=dt;p.moving=0;   // the Resurrection Kit knock-down (pose in animation.js)
     if(p.down<=0){p.hp=p.maxHp;p.inv=3;for(const z of agents){if(z.state!=='zombie')continue;const dx=z.pos.x-p.pos.x,dz=z.pos.z-p.pos.z,d=Math.hypot(dx,dz);if(d<4&&d>1e-3){z.pos.x+=dx/d*3;z.pos.z+=dz/d*3;collide(z.pos,z.rad);z.feed=1;}}}
     return;}
   if(p.bleed>0){updateDowned(p,dt);return;}
+  if(p.vault){updateVault(p,dt);if(p.cool>0)p.cool-=dt;return;}   // v0.30 going over a low obstacle
   const I=p.input,mag=I.mag;
   // stances (v0.29): crouched (C, the old sneak; on touch also a lightly pushed stick) or prone (Z); running stands up
   p.stance=I.run?0:Math.max(I.stance|0,I.slow||I.sneak?1:0);p.sneak=p.stance>0;
@@ -66,13 +69,21 @@ export function updatePlayer(p,dt){
   const w=curWeapon(p),def=DEF[w.id];
   p.ads=!!(I.ads&&def.gun&&!I.run&&p.reloadT<=0);p.bloom=Math.max(0,p.bloom-dt*BLOOM.decay);   // v0.29 aiming down the sights
   const heavy=(def.heavy&&(I.fire||p.aimT>0)?.7:1)*(p.ads?ADS.speed:1);
+  // v0.30 Space vaults what is ahead (or hops), running straight into something low vaults it
+  if(p.hop>0){p.hop-=dt;p.airH=Math.max(0,Math.sin(Math.PI*(1-p.hop/VAULT.hop)))*VAULT.hopH;}else p.airH=0;
+  if(!(p.trapT>0)&&!(p.reloadT>0)){
+    const dir=mag>.08?[I.mx,I.mz]:[Math.sin(p.face),Math.cos(p.face)];
+    if(I.jumpQ>0){I.jumpQ=0;if(p.stance<2&&!startVault(p,dir[0],dir[1])&&p.hop<=0)p.hop=VAULT.hop;}
+    else if(I.run&&mag>.9&&p.stance===0)startVault(p,dir[0],dir[1],VAULT.auto);
+    if(p.vault){updateVault(p,dt);return;}
+  }
   if(p.trapT>0){p.trapT-=dt;p.moving=0;}   // v0.26 caught in a bear trap
   else if(mag>.08){moveAgent(p,I.mx,I.mz,(p.stance?STANCE[p.stance].speed:(I.run?5.8:3.4)*Math.max(.45,mag))*heavy,dt,I.aim||p.aimT>0||p.ads);
     if(I.run&&G.phase==='night'){p.runNoise-=dt;if(p.runNoise<=0){p.runNoise=.5;makeNoise(p.pos.x,p.pos.z,5);}}}
   else p.moving=0;
   if(p.cool>0)p.cool-=dt;
   if(p.reloadT>0){p.reloadT-=dt;if(p.reloadT<=0)finishReload(p);}
-  if(I.fireQ>0)I.fireQ-=dt;
+  if(I.fireQ>0)I.fireQ-=dt;if(I.jumpQ>0)I.jumpQ-=dt;
   if(p.helping&&!keepHelping(p,dt)){if(isDown(p.helping))p.helping.reviveT=0;p.helping=null;}
   if(p.searching>=0&&!keepSearching(p,dt)){p.searching=-1;p.searchT=0;}   // v0.15
   if((I.fire||I.fireQ>0)&&p.cool<=0&&p.reloadT<=0){

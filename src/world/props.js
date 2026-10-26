@@ -51,7 +51,7 @@ export function car(x,z,alongX,police){
   if(police){box(policeBlue,alongX?4.22:1.92,.28,alongX?1.92:4.22,x,.62,z);box(sirenR,alongX?.18:.5,.14,alongX?.5:.18,x+(alongX?-.1:-.0),1.86,z+(alongX?-.28:-.1));box(sirenB,alongX?.18:.5,.14,alongX?.5:.18,x+(alongX?.1:0),1.86,z+(alongX?.28:.1));}
   box(S({color:'#1d2226',roughness:.2,metalness:.6}),alongX?2.2:1.7,.7,alongX?1.7:2.2,x+(alongX?-.2:0),1.45,z+(alongX?0:-.2));
   for(const s of [-1,1])for(const t of [-1,1]){const wx=alongX?s*1.35:t*.95,wz=alongX?t*.95:s*1.35;box(darkMetal,alongX?.6:.25,.6,alongX?.25:.6,x+wx,.3,z+wz,false);}
-  solid(x,z,w/2,d/2);breakable('car',n0,x,z);
+  solid(x,z,w/2,d/2).low=true;breakable('car',n0,x,z);   // v0.30 can be vaulted (across)
   const b=breakables[breakables.length-1];b.car={alongX,police:!!police,burned,paint:'#'+m.color.getHexString(),boxes:[...b.meshes],model:null};   // the model goes on top (prop-models.js, v0.14)
 }
 // abandoned ambulance (no rand(): it is placed after the seeded city is built)
@@ -75,5 +75,5 @@ export function container(x,z,alongX,y){
   const m=new THREE.Mesh(geo,S({map:CORR,color:pickS(containerCols),roughness:.75,metalness:.25}));
   m.position.set(x,(y||0.18)+h/2,z);m.castShadow=m.receiveShadow=true;scene.add(m);if(!y)solid(x,z,w/2,d/2);
 }
-export function bench(x,z,alongX){const n0=scene.children.length;box(woodMat,alongX?1.8:.5,.08,alongX?.5:1.8,x,.62,z);box(darkMetal,alongX?1.8:.08,.5,alongX?.08:1.8,x+(alongX?0:-.22),.9,z+(alongX?-.22:0));box(darkMetal,alongX?1.5:.4,.4,alongX?.4:1.5,x,.38,z,false);solid(x,z,alongX?.9:.3,alongX?.3:.9);breakable('bench',n0,x,z);}
-export function trash(x,z){const n0=scene.children.length,n=2+Math.floor(rand()*4);for(let i=0;i<n;i++)box(S({color:pickS(['#1f2224','#2c3530','#3a3226'])}),R(.4,.7),R(.35,.55),R(.4,.7),x+R(-.8,.8),.4,z+R(-.8,.8));solid(x,z,.9,.9);breakable('trash',n0,x,z);}
+export function bench(x,z,alongX){const n0=scene.children.length;box(woodMat,alongX?1.8:.5,.08,alongX?.5:1.8,x,.62,z);box(darkMetal,alongX?1.8:.08,.5,alongX?.08:1.8,x+(alongX?0:-.22),.9,z+(alongX?-.22:0));box(darkMetal,alongX?1.5:.4,.4,alongX?.4:1.5,x,.38,z,false);solid(x,z,alongX?.9:.3,alongX?.3:.9).low=true;breakable('bench',n0,x,z);}
+export function trash(x,z){const n0=scene.children.length,n=2+Math.floor(rand()*4);for(let i=0;i<n;i++)box(S({color:pickS(['#1f2224','#2c3530','#3a3226'])}),R(.4,.7),R(.35,.55),R(.4,.7),x+R(-.8,.8),.4,z+R(-.8,.8));solid(x,z,.9,.9).low=true;breakable('trash',n0,x,z);}

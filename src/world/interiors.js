@@ -71,7 +71,7 @@ function makeRoom(b,[nx,nz],rng){
     const f=FURN[Math.floor(rng()*FURN.length)],wl=sx?r.z1-r.z0:r.x1-r.x0,L=Math.min(wl-2.8,1.6+rng()*1.8);if(L<1.2)continue;   // same rng calls as before v0.15
     const off=(rng()*2-1)*Math.max(0,wl/2-1.4-L/2),fx=sx?(sx>0?r.x1-f.d/2:r.x0+f.d/2):(r.x0+r.x1)/2+off,fz=sz?(sz>0?r.z1-f.d/2:r.z0+f.d/2):(r.z0+r.z1)/2+off;
     const hw=sx?f.d/2:L/2,hd=sx?L/2:f.d/2;
-    const box=pushBox(fx-hw,fx+hw,fz-hd,fz+hd),mesh=slab(furnMats[Math.floor(rng()*furnMats.length)],fx-hw,fx+hw,fz-hd,fz+hd,y0,y0+f.h);
+    const box=pushBox(fx-hw,fx+hw,fz-hd,fz+hd);box.low=f.h<=1.2;const mesh=slab(furnMats[Math.floor(rng()*furnMats.length)],fx-hw,fx+hw,fz-hd,fz+hd,y0,y0+f.h);
     r.furniture.push(box);r.cut.add(mesh);
     boxes.push({room:rooms.length,kind:f.kind,box,mesh,x:fx,z:fz,n:[sx,sz],L,d:f.d,h:f.h,y0,cut:r.cut,model:null});
   }

@@ -18,3 +18,6 @@ export const STANCE=[
 export const SWAY={base:.006,moving:2.2,ads:.7,scope:1.6};
 export const BREATH=3,BREATH_REST=4;
 export const KICK={pitch:.018,yaw:.006};   // camera kick per shot (rad), × (1 + bloom)
+// vaulting low obstacles (v0.30): how far ahead (m), how deep an obstacle can be, how long it takes (s) and how high
+// the arc goes (m); running into one vaults when it is within auto m; a hop without anything to vault
+export const VAULT={reach:1.1,auto:.55,depth:2.4,dur:.55,height:.75,hop:.42,hopH:.3};

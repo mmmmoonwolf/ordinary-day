@@ -48,8 +48,9 @@ export function animate(a,dt){
   // v0.29 prone: the whole body tipped forward onto the ground, centred on the player
   const prone=a.state==='player'&&a.stance===2;p.root.rotation.order='YXZ';p.root.rotation.x=prone?Math.PI/2:0;
   if(prone){p.root.position.x-=Math.sin(a.face)*.85;p.root.position.z-=Math.cos(a.face)*.85;p.root.position.y+=.18;}
+  if(a.airH>0){p.root.position.y+=a.airH;if(!prone)p.root.rotation.x=a.airH*.35;}   // v0.30 vaulting or hopping, leaning into it
 }
 export function separate(){
-  const L=agents.filter(a=>a.state!=='dead');for(const p of players)if(p.alive)L.push(p);
+  const L=agents.filter(a=>a.state!=='dead');for(const p of players)if(p.alive&&!p.vault)L.push(p);   // v0.30 not mid-vault
   for(let i=0;i<L.length;i++)for(let j=i+1;j<L.length;j++){const a=L[i],b=L[j];const need=(a.rad||.34)+(b.rad||.34);const dx=b.pos.x-a.pos.x,dz=b.pos.z-a.pos.z,dd=dx*dx+dz*dz;if(dd>need*need||dd<1e-6)continue;const d=Math.sqrt(dd),push=(need-d)/2;a.pos.x-=dx/d*push;a.pos.z-=dz/d*push;b.pos.x+=dx/d*push;b.pos.z+=dz/d*push;collide(a.pos,a.rad||.34);collide(b.pos,b.rad||.34);}   // never push anyone through a thin wall
 }
