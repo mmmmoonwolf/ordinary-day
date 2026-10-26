@@ -20,9 +20,10 @@ import {settings} from './settings.js';
 // view up, the eyes drop when crouched or prone (config/handling.js)
 const SENS=.0022,TOUCH_SENS=.0055,PITCH=[-.8,.6],FOV=72;   // mouse / finger look speed (rad per pixel), how far down and up, field of view
 const EYE_DOWN=.5,CEIL=3.1,DOOR_TOP=2.2;   // eye height when down (m), room ceiling, top of the door
+let touchHint=0;   // v0.35 on a phone, how to look around is shown for a few seconds
 export function setFps(on){
   view.fps=on;if(document.body)document.body.classList.toggle('fps',on);
-  if(on){view.yaw=player.face;view.pitch=-.08;}
+  if(on){view.yaw=player.face;view.pitch=-.08;if(isTouch){touchHint=performance.now()+5000;$('fpsHint').textContent='ลากนิ้วด้านขวาของจอเพื่อหันมอง';}}   // v0.35
   else if(document.pointerLockElement===cv)document.exitPointerLock();
   for(const r of rooms)if(r.shell)r.shell.visible=on;
   vm.visible=false;vmId=null;
@@ -96,6 +97,6 @@ export function updateFps(v,dt){
   const k=shownRoom();if(k>=0){const r=rooms[k],s=shell(r);s.visible=true;r.shellDoor.visible=r.cutDoor.visible;}
   // the cursor comes back for the bag and the pause menu; a click on the game takes the mouse again
   if(mouseLocked()&&(!$('bag').hidden||!$('pause').hidden||!$('overlay').hidden))document.exitPointerLock();
-  const hint=!isTouch&&!mouseLocked()&&G.running&&$('bag').hidden&&$('pause').hidden&&$('overlay').hidden;
+  const hint=(isTouch?performance.now()<touchHint:!mouseLocked())&&G.running&&$('bag').hidden&&$('pause').hidden&&$('overlay').hidden;
   if($('fpsHint').hidden===hint)$('fpsHint').hidden=!hint;
 }

@@ -99,6 +99,15 @@ export function initInput(){
   cv.addEventListener('pointerup',endPtr);cv.addEventListener('pointercancel',endPtr);
   cv.addEventListener('contextmenu',e=>e.preventDefault());
   cv.addEventListener('wheel',e=>{e.preventDefault();if(view.fps)return;zoom(e.deltaY>0?1.1:1/1.1);},{passive:false});
+  // v0.35 first person on a phone: the right thumb rests on the buttons there, so a finger that slides off one of them
+  // turns the view too (a tap still presses it; a slide does not)
+  let slideId=null,slideX=0,slideY=0,slid=false;
+  addEventListener('pointerdown',e=>{slid=false;if(!view.fps||e.pointerType==='mouse'||e.target===cv||e.clientX<innerWidth*.55||e.target.closest&&e.target.closest('#bAtk'))return;
+    if(!$('bag').hidden||!$('pause').hidden||!$('overlay').hidden)return;slideId=e.pointerId;slideX=e.clientX;slideY=e.clientY;},true);
+  addEventListener('pointermove',e=>{if(e.pointerId!==slideId)return;const dx=e.clientX-slideX,dy=e.clientY-slideY;if(!slid&&Math.hypot(dx,dy)<12)return;
+    slid=true;look(dx,dy,true);slideX=e.clientX;slideY=e.clientY;},true);
+  for(const ev of ['pointerup','pointercancel'])addEventListener(ev,e=>{if(e.pointerId===slideId)slideId=null;},true);
+  addEventListener('click',e=>{if(slid){slid=false;e.stopPropagation();e.preventDefault();}},true);
   $('bView').addEventListener('click',toggleFps);
   $('bAds').addEventListener('click',()=>{ctl.adsTouch=!ctl.adsTouch;});   // v0.29 touch: aim down the sights on / off
   $('bStance').addEventListener('click',()=>{ctl.stance=(ctl.stance+1)%3;});
@@ -108,7 +117,10 @@ export function initInput(){
   $('bagClose').addEventListener('click',closeBag);
   $('bag').addEventListener('pointerdown',e=>{if(e.target===$('bag'))closeBag();});
   const atk=$('bAtk');
-  atk.addEventListener('pointerdown',e=>{e.preventDefault();mouse.active=e.pointerType==='mouse'&&mouse.active;ctl.fireHeld=true;ctl.fireQ=.2;try{atk.setPointerCapture(e.pointerId);}catch(_){}});
+  let atkX=0,atkY=0;
+  atk.addEventListener('pointerdown',e=>{e.preventDefault();mouse.active=e.pointerType==='mouse'&&mouse.active;ctl.fireHeld=true;ctl.fireQ=.2;atkX=e.clientX;atkY=e.clientY;try{atk.setPointerCapture(e.pointerId);}catch(_){}});
+  // v0.35 first person on a phone: the thumb on the attack button turns the view as it slides, so you can shoot and aim at once
+  atk.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'||!view.fps||!ctl.fireHeld)return;look(e.clientX-atkX,e.clientY-atkY,true);atkX=e.clientX;atkY=e.clientY;});
   for(const ev of ['pointerup','pointercancel','lostpointercapture'])atk.addEventListener(ev,()=>{ctl.fireHeld=false;});
   $('bReload').addEventListener('click',()=>act('reload'));
   $('bHeal').addEventListener('click',()=>act('heal'));
