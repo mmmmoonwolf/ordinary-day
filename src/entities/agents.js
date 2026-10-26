@@ -57,7 +57,7 @@ export function styleZombie(a){
 }
 export function becomeZombie(a,kind){
   a.state='zombie';a.kind=kind||(isNightTod(G.min%1440)?'zombie':'walker');a.hp=ZC[a.kind].hp;a.maxHp=a.hp;
-  a.vendor=false;a.panic=0;a.node=nearestNode(a.pos);a.prev=null;a.spd=rnd(.9,1.1);a.retreat=false;
+  a.vendor=false;a.panic=0;a.node=nearestNode(a.pos);a.prev=null;a.spd=rnd(.9,1.1);a.retreat=false;a.rise=0;
   styleZombie(a);
 }
 export function setKind(a,kind){const ratio=a.hp/a.maxHp;a.kind=kind;a.maxHp=ZC[kind].hp;a.hp=Math.max(1,a.maxHp*ratio);styleZombie(a);}

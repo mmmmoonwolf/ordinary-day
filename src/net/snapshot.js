@@ -1,6 +1,6 @@
 import {G} from '../core/state.js';
 import {DEF} from '../config/items.js';
-import {ZC} from '../config/zombies.js';
+import {ZC,RISE} from '../config/zombies.js';
 import {agents,makeAgent,becomeZombie,setKind,removeAgent} from '../entities/agents.js';
 import {players,player,setPlayer,makePlayer} from '../entities/player.js';
 import {drops,spawnDrop,removeDrop} from '../systems/drops.js';
@@ -33,7 +33,7 @@ export function encodeWorld(c,me){
   s.ag=[];s.nw=[];
   for(const a of agents){
     if(a.gone)continue;
-    s.ag.push([a.nid,ST.indexOf(a.state),a.kind||0,r2(a.pos.x),r2(a.pos.z),r2(a.face),r2(a.moving),a.state==='zombie'?Math.ceil(a.hp):0,r2(a.fuse),r2(a.wind),a.hitT>0?1:0,a.panic>0?1:0]);
+    s.ag.push([a.nid,ST.indexOf(a.state),a.kind||0,r2(a.pos.x),r2(a.pos.z),r2(a.face),r2(a.moving),a.state==='zombie'?Math.ceil(a.hp):0,r2(a.fuse),r2(a.wind),a.hitT>0?1:0,a.panic>0?1:0,a.rise>0?2:a.state==='infected'&&a.turnT<RISE.fall?1:0]);   // v0.27 getting up / down before turning
     if(!c.seen.has(a.nid)){c.seen.add(a.nid);s.nw.push([a.nid,a.look]);}
   }
   const key=drops.map(d=>d.nid).join(',');if(key!==c.drops){c.drops=key;s.dr=drops.map(d=>[d.nid,d.item,r2(d.x),r2(d.z)]);}
@@ -82,7 +82,7 @@ export function applyWorld(s,myId){
   for(const [nid,look] of s.nw||[])looks.set(nid,look);
   const live=new Set();
   for(const r of s.ag){
-    const [nid,st,kind,x,z,face,moving,hp,fuse,wind,hit,panic]=r;live.add(nid);
+    const [nid,st,kind,x,z,face,moving,hp,fuse,wind,hit,panic,pose]=r;live.add(nid);
     let a=byNid.get(nid);
     if(!a){a=makeAgent(x,z,looks.get(nid));a.nid=nid;a.face=face;byNid.set(nid,a);agents.push(a);}
     const state=ST[st]||'human';
@@ -91,7 +91,7 @@ export function applyWorld(s,myId){
       else if(kind&&a.kind!==kind&&ZC[kind])setKind(a,kind);
     }
     if(state==='dead'&&a.state!=='dead'){a.state='dead';a.deadT=0;}else if(state!=='dead')a.state=state;
-    want(a,x,z);a.nface=face;a.moving=moving;a.fuse=fuse;a.wind=wind;a.panic=panic?1:0;if(hit)a.hitT=.18;if(hp)a.hp=hp;
+    want(a,x,z);a.nface=face;a.moving=moving;a.fuse=fuse;a.wind=wind;a.panic=panic?1:0;if(hit)a.hitT=.18;if(hp)a.hp=hp;a.rise=pose===2?1:0;a.turnT=pose===1?0:9;
   }
   for(let i=agents.length-1;i>=0;i--){const a=agents[i];if(!live.has(a.nid)){byNid.delete(a.nid);removeAgent(a);agents.splice(i,1);}}
 }

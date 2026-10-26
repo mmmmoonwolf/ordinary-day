@@ -664,6 +664,21 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     for (const a of [z, z2, z3]) a.gone = true; T.G.traps = []; Cs.applyTraps();
     console.log('v0.26: camp ' + tents + ' tents, ' + Cw.camp.traps.length + ' traps (caught a zombie and the player, saved), fire burns, ' + Math.round(good / 6) + '% police / military loot, ' + guards + ' guards, flare calls zombies');
   }
+  // v0.27: a bitten person falls down, turns, and lies still while getting up; the zombie clips are in anims.glb
+  { const Ai = await import('../src/entities/ai.js'), Zc = await import('../src/config/zombies.js'), fs2 = await import('node:fs'), { RC } = await import('../src/config/world.js');
+    const pl = T.player, px = pl.pos.x, pz = pl.pos.z; pl.pos.x = 60; pl.pos.z = 60;
+    const h = T.makeAgent(RC[2] + 2, RC[2] + 2); T.agents.push(h); h.state = 'infected'; h.turnT = Zc.RISE.fall + .3; h.panic = 5; h.tx = 1; h.tz = 0;
+    let moved = 0, fell = false; for (let i = 0; i < 60 && h.state === 'infected'; i++) { const x = h.pos.x; Ai.updateHuman(h, 1 / 30); if (h.state === 'infected' && h.turnT < Zc.RISE.fall) { fell = true; moved += Math.abs(h.pos.x - x); } }
+    if (!fell || moved > 0 || h.state !== 'zombie' || !(h.rise > 1.5)) vfail('turning: fell ' + fell + ', moved ' + moved + ' while down, state ' + h.state + ', rise ' + h.rise);
+    const x0 = h.pos.x, z0 = h.pos.z; for (let i = 0; i < 30; i++) Ai.updateZombie(h, 1 / 30);
+    if (Math.hypot(h.pos.x - x0, h.pos.z - z0) > 0 || !(h.rise > 0)) vfail('a zombie getting up moved: ' + (h.pos.x - x0).toFixed(2) + ', rise ' + h.rise);
+    for (let i = 0; i < 60; i++) Ai.updateZombie(h, 1 / 30); if (h.rise > 0) vfail('still getting up after ' + Zc.RISE.up + ' s');
+    h.gone = true; pl.pos.x = px; pl.pos.z = pz;
+    const glb = fs2.readFileSync(new URL('../assets/characters/anims.glb', import.meta.url)), json = glb.toString('utf8', 20, 20 + glb.readUInt32LE(12));
+    const names = JSON.parse(json).animations.map(a => a.name), want = ['Z_Idle', 'Z_Idle2', 'Z_Walk', 'Z_Walk2', 'Z_Run', 'Z_Punch', 'Z_Attack', 'Z_Hit', 'Z_Fall', 'Z_StandUp', 'Walk', 'Death'];
+    const miss = want.filter(n => !names.includes(n)); if (miss.length) vfail('anims.glb is missing ' + miss.join(', '));
+    console.log('v0.27: a bitten person fell, turned and got up in ' + Zc.RISE.up + ' s without moving; ' + names.filter(n => n.startsWith('Z_')).length + ' zombie clips in anims.glb');
+  }
   // v0.23: gas cylinders blow up when shot (chain, blown list saved), Molotov fire, grenades, farm weapons, town extras
   { const Ex = await import('../src/world/extras.js'), Bl = await import('../src/systems/blast.js'), Th = await import('../src/systems/throw.js'), Cb = await import('../src/systems/combat.js'), It2 = await import('../src/config/items.js'), Cl2 = await import('../src/world/clutter.js'), Col2 = await import('../src/world/collision.js');
     const pl = T.player, bag0 = pl.gear.bag.slice(); pl.inv = 1e9; T.G.blown = []; Bl.applyTanks(); Bl.clearFires();

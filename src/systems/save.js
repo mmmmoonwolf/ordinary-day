@@ -21,7 +21,7 @@ import {applyEvents} from './events.js';
 // The city is rebuilt from its seed, so loot spots are stored by index; bump SAVE_VERSION when that or the format changes.
 const SAVE_KEY='ordinary-day.save',SAVE_VERSION=2;   // 2 (v0.9): players[] with their own gear; 1 still loads (one player)
 const AUTOSAVE_EVERY=15;   // real seconds while playing
-const AGENT_KEYS=['state','kind','face','phase','node','prev','jx','jz','walk','panic','tx','tz','wait','vendor','hp','maxHp','feed','atk','spd','stuckT','lost','turnT','heard','fuse','wind','retreat','shrieked','march'];
+const AGENT_KEYS=['state','kind','face','phase','node','prev','jx','jz','walk','panic','tx','tz','wait','vendor','hp','maxHp','feed','atk','spd','stuckT','lost','turnT','heard','fuse','wind','retreat','shrieked','march','rise'];
 let sinceSave=0,toldPlayer=false;
 
 const validItem=it=>it&&DEF[it.id];
