@@ -63,6 +63,14 @@ body.film #grain{opacity:.09}
 .tools button{height:40px;min-width:40px;padding:0 8px;border:1px solid var(--line);background:var(--panel);font-weight:700;font-size:14px;backdrop-filter:blur(4px)}
 #bSpeed{min-width:48px;font-family:var(--f-clock);font-size:18px}
 #bBag{border-color:rgba(226,166,74,.55)}
+/* v0.28 first-person view: crosshair, mouse hint, no zoom buttons */
+#cross{display:none;position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;pointer-events:none;
+  background:linear-gradient(rgba(235,231,221,.85),rgba(235,231,221,.85)) center/2px 6px no-repeat,linear-gradient(90deg,rgba(235,231,221,.85),rgba(235,231,221,.85)) center/6px 2px no-repeat;
+  border:1px solid rgba(235,231,221,.35);border-radius:50%}
+body.fps #cross{display:block}
+body.fps #bZin,body.fps #bZout{display:none}
+body.fps #bView{border-color:rgba(226,166,74,.75);background:rgba(226,166,74,.25)}
+#fpsHint{position:absolute;left:50%;top:66%;transform:translateX(-50%);padding:6px 12px;background:var(--panel);border:1px solid var(--line);font-size:13px;pointer-events:none;white-space:nowrap}
 .loadout{position:absolute;right:max(22px,calc(env(safe-area-inset-right,0px) + 22px));bottom:calc(env(safe-area-inset-bottom,0px) + 132px);width:236px;display:grid;gap:6px;background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--wg,var(--line));padding:9px 10px;backdrop-filter:blur(4px)}
 .wrow{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .wname{display:grid;min-width:0}
@@ -236,6 +244,9 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
   .vitals{width:118px}
   .tools button{min-width:32px;padding:0 5px}
 }
+@media (max-width:440px){
+  .tools button,.tools #bSpeed{min-width:29px;padding:0 4px}.tools #bBag{font-size:11px}   /* v0.28 room for the 👁 button */
+}
 @media (max-width:370px){
   .vitals{width:106px}
   .tools{gap:3px}
@@ -269,10 +280,13 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
     <button id="bPause" title="หยุดเกม (P หรือ Esc)" aria-label="หยุดเกม">❚❚</button>
     <button id="bBag" title="กระเป๋า (Tab)">กระเป๋า</button>
     <button id="bSpeed" title="ความเร็วเวลา">×1</button>
+    <button id="bView" title="มุมมองบุคคลที่หนึ่ง (V) ทดลอง" aria-label="สลับมุมมอง">👁</button>
     <button id="bZin" title="ซูมเข้า">+</button>
     <button id="bZout" title="ซูมออก">−</button>
   </div>
   <div id="feed"></div>
+  <div id="cross" aria-hidden="true"></div>
+  <div id="fpsHint" hidden>คลิกที่เกมเพื่อหันกล้องด้วยเมาส์ · V กลับมุมเดิม</div>
   <button id="bPick" hidden><span id="pickVerb">เก็บ </span><b id="pickName"></b></button>
   <button id="bFix" hidden title="ตอกไม้ / ซ่อมประตู (B)">🔨 <b id="fixName"></b></button>
   <div class="loadout" id="loadout">

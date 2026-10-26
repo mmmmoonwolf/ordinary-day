@@ -1,5 +1,5 @@
 // Ordinary Day — entry point: builds the city, wires input, starts a new game and runs the frame loop.
-import {renderer,scene,camera,camOffset,camTarget,flash,muzzle,boomLight} from './core/renderer.js';
+import {renderer,scene,camera,camOffset,camTarget,flash,muzzle,boomLight,view as cam,activeCam} from './core/renderer.js';
 import {G} from './core/state.js';
 import {$} from './core/util.js';
 import {RATE,SPEEDS} from './config/time.js';
@@ -41,6 +41,7 @@ import {bus} from './core/bus.js';
 import {hostFrame} from './net/host.js';
 import {clientStep} from './net/client.js';
 import {initOnline} from './ui/online.js';
+import {updateFps} from './ui/fps.js';
 import {loadSkins,beginSkins} from './entities/skins.js';
 import {loadProps,props} from './world/prop-models.js';
 import './ui/report.js';   // keeps the last script errors for bug reports
@@ -112,12 +113,13 @@ function loop(now){
   updateAmbience({on:G.running&&!G.over,rain:G.running?G.rain||0:0,night:G.night||0,outbreak:G.running&&G.outbreak&&!G.over,alive:view.alive,inside:roomAt(view.pos.x,view.pos.z)>=0});   // v0.19 rain, distant screams · v0.20 wind, moaning
   camTarget.x+=(view.pos.x-camTarget.x)*Math.min(1,dt*5);camTarget.z+=(view.pos.z-camTarget.z)*Math.min(1,dt*5);
   camera.position.copy(camTarget).add(camOffset);camera.lookAt(camTarget);
-  ring.position.set(player.pos.x,player.y+.03,player.pos.z);ring.visible=player.alive;
+  if(cam.fps)updateFps(view,dt);   // v0.28 first-person view
+  ring.position.set(player.pos.x,player.y+.03,player.pos.z);ring.visible=player.alive&&!cam.fps;
   if(G.alertT>0&&G.alertA){G.alertT-=dt;alertRing.position.set(G.alertA.pos.x,G.alertA.y+.04,G.alertA.pos.z);alertRing.material.opacity=Math.min(1,G.alertT)*(.5+.5*Math.sin(now/120));alertRing.scale.setScalar(1+.25*Math.sin(now/200));}else alertRing.material.opacity=0;
   const fx=Math.sin(view.face),fz=Math.cos(view.face);
   flash.position.set(view.pos.x-fx*.2,2.2,view.pos.z-fz*.2);flash.target.position.set(view.pos.x+fx*8,0,view.pos.z+fz*8);
   if(frame%4===0)updateOcclusion();
   updateHUD(dt);
-  renderer.render(scene,camera);
+  renderer.render(scene,activeCam());
 }
 requestAnimationFrame(loop);
