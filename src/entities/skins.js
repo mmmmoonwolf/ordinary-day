@@ -1,5 +1,5 @@
 import {clamp} from '../core/util.js';
-import {camera} from '../core/renderer.js';
+import {activeCam} from '../core/renderer.js';
 import {loadGltf} from '../core/gltf.js';
 import {DEF} from '../config/items.js';
 import {ZC,RISE} from '../config/zombies.js';
@@ -90,7 +90,7 @@ const CLIPS={walk:'Walk',run:'Run',idle:'Idle',die:'Death',hit:'HitRecieve',shoo
 const ZV={zWalk:.46,zWalk2:.29,zRun:2.67};
 const frustum=new THREE.Frustum(),pv=new THREE.Matrix4(),sphere=new THREE.Sphere(),qa=new THREE.Quaternion(),qb=new THREE.Quaternion();
 // once a frame, before the agents: what the camera sees
-export function beginSkins(){if(!skins.ready)return;pv.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);frustum.setFromProjectionMatrix(pv);}
+export function beginSkins(){if(!skins.ready)return;const camera=activeCam();camera.updateMatrixWorld();pv.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);frustum.setFromProjectionMatrix(pv);}
 export function skinFrame(a,dt){
   const s=a.sk;
   sphere.center.set(a.pos.x,1,a.pos.z);sphere.radius=2.5;

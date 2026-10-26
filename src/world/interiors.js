@@ -27,7 +27,7 @@ export const boxes=[];
 const SIDES=[[1,0],[-1,0],[0,1],[0,-1]];
 function blockOf(x){for(let i=0;i<4;i++)if(x>RC[i]&&x<RC[i+1])return i;return -1;}
 // a mesh placed in world space but not added to the scene (goes into a group)
-function slab(mat,x0,x1,z0,z1,y0,y1){return part(mat,x1-x0,y1-y0,z1-z0,(x0+x1)/2,(y0+y1)/2,(z0+z1)/2);}
+export function slab(mat,x0,x1,z0,z1,y0,y1){return part(mat,x1-x0,y1-y0,z1-z0,(x0+x1)/2,(y0+y1)/2,(z0+z1)/2);}
 const pushBox=(x0,x1,z0,z1)=>{const b={x0,x1,z0,z1};solids.push(b);return b;};
 
 // best door side of a building, or null when every side is blocked
@@ -47,15 +47,16 @@ function doorSide(b,bcx,bcz){
 function makeRoom(b,[nx,nz],rng){
   const T=WALL_T,X0=b.cx-b.w/2,X1=b.cx+b.w/2,Z0=b.cz-b.d/2,Z1=b.cz+b.d/2,y0=.18;
   const tx=-nz,tz=nx,dx=b.cx+nx*b.w/2,dz=b.cz+nz*b.d/2,half=nx?b.d/2:b.w/2;
-  const r={b,x0:X0+T,x1:X1-T,z0:Z0+T,z1:Z1-T,n:[nx,nz],t:[tx,tz],dx,dz,half,depth:nx?b.w:b.d,ext:new THREE.Group(),cut:new THREE.Group(),furniture:[]};
+  const r={b,x0:X0+T,x1:X1-T,z0:Z0+T,z1:Z1-T,n:[nx,nz],t:[tx,tz],dx,dz,half,depth:nx?b.w:b.d,ext:new THREE.Group(),cut:new THREE.Group(),furniture:[],walls:[],y0};
   // walls: the door side is split around the doorway; the door itself is its own box, in `solids` only while closed
   const i=solids.indexOf(b.box);if(i>=0)solids.splice(i,1);
   const stubMat=S({color:new THREE.Color(b.base).multiplyScalar(.9),roughness:.9});
   const wallBoxes=[[[0,1],X0,X1,Z1-T,Z1],[[0,-1],X0,X1,Z0,Z0+T],[[1,0],X1-T,X1,Z0+T,Z1-T],[[-1,0],X0,X0+T,Z0+T,Z1-T]];
   for(const [[sx,sz],x0,x1,z0,z1] of wallBoxes){
     const segs=sx!==nx||sz!==nz?[[x0,x1,z0,z1]]:nx?[[x0,x1,z0,dz-DOOR_W/2],[x0,x1,dz+DOOR_W/2,z1]]:[[x0,dx-DOOR_W/2,z0,z1],[dx+DOOR_W/2,x1,z0,z1]];
-    for(const q of segs){pushBox(...q);r.cut.add(slab(stubMat,...q,y0,y0+STUB_H));}
+    for(const q of segs){pushBox(...q);r.walls.push(q);r.cut.add(slab(stubMat,...q,y0,y0+STUB_H));}
   }
+  r.wallMat=stubMat;   // v0.28 the first-person view raises these walls to full height (ui/fps.js)
   r.doorBox=nx?{x0:Math.min(dx,dx-nx*T),x1:Math.max(dx,dx-nx*T),z0:dz-DOOR_W/2,z1:dz+DOOR_W/2}:{x0:dx-DOOR_W/2,x1:dx+DOOR_W/2,z0:Math.min(dz,dz-nz*T),z1:Math.max(dz,dz-nz*T)};
   const D=r.doorBox;
   // cutaway: floor, door (closed / broken) and furniture against the three other walls

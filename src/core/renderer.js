@@ -12,6 +12,16 @@ scene.background=new THREE.Color('#a9b5bb');
 scene.fog=new THREE.Fog('#a9b5bb',125,240);
 export const camera=new THREE.OrthographicCamera(-1,1,1,-1,1,500);
 export const camOffset=new THREE.Vector3(1,1.3,1).normalize().multiplyScalar(130);
+// v0.28 first-person view (experimental, ui/fps.js): a perspective camera at the eyes of the player this device follows.
+// Only this device's view: the game, the other players and online play do not know about it
+export const view={fps:false,yaw:0,pitch:0};
+export const fpsCam=new THREE.PerspectiveCamera(72,1,.05,140);scene.add(fpsCam);
+export const activeCam=()=>view.fps?fpsCam:camera;
+// the on-screen direction (radians, clockwise from up) of a ground vector, for arrows on the HUD
+export function screenAngle(dx,dz){
+  if(view.fps)return view.yaw-Math.atan2(dx,dz);
+  const sx=(dx-dz)/Math.SQRT2,sy=-(dx+dz)/Math.SQRT2;return Math.atan2(sx,sy);   // under the isometric camera
+}
 export const camTarget=new THREE.Vector3(5,0,5);
 let viewH=isTouch?24:32;
 export const hemi=new THREE.HemisphereLight('#c8d4dc','#5a5040',0.6);scene.add(hemi);
@@ -23,7 +33,7 @@ export const muzzle=new THREE.PointLight('#ffc477',0,9,2);scene.add(muzzle);
 export const boomLight=new THREE.PointLight('#ff9a4a',0,16,2);scene.add(boomLight);
 export function resize(){
   const w=innerWidth,h=innerHeight;renderer.setSize(w,h);
-  const asp=w/h;camera.left=-viewH*asp/2;camera.right=viewH*asp/2;camera.top=viewH/2;camera.bottom=-viewH/2;camera.updateProjectionMatrix();
+  const asp=w/h;fpsCam.aspect=asp;fpsCam.updateProjectionMatrix();camera.left=-viewH*asp/2;camera.right=viewH*asp/2;camera.top=viewH/2;camera.bottom=-viewH/2;camera.updateProjectionMatrix();
   const s=Math.max(30,viewH*Math.max(1,asp)*0.95);const sc=sun.shadow.camera;sc.left=-s;sc.right=s;sc.top=s;sc.bottom=-s;sc.updateProjectionMatrix();
 }
 addEventListener('resize',resize);resize();

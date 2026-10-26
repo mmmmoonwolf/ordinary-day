@@ -664,6 +664,17 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     for (const a of [z, z2, z3]) a.gone = true; T.G.traps = []; Cs.applyTraps();
     console.log('v0.26: camp ' + tents + ' tents, ' + Cw.camp.traps.length + ' traps (caught a zombie and the player, saved), fire burns, ' + Math.round(good / 6) + '% police / military loot, ' + guards + ' guards, flare calls zombies');
   }
+  // v0.28: first-person view: keys move relative to where the view looks, the player faces it, back to the isometric view
+  { const Fp = await import('../src/ui/fps.js'), Rd = await import('../src/core/renderer.js'), In = await import('../src/ui/input.js'), Ct = await import('../src/core/controls.js');
+    const pl = T.player; Fp.setFps(true); Rd.view.yaw = Math.PI / 2; Ct.keys.KeyW = true; In.pollInput(pl); Ct.keys.KeyW = false;
+    const I = pl.input, okW = Math.abs(I.mx - 1) < 1e-6 && Math.abs(I.mz) < 1e-6 && I.face === Math.PI / 2;
+    const [rx, rz] = Fp.fpsMove(1, 0), okR = Math.abs(rx) < 1e-6 && Math.abs(rz - 1) < 1e-6;   // facing +x, right is +z
+    Fp.look(100, -50, false); const turned = Rd.view.yaw < Math.PI / 2 && Rd.view.pitch > 0;
+    const arrow = Rd.screenAngle(Math.sin(Rd.view.yaw), Math.cos(Rd.view.yaw));
+    Fp.setFps(false); In.pollInput(pl);
+    if (!okW || !okR || !turned || Math.abs(arrow) > 1e-6 || Rd.view.fps || Rd.activeCam() !== Rd.camera) vfail('first person: W ' + okW + ' (' + I.mx + ',' + I.mz + ', face ' + I.face + '), right ' + okR + ', look ' + turned + ', arrow ' + arrow);
+    console.log('v0.28: first person moves with the view (W along the look, D to its right), faces it, mouse turns it, back to isometric');
+  }
   // v0.27: a bitten person falls down, turns, and lies still while getting up; the zombie clips are in anims.glb
   { const Ai = await import('../src/entities/ai.js'), Zc = await import('../src/config/zombies.js'), fs2 = await import('node:fs'), { RC } = await import('../src/config/world.js');
     const pl = T.player, px = pl.pos.x, pz = pl.pos.z; pl.pos.x = 60; pl.pos.z = 60;

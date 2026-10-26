@@ -1,5 +1,5 @@
 import {$} from '../core/util.js';
-import {scene} from '../core/renderer.js';
+import {scene,screenAngle} from '../core/renderer.js';
 import {G} from '../core/state.js';
 import {DAY_START} from '../config/time.js';
 import {GOAL_NIGHTS,LZ,RESCUE_FROM,RESCUE_UNTIL,RESCUE_RADIUS,nightsSurvived} from '../config/goal.js';
@@ -39,9 +39,7 @@ export function updateGoal(dt,now){
   const showArrow=morning&&player.alive&&G.running;
   if($('lz').hidden===showArrow)$('lz').hidden=!showArrow;
   if(showArrow){
-    // screen direction of a ground vector under the isometric camera (see player movement in entities/player.js)
-    const sx=(dx-dz)/Math.SQRT2,sy=-(dx+dz)/Math.SQRT2;
-    $('lzArrow').style.transform='rotate('+Math.atan2(sx,sy).toFixed(2)+'rad)';
+    $('lzArrow').style.transform='rotate('+screenAngle(dx,dz).toFixed(2)+'rad)';   // v0.28 also in first person
     $('lzDist').textContent=(h===0?'เฮลิคอปเตอร์ ':'จุดลงจอด ')+Math.round(dist)+' ม.';
   }
   if(!G.running||!ready||isClient())return;   // in a friend's room the host decides the rescue (v0.12)

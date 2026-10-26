@@ -1,5 +1,5 @@
 import {$,isTouch} from '../core/util.js';
-import {cv,zoom,camera} from '../core/renderer.js';
+import {cv,zoom,camera,view} from '../core/renderer.js';
 import {G} from '../core/state.js';
 import {keys,ctl,mouse,joy} from '../core/controls.js';
 import {SPEEDS} from '../config/time.js';
@@ -13,9 +13,10 @@ import {openBag,closeBag} from './bag.js';
 import {isMuted,toggleMute} from '../systems/audio.js';
 import {isSettingsOpen,closeSettings} from './settings.js';
 import {isPauseOpen,togglePause} from './pause.js';
+import {toggleFps,look,lockMouse,mouseLocked,fpsMove} from './fps.js';
 
 // ---------- input ----------
-let rightId=null;
+let rightId=null,lookId=null,lookX=0,lookY=0;   // v0.28 a finger turning the first-person view
 // start screen: offer "continue" when an autosave exists; starting a new day overwrites it
 export function showContinue(){
   const s=readSave(),has=!!s;
@@ -34,10 +35,12 @@ export function pollInput(p){
   let mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1;}
   // screen to ground under the isometric camera: screen right = (1,-1)/√2, screen up = (-1,-1)/√2
   I.mx=(ix-iy)/Math.SQRT2;I.mz=(-ix-iy)/Math.SQRT2;I.mag=mag;
+  if(view.fps)[I.mx,I.mz]=fpsMove(ix,iy);   // v0.28 relative to where the view looks
   I.run=!!(keys.ShiftLeft||keys.ShiftRight)||(joy.id!==null&&mag>.9);
   I.slow=!!keys.KeyC;I.sneak=joy.id!==null&&mag>.08&&mag<.45;
   I.aim=mouse.active;I.face=null;
-  if(mouse.active){mray.setFromCamera(mouse.ndc,camera);if(mray.ray.intersectPlane(groundPlane,mouse.world)){I.face=Math.atan2(mouse.world.x-p.pos.x,mouse.world.z-p.pos.z);I.aimDist=Math.hypot(mouse.world.x-p.pos.x,mouse.world.z-p.pos.z);}}
+  if(view.fps){I.face=view.yaw;I.aim=!isTouch;I.aimDist=40;}   // v0.28 face where the view looks; on a phone aim assist still helps
+  else if(mouse.active){mray.setFromCamera(mouse.ndc,camera);if(mray.ray.intersectPlane(groundPlane,mouse.world)){I.face=Math.atan2(mouse.world.x-p.pos.x,mouse.world.z-p.pos.z);I.aimDist=Math.hypot(mouse.world.x-p.pos.x,mouse.world.z-p.pos.z);}}
   I.fire=ctl.fireHeld;if(ctl.fireQ>0){I.fireQ=ctl.fireQ;ctl.fireQ=0;}
 }
 function showSound(){for(const id of ['bSound','bSound2'])$(id).textContent='เสียง: '+(isMuted()?'ปิด':'เปิด');}
@@ -59,6 +62,7 @@ export function initInput(){
     if(e.code==='Escape'||e.code==='KeyP'){if(isSettingsOpen())closeSettings();else if(!$('bag').hidden)closeBag();else togglePause();return;}
     if(e.code==='KeyM'){toggleMute();showSound();return;}
     if(G.paused)return;
+    if(e.code==='KeyV'&&!e.repeat){toggleFps();return;}   // v0.28
     keys[e.code]=true;
     if(e.code==='Space'){e.preventDefault();if(!e.repeat){ctl.fireHeld=true;ctl.fireQ=.2;}}
     if(e.code==='Digit1')act('slot','primary');if(e.code==='Digit2')act('slot','secondary');if(e.code==='Digit3')act('slot','melee');
@@ -70,20 +74,24 @@ export function initInput(){
   addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Space')ctl.fireHeld=false;});
   addEventListener('blur',()=>{for(const k in keys)keys[k]=false;ctl.fireHeld=false;});
   cv.addEventListener('pointerdown',e=>{
-    if(e.pointerType==='mouse'){mouse.active=true;if(e.button===0&&G.running){ctl.fireHeld=true;ctl.fireQ=.2;}return;}
+    if(e.pointerType==='mouse'){mouse.active=true;if(view.fps&&!mouseLocked()){lockMouse();return;}if(e.button===0&&G.running){ctl.fireHeld=true;ctl.fireQ=.2;}return;}   // v0.28 the first click takes the mouse
     mouse.active=false;
     if(e.clientX<innerWidth*.55&&joy.id===null){joy.id=e.pointerId;joy.ox=e.clientX;joy.oy=e.clientY;joy.x=joy.y=0;const j=$('joy');j.style.left=e.clientX+'px';j.style.top=e.clientY+'px';j.hidden=false;$('knob').style.transform='';}
+    else if(view.fps&&lookId===null){lookId=e.pointerId;lookX=e.clientX;lookY=e.clientY;}   // v0.28 right half turns the view, the attack button fires
     else{rightId=e.pointerId;ctl.fireHeld=true;ctl.fireQ=.2;}
     try{cv.setPointerCapture(e.pointerId);}catch(_){}
   });
   cv.addEventListener('pointermove',e=>{
+    if(e.pointerType==='mouse'&&view.fps&&mouseLocked()){look(e.movementX||0,e.movementY||0,false);return;}
+    if(e.pointerId===lookId){look(e.clientX-lookX,e.clientY-lookY,true);lookX=e.clientX;lookY=e.clientY;return;}
     if(e.pointerType==='mouse'){mouse.active=true;mouse.ndc.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);return;}
     if(e.pointerId!==joy.id)return;let dx=e.clientX-joy.ox,dy=e.clientY-joy.oy;const l=Math.hypot(dx,dy),M=56;if(l>M){dx=dx/l*M;dy=dy/l*M;}joy.x=dx/M;joy.y=dy/M;$('knob').style.transform=`translate(${dx}px,${dy}px)`;
   });
-  const endPtr=e=>{if(e.pointerType==='mouse'){ctl.fireHeld=false;return;}if(e.pointerId===joy.id){joy.id=null;joy.x=joy.y=0;$('joy').hidden=true;}if(e.pointerId===rightId){rightId=null;ctl.fireHeld=false;}};
+  const endPtr=e=>{if(e.pointerType==='mouse'){ctl.fireHeld=false;return;}if(e.pointerId===joy.id){joy.id=null;joy.x=joy.y=0;$('joy').hidden=true;}if(e.pointerId===rightId){rightId=null;ctl.fireHeld=false;}if(e.pointerId===lookId)lookId=null;};
   cv.addEventListener('pointerup',endPtr);cv.addEventListener('pointercancel',endPtr);
   cv.addEventListener('contextmenu',e=>e.preventDefault());
-  cv.addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY>0?1.1:1/1.1);},{passive:false});
+  cv.addEventListener('wheel',e=>{e.preventDefault();if(view.fps)return;zoom(e.deltaY>0?1.1:1/1.1);},{passive:false});
+  $('bView').addEventListener('click',toggleFps);
   $('bZin').addEventListener('click',()=>zoom(1/1.2));$('bZout').addEventListener('click',()=>zoom(1.2));
   $('bSpeed').addEventListener('click',()=>{if(!isSolo())return;G.speedIdx=(G.speedIdx+1)%SPEEDS.length;$('bSpeed').textContent='×'+SPEEDS[G.speedIdx];});
   $('bBag').addEventListener('click',()=>{$('bag').hidden?openBag():closeBag();});
@@ -111,6 +119,6 @@ export function initInput(){
   $('bAgain').addEventListener('click',()=>{reset();$('overlay').hidden=true;G.running=true;});
   if(isTouch){$('atkKey').textContent='กดค้าง';}
   $('keys').innerHTML=isTouch
-    ?'<kbd>นิ้วซ้าย</kbd><span>ลากเพื่อเดิน ดันสุดเพื่อวิ่ง</span><kbd>ปุ่มโจมตี</kbd><span>กดค้างเพื่อยิงต่อเนื่อง เล็งให้อัตโนมัติ</span><kbd>1 2 3</kbd><span>สลับอาวุธหลัก รอง ประชิด</span><kbd>กระเป๋า</kbd><span>ติดตั้ง ใช้ หรือทิ้งของ (เกมหยุดระหว่างเปิด)</span>'
-    :'<kbd>W A S D</kbd><span>เดิน (Shift วิ่ง กลางคืนเสียงวิ่งเรียกซอมบี้)</span><kbd>เมาส์</kbd><span>เล็ง · คลิกค้างเพื่อโจมตี</span><kbd>1 2 3</kbd><span>สลับอาวุธหลัก รอง ประชิด</span><kbd>R · E · H</kbd><span>รีโหลด · เก็บของ · ใช้ยา</span><kbd>Tab</kbd><span>เปิดกระเป๋า (เกมหยุดระหว่างเปิด)</span>';
+    ?'<kbd>นิ้วซ้าย</kbd><span>ลากเพื่อเดิน ดันสุดเพื่อวิ่ง</span><kbd>ปุ่มโจมตี</kbd><span>กดค้างเพื่อยิงต่อเนื่อง เล็งให้อัตโนมัติ</span><kbd>1 2 3</kbd><span>สลับอาวุธหลัก รอง ประชิด</span><kbd>👁</kbd><span>มุมมองบุคคลที่หนึ่ง (ทดลอง) นิ้วขวาลากเพื่อหันมอง</span><kbd>กระเป๋า</kbd><span>ติดตั้ง ใช้ หรือทิ้งของ (เกมหยุดระหว่างเปิด)</span>'
+    :'<kbd>W A S D</kbd><span>เดิน (Shift วิ่ง กลางคืนเสียงวิ่งเรียกซอมบี้)</span><kbd>เมาส์</kbd><span>เล็ง · คลิกค้างเพื่อโจมตี</span><kbd>1 2 3</kbd><span>สลับอาวุธหลัก รอง ประชิด</span><kbd>R · E · H</kbd><span>รีโหลด · เก็บของ · ใช้ยา</span><kbd>Tab</kbd><span>เปิดกระเป๋า (เกมหยุดระหว่างเปิด)</span><kbd>V</kbd><span>มุมมองบุคคลที่หนึ่ง (ทดลอง) เมาส์หันมอง</span>';
 }

@@ -1,5 +1,5 @@
 import {isTouch,rnd,clamp} from '../core/util.js';
-import {scene,sun,hemi,flash,camTarget} from '../core/renderer.js';
+import {scene,sun,hemi,flash,camTarget,view} from '../core/renderer.js';
 import {G} from '../core/state.js';
 import {roadMat,puddleMat,lampHeadMat,glowMat,wallMats} from '../world/materials.js';
 import {sirenR,sirenB,flickers} from '../world/props.js';
@@ -25,7 +25,8 @@ export function updateSky(dt,now){
   G.rain+=(G.rainTarget-G.rain)*Math.min(1,dt*.35);G.wet=clamp(G.wet+(G.rain>.3?.12:-.015)*dt,0,1);
   tmpC.copy(C.night).lerp(C.day,day).lerp(C.dusk,dusk*.55).lerp(C.rain,G.rain*.55*day);
   scene.background.copy(tmpC);scene.fog.color.copy(tmpC);
-  const haze=tod>300&&tod<600?clamp(1-Math.abs(tod-420)/180,0,1):0;const thick=G.fog>G.min?clamp((G.fog-G.min)/30,0,1):0;scene.fog.near=118-haze*22-G.rain*10-thick*48;scene.fog.far=235-haze*45-G.rain*25-thick*85;   // morning haze, rain, a fog event (v0.18)
+  const haze=tod>300&&tod<600?clamp(1-Math.abs(tod-420)/180,0,1):0;const thick=G.fog>G.min?clamp((G.fog-G.min)/30,0,1):0;scene.fog.near=118-haze*22-G.rain*10-thick*48;scene.fog.far=235-haze*45-G.rain*25-thick*85;
+  if(view.fps){scene.fog.near*=.25;scene.fog.far*=.5;}   // v0.28 at eye level the town fades out within ~120 m (and the camera draws no further)   // morning haze, rain, a fog event (v0.18)
   sunDir.set(Math.cos(a)*.85,Math.max(sunH,.1)+.12,.45).normalize().lerp(moonDir,G.night).normalize();
   sun.position.copy(camTarget).addScaledVector(sunDir,110);sun.target.position.copy(camTarget);
   sun.intensity=day*(1.9-G.rain*1.1-haze*.35)+G.night*.28;sun.color.copy(C.moon).lerp(C.sunDay,day).lerp(C.sunLow,dusk*.7);
