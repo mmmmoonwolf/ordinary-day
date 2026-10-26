@@ -1,6 +1,6 @@
 import {$} from '../core/util.js';
 import {G} from '../core/state.js';
-import {RATE,SPEEDS,NIGHT_START,DAY_START,DUSK_WARN,isNightTod} from '../config/time.js';
+import {RATE,SPEEDS,NIGHT_START,DAY_START,DUSK_WARN,isNightTod,CALM_PACE} from '../config/time.js';
 import {DEF,GRADES,durPct} from '../config/items.js';
 import {diffOf} from '../config/difficulty.js';
 import {agents} from '../entities/agents.js';
@@ -83,7 +83,7 @@ export function updateHUD(dt){
   const m=Math.floor(G.min),tod=m%1440,day=Math.floor(m/1440)+1;
   if(m!==G.lastMinShown){G.lastMinShown=m;$('clock').textContent=hhmm(m);$('dayline').innerHTML='วันที่ '+day+'<span class="wd"> · '+DAYS[(2+day-1)%7]+'</span> · รอด '+Math.min(nightsSurvived(m),GOAL_NIGHTS)+'/'+GOAL_NIGHTS+' คืน';}
   const night=isNightTod(tod),left=night?(tod>=NIGHT_START?1440-tod+DAY_START:DAY_START-tod):NIGHT_START-tod;
-  const real=left/(RATE*SPEEDS[G.speedIdx]);
+  const real=(left+(G.outbreak?0:Math.max(0,9*60+30-tod)*(1/CALM_PACE-1)))/(RATE*SPEEDS[G.speedIdx]);   // v0.32 the slow first morning
   const ph=night?'night':(tod>=DUSK_WARN?'dusk':'day');
   const pe=$('phase');if(pe.className!==ph)pe.className=ph;
   setText('phaseName',night?'NIGHT':ph==='dusk'?'NIGHT INCOMING':'DAY');

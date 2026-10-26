@@ -2,7 +2,7 @@
 import {renderer,scene,camera,camOffset,camTarget,flash,muzzle,boomLight,view as cam,activeCam} from './core/renderer.js';
 import {G} from './core/state.js';
 import {$} from './core/util.js';
-import {RATE,SPEEDS} from './config/time.js';
+import {RATE,SPEEDS,CALM_PACE} from './config/time.js';
 import {buildCity} from './world/city.js';
 import {buildInteriors,roomAt} from './world/interiors.js';
 import {buildDecor} from './world/decor.js';
@@ -33,6 +33,7 @@ import {updateHUD} from './ui/hud.js';
 import {initInput,pollInput} from './ui/input.js';
 import {initPause} from './ui/pause.js';
 import {updateTips} from './ui/tips.js';
+import {updateObjective} from './ui/objective.js';
 import {updatePrompts} from './ui/prompts.js';
 import {updateMinimap} from './ui/minimap.js';
 import {VERSION} from './config/version.js';
@@ -72,7 +73,7 @@ const STEP=1/60,MAX_STEPS=5;
 function simStep(dt,now){
   if(bus.role==='client'){if(G.running){pollInput(player);clientStep(dt);}return;}   // in a friend's room the host runs the game (v0.12)
   if(!isSolo())G.speedIdx=0;   // no ×2 / ×4 with more than one player (v0.11)
-  if(G.running){G.min+=dt*RATE*SPEEDS[G.speedIdx];runEvents(now);pollInput(player);for(const p of players)if(!p.away)updatePlayer(p,dt);updateShelter();autosave(dt);}
+  if(G.running){G.min+=dt*RATE*SPEEDS[G.speedIdx]*(G.outbreak?1:CALM_PACE);runEvents(now);pollInput(player);for(const p of players)if(!p.away)updatePlayer(p,dt);updateShelter();autosave(dt);}
   for(let i=agents.length-1;i>=0;i--){
     const a=agents[i];
     if(a.state==='human'||a.state==='infected')updateHuman(a,dt);
@@ -104,7 +105,7 @@ function loop(now){
     const pulse=.62+.25*Math.sin(now/280);for(const k in ringMats)ringMats[k].opacity=pulse;for(const k in glowMats)glowMats[k].opacity=.14+.1*Math.sin(now/280);
     updateSky(dt,now);updateFireFx(dt,now);
     updateGoal(dt,now);
-    updateTips(dt);
+    updateTips(dt);updateObjective(dt);   // v0.32 the goal line under the clock
   }
   if(bus.role==='host')hostFrame(real);   // friends in this room: messages and the world, also while paused (v0.12)
   updatePrompts();

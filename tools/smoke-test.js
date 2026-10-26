@@ -664,6 +664,24 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     for (const a of [z, z2, z3]) a.gone = true; T.G.traps = []; Cs.applyTraps();
     console.log('v0.26: camp ' + tents + ' tents, ' + Cw.camp.traps.length + ' traps (caught a zombie and the player, saved), fire burns, ' + Math.round(good / 6) + '% police / military loot, ' + guards + ' guards, flare calls zombies');
   }
+  // v0.32: the slow first morning, the outbreak seen happening, the goal line
+  { const Ob = await import('../src/ui/objective.js'), Tm = await import('../src/config/time.js'), Ph = await import('../src/systems/phases.js');
+    els.bAgain.fire('click'); T.G.running = true; const pl = T.player; pl.inv = 1e9;
+    const m0 = T.G.min; step(600); const paced = (T.G.min - m0) / (10 * Tm.RATE);   // 10 real seconds at ×1
+    const g0 = Ob.currentGoal(pl);
+    T.G.min = 9 * 60 + 29.95; step(30);
+    const first = T.agents.find(a => a === T.G.alertA), wasInfected = first && first.state === 'infected', panicked = T.agents.filter(a => a.state === 'human' && a.panic > 0).length;
+    step(300); const turned = first && first.state === 'zombie';
+    pl.gear.eq.melee = T.makeItem('bat_c'); pl.gear.bag = []; const gFood = Ob.currentGoal(pl);
+    pl.gear.bag = [{ id: 'canned', n: 1 }, { id: 'water', n: 1 }, { id: 'bandage', n: 1 }]; const gMore = Ob.currentGoal(pl);
+    T.G.min = 16 * 60; const out = Ob.currentGoal(pl);
+    const k = 0, r = (await import('../src/world/interiors.js')).rooms[k]; pl.pos.x = (r.x0 + r.x1) / 2; pl.pos.z = (r.z0 + r.z1) / 2; T.G.doors[k].open = false; const inside = Ob.currentGoal(pl);
+    T.G.min = 20 * 60; const night = Ob.currentGoal(pl); T.G.min = 1440 + 16 * 60; const gone = Ob.currentGoal(pl);
+    pl.pos.x = 5; pl.pos.z = 5;
+    const ok = paced > .3 && paced < .4 && /อาวุธ/.test(g0.text) && wasInfected && turned && panicked > 0 && /อาหาร/.test(gFood.text) && /ก่อนมืด/.test(gMore.text) && out.x !== undefined && /ก่อนมืด/.test(out.text) && /พร้อม|ตอก/.test(inside.text) && /06:00/.test(night.text) && gone === null;
+    if (!ok) vfail('first day: pace ' + paced.toFixed(2) + ', goals ' + JSON.stringify([g0, gFood, gMore, out, inside, night, gone].map(g => g && g.text)) + ', outbreak infected ' + wasInfected + ' turned ' + turned + ' panicked ' + panicked);
+    console.log('v0.32: first morning at ' + paced.toFixed(2) + '× pace; outbreak: one person staggers, falls and turns, ' + panicked + ' run; goals: ' + [g0, gFood, gMore, out, inside, night].map(g => g.text.split(' ')[0]).join(' → '));
+  }
   // v0.31: a hit on a zombie sends an impact (blood spray, hit marker for the player who landed it), a kill a bigger one
   { const Ef = await import('../src/systems/effects.js'), Ai4 = await import('../src/entities/ai.js');
     const seen = [], keep = Ef.hooks.impact; Ef.hooks.impact = (x, z, k, by, melee) => seen.push([k, by, !!melee]);
