@@ -141,6 +141,8 @@ const S={
   outbreak(){if(bufs.siren_outbreak)play(9.1,undefined,0,1,(t,d)=>sample('siren_outbreak',t,d,.3,{cut:2500}));},   // v0.21 a civil defence siren far off when it starts
   night(){play(2.4,undefined,0,1,(t,d)=>{tone(t,2.2,{wave:'sawtooth',f0:55,f1:48,peak:.18,attack:.6,dest:d});tone(t,2.2,{f0:110,f1:96,peak:.1,attack:.6,dest:d});});},
   dawn(){play(1.4,undefined,0,1,(t,d)=>{tone(t,.5,{f0:523,peak:.12,dest:d});tone(t+.25,.6,{f0:659,peak:.11,dest:d});tone(t+.5,.8,{f0:784,peak:.1,dest:d});});},
+  // v0.33 a temple bell far off, struck three times at first light: a low tone with a few out-of-tune partials that ring on
+  bell(){play(7,undefined,0,1,(t,d)=>{for(let k=0;k<3;k++){const s=t+k*2.1;[[1,4,.11],[2.01,3,.05],[2.76,2.2,.04],[5.43,1.2,.02]].forEach(([m,len,pk])=>tone(s,len,{f0:174*m,peak:pk,attack:.004,dest:d}));}});},
   win(){play(2.2,undefined,0,1,(t,d)=>{[523,659,784,1047].forEach((f,i)=>tone(t+i*.22,.9,{wave:'triangle',f0:f,peak:.14,dest:d}));});},
   // helicopter rotor: a looping chopped noise whose level follows the distance to the LZ (0 stops it)
   rotor(level,x,z){

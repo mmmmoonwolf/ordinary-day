@@ -15,7 +15,7 @@ function spot(x,z,zone){lootSpots.push({x,z,zone,drop:null});}
 // ---------- buildings ----------
 function building(cx,cz,w,d,floors){
   const h=floors*3.2,v=pickS(WALLS),ou=Math.floor(rand()*4)/4;
-  const geo=scaleUV(new THREE.BoxGeometry(w,h,d),f=>{if(f===2||f===3)return [w/8,d/8];return [(f<2?d:w)/16,h/12.8,ou+f*.25,0];});
+  const geo=scaleUV(new THREE.BoxGeometry(w,h,d),f=>{if(f===2||f===3)return [w/8,d/8];return [(f<2?d:w)/16,h/25.6,ou+f*.25,0];});
   const wall=S({map:v.map,emissiveMap:v.emi,emissive:'#ffffff',emissiveIntensity:0,roughness:.92});
   const corr=rand()<.28;const roof=S({map:corr?CORR:TAR,color:corr?'#a0a8ac':'#ffffff',roughness:.95});
   const mesh=new THREE.Mesh(geo,[wall,wall,roof,roof,wall,wall]);mesh.position.set(cx,.18+h/2,cz);mesh.castShadow=mesh.receiveShadow=true;scene.add(mesh);

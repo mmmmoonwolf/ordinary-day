@@ -664,11 +664,26 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     for (const a of [z, z2, z3]) a.gone = true; T.G.traps = []; Cs.applyTraps();
     console.log('v0.26: camp ' + tents + ' tents, ' + Cw.camp.traps.length + ' traps (caught a zombie and the player, saved), fire burns, ' + Math.round(good / 6) + '% police / military loot, ' + guards + ' guards, flare calls zombies');
   }
+  // v0.33: the Thai town: signs, poles, spirit houses, scooters and carts built, none of their collision boxes on a loot
+  // spot or a doorway, shop boards in Thai, a temple bell at dawn
+  { const Th3 = await import('../src/world/thai.js'), Cl3 = await import('../src/world/collision.js'), I4 = await import('../src/world/interiors.js'), Ct = await import('../src/world/city.js'), Pl3 = await import('../src/config/places.js');
+    const th = Th3.thai, n0 = Cl3.solids.length;
+    if (th.poles.length < 60 || th.shrines.length < 8 || th.scooters < 30 || th.carts < 5 || th.signs < 30) vfail('thai town: ' + JSON.stringify({ poles: th.poles.length, shrines: th.shrines.length, scooters: th.scooters, carts: th.carts, signs: th.signs }));
+    const near = (x, z, m) => Cl3.solids.filter(b => x > b.x0 - m && x < b.x1 + m && z > b.z0 - m && z < b.z1 + m);
+    const poleOn = th.poles.filter(([x, z]) => Ct.lootSpots.some(s => Math.hypot(s.x - x, s.z - z) < 1) || I4.rooms.some(r => Math.hypot(r.dx - x, r.dz - z) < 2.5)).length;
+    const shrineOn = th.shrines.filter(([x, z]) => Ct.lootSpots.some(s => Math.hypot(s.x - x, s.z - z) < 1)).length;
+    if (poleOn || shrineOn) vfail('thai town blocks loot spots or doors: poles ' + poleOn + ', shrines ' + shrineOn);
+    if (Pl3.PLACES.some(P => /[A-Z]/.test(P.sign)) || !/[ก-๙]/.test(Pl3.BARN.sign)) vfail('shop boards not in Thai');
+    let rang = 0; const Au = await import('../src/systems/audio.js'), Ph3 = await import('../src/systems/phases.js'), keep = Au.sfx.bell, m1 = T.G.min, ph1 = T.G.phase; Au.sfx.bell = () => rang++; T.G.min = 1440 + 6 * 60 + 1; T.G.phase = 'night'; Ph3.runEvents(); Au.sfx.bell = keep; T.G.min = m1; T.G.phase = ph1;
+    if (!rang) vfail('no temple bell at dawn');
+    console.log('v0.33: ' + th.signs + ' shop signs, ' + th.poles.length + ' power poles, ' + th.shrines.length + ' spirit houses, ' + th.scooters + ' scooters, ' + th.carts + ' food carts; ' + n0 + ' solids; bell at dawn');
+  }
   // v0.32: the slow first morning, the outbreak seen happening, the goal line
   { const Ob = await import('../src/ui/objective.js'), Tm = await import('../src/config/time.js'), Ph = await import('../src/systems/phases.js');
     els.bAgain.fire('click'); T.G.running = true; const pl = T.player; pl.inv = 1e9;
     const m0 = T.G.min; step(600); const paced = (T.G.min - m0) / (10 * Tm.RATE);   // 10 real seconds at ×1
     const g0 = Ob.currentGoal(pl);
+    for (let k = 0; k < 6; k++) T.agents.push(T.makeAgent(pl.pos.x + Math.sin(k) * 14, pl.pos.z + Math.cos(k) * 14));   // people around, so one is near whoever turns
     T.G.min = 9 * 60 + 29.95; step(30);
     const first = T.agents.find(a => a === T.G.alertA), wasInfected = first && first.state === 'infected', panicked = T.agents.filter(a => a.state === 'human' && a.panic > 0).length;
     step(300); const turned = first && first.state === 'zombie';
@@ -755,13 +770,18 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   { const Ex = await import('../src/world/extras.js'), Bl = await import('../src/systems/blast.js'), Th = await import('../src/systems/throw.js'), Cb = await import('../src/systems/combat.js'), It2 = await import('../src/config/items.js'), Cl2 = await import('../src/world/clutter.js'), Col2 = await import('../src/world/collision.js');
     const pl = T.player, bag0 = pl.gear.bag.slice(); pl.inv = 1e9; T.G.blown = []; Bl.applyTanks(); Bl.clearFires();
     if (Ex.tanks.length < 10 || !Ex.tanks.some(t => t.kind === 'propane') || !Ex.tanks.some(t => t.kind === 'gas')) vfail('tanks: ' + Ex.tanks.length);
-    const tk = Ex.tanks.findIndex(t => t.kind === 'propane'), t0 = Ex.tanks[tk];
-    // stand 6 m off, facing it, with a zombie next to the cylinder; one pistol shot
+    // stand 6 m off a propane cylinder with a clear shot (v0.33: power poles stand on the sidewalks), facing it, with a
+    // zombie next to the cylinder; one pistol shot
+    const shotAt = t => { for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const x = t.x + dx * 6, zz = t.z + dz * 6; if (Col2.freeAt(x, zz, .5) && Col2.rayWall(x, zz, -dx, -dz, 6) > 5.6) return [x, zz, -dx, -dz]; } return null; };
+    // the zombie stands beside the cylinder, not in the line of fire
+    const I3 = await import('../src/world/interiors.js');
+    const zAt = (t, st) => { for (const [ox, oz] of [[st[3] * 1.3, -st[2] * 1.3], [-st[3] * 1.3, st[2] * 1.3], [st[2] * 1.3, st[3] * 1.3]]) { const x = t.x + ox, zz = t.z + oz; if (Col2.freeAt(x, zz, .4) && !I3.walledOff(t.x, t.z, x, zz)) return [x, zz]; } return null; };
+    let tk = Ex.tanks.findIndex(t => t.kind === 'propane' && shotAt(t) && zAt(t, shotAt(t))); if (tk < 0) tk = Ex.tanks.findIndex(t => t.kind === 'propane');
+    const t0 = Ex.tanks[tk], st = shotAt(t0), zs = st && zAt(t0, st);
     const z = T.makeAgent(t0.x + 1.2, t0.z); T.becomeZombie(z, 'zombie'); T.agents.push(z);
-    let st = null; for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const x = t0.x + dx * 6, zz = t0.z + dz * 6; if (Col2.freeAt(x, zz, .5) && Col2.rayWall(x, zz, -dx, -dz, 6) > 5.6) { st = [x, zz, -dx, -dz]; break; } }
-    if (!st) vfail('no clear shot at a cylinder'); else {
+    if (!st || !zs) vfail('no clear shot at a cylinder'); else {
       pl.pos.x = st[0]; pl.pos.z = st[1]; pl.face = Math.atan2(st[2], st[3]);
-      const I3 = await import('../src/world/interiors.js'); for (const [ox, oz] of [[st[3] * 1.3, -st[2] * 1.3], [-st[3] * 1.3, st[2] * 1.3], [st[2] * 1.3, st[3] * 1.3], [-st[2] * 2, -st[3] * 2]]) { const x = t0.x + ox, zz = t0.z + oz; if (Col2.freeAt(x, zz, .4) && !I3.walledOff(t0.x, t0.z, x, zz)) { z.pos.x = x; z.pos.z = zz; break; } } z.feed = 99;
+      z.pos.x = zs[0]; z.pos.z = zs[1]; z.feed = 99;
       const w = { id: 'pistol_c', mag: 12 }, d0 = It2.DEF.pistol_c, sp = d0.spread; d0.spread = 0; Cb.fireGun(pl, w, d0); d0.spread = sp;
       for (let i = 0; i < 30; i++) Bl.updateFires(1 / 30);
       if (!T.G.blown.includes(tk) || Col2.solids.includes(t0.box)) vfail('shot cylinder did not blow: ' + JSON.stringify(T.G.blown));
