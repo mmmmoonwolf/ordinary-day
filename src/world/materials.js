@@ -1,9 +1,9 @@
 import {scene} from '../core/renderer.js';
-import {asphaltTex,concreteTex,grassTex,dirtTex,GLOW} from './textures.js';
+import {asphaltTex,pavingTex,grassTex,dirtTex,GLOW} from './textures.js';
 
 // ---------- materials ----------
 export const S=o=>new THREE.MeshStandardMaterial(Object.assign({roughness:.9,metalness:0},o));
-export const roadMat=S({map:asphaltTex(),roughness:.92}),walkMat=S({map:concreteTex()}),grassMat=S({map:grassTex(),roughness:1}),groundMat=S({map:dirtTex(),roughness:1});
+export const roadMat=S({map:asphaltTex(),roughness:.92}),walkMat=S({map:pavingTex()}),grassMat=S({map:grassTex(),roughness:1}),groundMat=S({map:dirtTex(),roughness:1});
 export const woodMat=S({color:'#6b5a46'}),darkMetal=S({color:'#3a3d40',roughness:.6,metalness:.4}),greyMat=S({color:'#8a8a86'}),whiteMat=S({color:'#e4e1d8'}),trunkMat=S({color:'#4e4438'});
 export const leafMats=[S({color:'#4f5e34',flatShading:true}),S({color:'#606a3a',flatShading:true}),S({color:'#3f4e30',flatShading:true})];
 export const lampHeadMat=S({color:'#d8d4c8',emissive:'#ffcf8a',emissiveIntensity:0});
