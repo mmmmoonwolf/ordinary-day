@@ -45,6 +45,9 @@ export function animate(a,dt){
   else{const f=a.panic>0?1.5:.8;p.armL.rotation.x=-s*f;p.armR.rotation.x=s*f;p.head.rotation.z=0;}
   a.y+=(groundY(a.pos.x,a.pos.z)-a.y)*Math.min(1,dt*12);
   p.root.position.set(a.pos.x,a.y+Math.abs(Math.sin(a.phase))*.06*amt,a.pos.z);p.root.rotation.y=a.face;
+  // v0.29 prone: the whole body tipped forward onto the ground, centred on the player
+  const prone=a.state==='player'&&a.stance===2;p.root.rotation.order='YXZ';p.root.rotation.x=prone?Math.PI/2:0;
+  if(prone){p.root.position.x-=Math.sin(a.face)*.85;p.root.position.z-=Math.cos(a.face)*.85;p.root.position.y+=.18;}
 }
 export function separate(){
   const L=agents.filter(a=>a.state!=='dead');for(const p of players)if(p.alive)L.push(p);

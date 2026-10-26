@@ -14,7 +14,7 @@ export const camera=new THREE.OrthographicCamera(-1,1,1,-1,1,500);
 export const camOffset=new THREE.Vector3(1,1.3,1).normalize().multiplyScalar(130);
 // v0.28 first-person view (experimental, ui/fps.js): a perspective camera at the eyes of the player this device follows.
 // Only this device's view: the game, the other players and online play do not know about it
-export const view={fps:false,yaw:0,pitch:0};
+export const view={fps:false,yaw:0,pitch:0,sway:0,breathKey:false};   // v0.29 sway: the aim's drift (rad); breathKey: Shift through a scope
 export const fpsCam=new THREE.PerspectiveCamera(72,1,.05,140);scene.add(fpsCam);
 export const activeCam=()=>view.fps?fpsCam:camera;
 // the on-screen direction (radians, clockwise from up) of a ground vector, for arrows on the HUD
