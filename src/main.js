@@ -18,7 +18,7 @@ import {agents,removeAgent} from './entities/agents.js';
 import {updateHuman,updateZombie,updateDead} from './entities/ai.js';
 import {player,players,updatePlayer,syncHeld,isSolo,viewed} from './entities/player.js';
 import {animate,separate} from './entities/animation.js';
-import {ring,alertRing,blast,tracers,updateFireFx} from './systems/effects.js';
+import {ring,alertRing,blast,tracers,updateFireFx,updateImpacts} from './systems/effects.js';
 import {drops,ringMats,glowMats,refreshItems} from './systems/drops.js';
 import {runEvents} from './systems/phases.js';
 import {updateSky} from './systems/weather.js';
@@ -42,6 +42,7 @@ import {hostFrame} from './net/host.js';
 import {clientStep} from './net/client.js';
 import {initOnline} from './ui/online.js';
 import {updateFps} from './ui/fps.js';
+import {feel,updateFeel,initFeel} from './ui/feel.js';
 import {loadSkins,beginSkins} from './entities/skins.js';
 import {loadProps,props} from './world/prop-models.js';
 import './ui/report.js';   // keeps the last script errors for bug reports
@@ -62,6 +63,7 @@ initPause();
 initSave();
 initAudio();
 initOnline();
+initFeel();
 
 // ---------- loop ----------
 // The game state moves in fixed steps of 1/60 s (v0.9), however fast the screen draws, so every device (and later
@@ -90,9 +92,11 @@ function loop(now){
   requestAnimationFrame(loop);
   const real=Math.min(.25,(now-last)/1000),dt=Math.min(.05,real);last=now;frame++;
   if(!G.paused){
-    acc+=real;let n=0;while(acc>=STEP&&n<MAX_STEPS){simStep(STEP,now);acc-=STEP;n++;}if(n===MAX_STEPS)acc=0;   // a long stall is dropped, not replayed
-    beginSkins();for(const a of agents)animate(a,dt);
-    for(const p of players){syncHeld(p);animate(p,dt);}
+    const frozen=feel.stop>0;if(frozen)feel.stop-=real;   // v0.31 hit stop: a landed blow holds the world still for a moment
+    if(!frozen){acc+=real;let n=0;while(acc>=STEP&&n<MAX_STEPS){simStep(STEP,now);acc-=STEP;n++;}if(n===MAX_STEPS)acc=0;}   // a long stall is dropped, not replayed
+    const adt=frozen?0:dt;beginSkins();for(const a of agents)animate(a,adt);
+    for(const p of players){syncHeld(p);animate(p,adt);}
+    updateImpacts(dt);
     for(const tr of tracers){if(tr.t>0){tr.t-=dt;tr.l.material.opacity=Math.max(0,tr.t/.07)*.95;}}
     muzzle.intensity=Math.max(0,muzzle.intensity-dt*60);boomLight.intensity=Math.max(0,boomLight.intensity-dt*20);
     if(blast.userData.t>0){blast.userData.t-=dt;const k=1-blast.userData.t/.4;blast.scale.setScalar(.5+k*4);blast.material.opacity=Math.max(0,.75*(1-k));}else blast.material.opacity=0;
@@ -114,6 +118,7 @@ function loop(now){
   camTarget.x+=(view.pos.x-camTarget.x)*Math.min(1,dt*5);camTarget.z+=(view.pos.z-camTarget.z)*Math.min(1,dt*5);
   camera.position.copy(camTarget).add(camOffset);camera.lookAt(camTarget);
   if(cam.fps)updateFps(view,dt);   // v0.28 first-person view
+  updateFeel(dt);   // v0.31 camera shake, hit marker
   ring.position.set(player.pos.x,player.y+.03,player.pos.z);ring.visible=player.alive&&!cam.fps;
   if(G.alertT>0&&G.alertA){G.alertT-=dt;alertRing.position.set(G.alertA.pos.x,G.alertA.y+.04,G.alertA.pos.z);alertRing.material.opacity=Math.min(1,G.alertT)*(.5+.5*Math.sin(now/120));alertRing.scale.setScalar(1+.25*Math.sin(now/200));}else alertRing.material.opacity=0;
   const fx=Math.sin(view.face),fz=Math.cos(view.face);

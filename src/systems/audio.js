@@ -107,6 +107,9 @@ const S={
     play(.4,undefined,0,1,(t,d)=>{noise(t,.03,{type:'highpass',f0:2500,peak:.25,dest:d});noise(t+.25,.04,{type:'highpass',f0:1800,peak:.3,dest:d});});},
   swing(){play(.15,undefined,0,1,(t,d)=>noise(t,.12,{type:'bandpass',f0:600,f1:2400,q:2,peak:.18,attack:.03,dest:d}));},
   hit(x,z){if(bufs.punch)play(.7,x,z,20,(t,d,g)=>sample('punch',t,d,.6*g,{rate:.85+Math.random()*.3}));else S.thud(x,z);},   // v0.21 a melee blow lands
+  // v0.31 a bullet or a blow landing in a zombie (played on every device from the impact effect, so not sent again)
+  splat(x,z,k){if(k===2){play(.15,x,z,25,(t,d,g)=>{noise(t,.08,{type:'highpass',f0:3000,peak:.3*g,dest:d});tone(t,.06,{wave:'square',f0:1600,f1:900,peak:.06*g,dest:d});});return;}
+    play(.25,x,z,25,(t,d,g)=>{noise(t,k?.16:.07,{f0:k?500:900,f1:150,peak:(k?.55:.28)*g,dest:d});tone(t,k?.14:.07,{f0:k?110:150,f1:45,peak:(k?.5:.22)*g,dest:d});});},
   thud(x,z){play(.12,x,z,20,(t,d,g)=>{tone(t,.1,{f0:120,f1:50,peak:.5*g,dest:d});noise(t,.06,{f0:700,peak:.25*g,dest:d});});},
   hurt(){if(bufs.hurt){if(ctx.currentTime<lastHurt+.3)return;lastHurt=ctx.currentTime;play(.6,undefined,0,1,(t,d)=>sample('hurt',t,d,.75,{rate:.92+Math.random()*.16}));return;}   // v0.20 a recording
     play(.2,undefined,0,1,(t,d)=>{tone(t,.16,{wave:'triangle',f0:170,f1:70,peak:.45,dest:d});noise(t,.1,{f0:500,peak:.3,dest:d});});},

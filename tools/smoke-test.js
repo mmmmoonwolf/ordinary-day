@@ -664,6 +664,14 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     for (const a of [z, z2, z3]) a.gone = true; T.G.traps = []; Cs.applyTraps();
     console.log('v0.26: camp ' + tents + ' tents, ' + Cw.camp.traps.length + ' traps (caught a zombie and the player, saved), fire burns, ' + Math.round(good / 6) + '% police / military loot, ' + guards + ' guards, flare calls zombies');
   }
+  // v0.31: a hit on a zombie sends an impact (blood spray, hit marker for the player who landed it), a kill a bigger one
+  { const Ef = await import('../src/systems/effects.js'), Ai4 = await import('../src/entities/ai.js');
+    const seen = [], keep = Ef.hooks.impact; Ef.hooks.impact = (x, z, k, by, melee) => seen.push([k, by, !!melee]);
+    const pl = T.player, z = T.makeAgent(pl.pos.x + 30, pl.pos.z); T.becomeZombie(z, 'walker'); T.agents.push(z);
+    Ai4.hurtZombie(z, 1, 1, 0, .2, true, false, pl); Ai4.hurtZombie(z, 999, 1, 0, .5, false, false, pl); Ef.hooks.impact = keep; z.gone = true;
+    if (seen.length !== 2 || seen[0][0] !== 0 || seen[1][0] !== 1 || seen[0][1] !== pl.id || seen[0][2] || !seen[1][2] || !Ef.FX.impact) vfail('impacts: ' + JSON.stringify(seen));
+    console.log('v0.31: impacts ' + JSON.stringify(seen) + ' (hit by gun, kill by a blow)');
+  }
   // v0.30: vaulting: Space over a bench lands on the far side, a building wall only hops, running into a car vaults it
   { const Col3 = await import('../src/world/collision.js'), Vt = await import('../src/systems/vault.js'), H2 = await import('../src/config/handling.js'), City = await import('../src/world/city.js');
     const pl = T.player, x0 = pl.pos.x, z0 = pl.pos.z, inv0 = pl.inv; pl.inv = 1e9; pl.reloadT = 0; delete pl.trapT;   // a player never caught in a trap has no trapT

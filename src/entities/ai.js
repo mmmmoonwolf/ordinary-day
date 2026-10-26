@@ -11,7 +11,7 @@ import {nearestNode} from '../world/sidewalk.js';
 import {agents,becomeZombie} from './agents.js';
 import {lerpAng,moveAgent,wander,d2} from './movement.js';
 import {players,targets} from './player.js';
-import {addBlood,warnRing,boom} from '../systems/effects.js';
+import {addBlood,warnRing,boom,impact} from '../systems/effects.js';
 import {makeItem,spawnDrop,dropGuaranteed} from '../systems/drops.js';
 import {hurtPlayer} from '../systems/combat.js';
 import {infectPlayer} from '../systems/infection.js';
@@ -123,6 +123,8 @@ export function hurtZombie(z,dmg,dx,dz,kb,isGun,silent,by){
   const kbm=z.kind==='tyrant'?.12:z.kind==='armor'?.5:z.kind==='boomer'?.6:1;
   z.hp-=dmg;z.hitT=.18;if(z.kind!=='tyrant')z.feed=Math.max(z.feed,.22);z.pos.x+=dx*kb*kbm;z.pos.z+=dz*kb*kbm;collide(z.pos,z.rad);
   if(!silent&&by)z.heard={x:by.pos.x,z:by.pos.z,t:5};if(Math.random()<.35)addBlood(z.pos.x,z.pos.z);
+  const kill=z.hp<=0&&z.state==='zombie';impact(z.pos.x,z.pos.z,dx,dz,kill?1:armored?2:0,by&&by.state==='player'?by.id:-1,!isGun);   // v0.31
+  if(kill&&kb>0){z.pos.x+=dx*.45*kbm;z.pos.z+=dz*.45*kbm;collide(z.pos,z.rad);}   // a killing blow throws it back a little more
   if(z.hp<=0&&z.state==='zombie'){
     z.state='dead';z.deadT=0;z.fuse=0;z.wind=0;z.b.mats[0].emissive.setRGB(0,0,0);G.kills++;G.killsBy[z.kind]=(G.killsBy[z.kind]||0)+1;addBlood(z.pos.x,z.pos.z);
     if(z.kind==='armor'){dropGuaranteed('pol',z.pos.x,z.pos.z);feed('Armor Walker ดรอปของระดับ Police','pol');}

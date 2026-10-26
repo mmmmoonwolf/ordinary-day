@@ -4,6 +4,7 @@ import {groundY} from '../config/world.js';
 import {bloodMat} from '../world/materials.js';
 import {boomLight} from '../core/renderer.js';
 import {send} from '../core/bus.js';
+import {playLocal} from './audio.js';
 
 // ---------- effects ----------
 // blood, tracers and blasts made by the game are also sent to the other devices (v0.11, core/bus.js)
@@ -17,7 +18,7 @@ export const tracers=[];for(let i=0;i<20;i++){const g=new THREE.BufferGeometry()
 let tri=0;
 export function tracer(x0,z0,x1,z1,col){send('*','fx',['tracer',x0,z0,x1,z1,col]);const tr=tracers[tri++%tracers.length];const a=tr.l.geometry.attributes.position.array;a[0]=x0;a[1]=1.36;a[2]=z0;a[3]=x1;a[4]=1.3;a[5]=z1;tr.l.geometry.attributes.position.needsUpdate=true;tr.l.material.color.set(col||'#ffd38a');tr.t=.07;}
 // an explosion flash: the sphere for t seconds and, when given, the orange light
-export function boom(x,y,z,t,light){send('*','fx',['boom',x,y,z,t,light]);blast.position.set(x,y,z);blast.userData.t=t;if(light){boomLight.position.set(x,2,z);boomLight.intensity=light;}}
+export function boom(x,y,z,t,light){send('*','fx',['boom',x,y,z,t,light]);if(hooks.boom)hooks.boom(x,z,t);blast.position.set(x,y,z);blast.userData.t=t;if(light){boomLight.position.set(x,2,z);boomLight.intensity=light;}}
 // v0.23 burning ground (systems/blast.js): flickering flame sprites and a scorch, also on the other devices; fireSpots
 // is what the fire sound follows (systems/audio.js)
 export const fireSpots=[];
@@ -45,4 +46,25 @@ export function staticFlames(x,z,r,col,h=0){
   for(let i=0;i<n;i++){const s=new THREE.Sprite(m),a=Math.random()*6.28,d=Math.sqrt(Math.random())*r*.7;s.position.set(x+Math.cos(a)*d,h+.4,z+Math.sin(a)*d);s.userData.ph=Math.random()*6.28;s.userData.k=(.5+Math.random()*.5)*Math.min(1,.4+r);s.userData.y0=h;g.add(s);fl.push(s);}
   scene.add(g);fireSpots.push({x,z,r,t:Infinity,g,fl,keep:true,camp:true});
 }
-export const FX={blood:addBlood,tracer,boom,fire:fireFx};
+// ---------- impacts (v0.31) ----------
+// A hit on a zombie throws a spray of blood the way the blow or the bullet went (sparks off the front of an armoured
+// one), more on a kill, with a wet thud; sent to every device. ui/feel.js hangs the hit marker, the camera shake and the
+// hit stop for the player who landed it on hooks.impact (no import the other way round).
+// k: 0 a hit, 1 a kill, 2 stopped by armour; by: the player's id (-1 for none); melee: a blow, not a bullet
+export const hooks={impact:null,boom:null};
+const DROPS=[],dropGeo=new THREE.BoxGeometry(.06,.06,.06),dropMats=[new THREE.MeshBasicMaterial({color:'#7a1010'}),new THREE.MeshBasicMaterial({color:'#ffe2a0'})];
+for(let i=0;i<90;i++){const m=new THREE.Mesh(dropGeo,dropMats[0]);m.visible=false;m.frustumCulled=false;scene.add(m);DROPS.push({m,vx:0,vy:0,vz:0,t:0});}
+let dropI=0,lastSplat=0;
+export function impact(x,z,dx,dz,k,by,melee){
+  send('*','fx',['impact',x,z,dx,dz,k,by,melee]);
+  const n=k===1?14:k===2?6:melee?8:4,spark=k===2,l=Math.hypot(dx,dz)||1;dx/=l;dz/=l;
+  for(let i=0;i<n;i++){const d=DROPS[dropI++%DROPS.length],s=rnd(1.2,spark?5:3.6);d.m.material=dropMats[spark?1:0];d.m.visible=true;d.t=rnd(.35,.6);
+    d.m.position.set(x+dx*.2,rnd(.9,1.4),z+dz*.2);d.vx=dx*s+rnd(-1.2,1.2);d.vz=dz*s+rnd(-1.2,1.2);d.vy=rnd(.6,2.8);d.m.scale.setScalar(rnd(.6,1.6));}
+  const now=performance.now();if(now-lastSplat>45){lastSplat=now;playLocal('splat',x,z,k);}
+  if(hooks.impact)hooks.impact(x,z,k,by,melee);
+}
+export function updateImpacts(dt){
+  for(const d of DROPS){if(!d.m.visible)continue;d.t-=dt;d.vy-=9.8*dt;const p=d.m.position;p.x+=d.vx*dt;p.y+=d.vy*dt;p.z+=d.vz*dt;
+    if(d.t<=0||p.y<groundY(p.x,p.z)+.02)d.m.visible=false;}
+}
+export const FX={blood:addBlood,tracer,boom,fire:fireFx,impact};
