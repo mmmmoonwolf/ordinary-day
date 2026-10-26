@@ -37,6 +37,7 @@ function bloodyRunner(){
 function farScream(){const p=players[0],a=Math.random()*Math.PI*2;sfx.scream(p.pos.x+Math.cos(a)*45,p.pos.z+Math.sin(a)*45);}
 export const EVENTS=[
   {t:7*60+31,text:'ทุกอย่างเริ่มต้นจากวันธรรมดา'},
+  {t:7*60+36,text:'เสียงตามสาย: สวัสดีพี่น้องชาวชุมชน ช่วงนี้มีไข้ระบาด ใครไม่สบายให้ไปตรวจที่โรงพยาบาลนะครับ',cls:'radio'},   // v0.33 the community loudspeaker
   {t:7*60+42,text:'ร้านค้าเพิ่งเปิด คนเริ่มออกมาทำงาน'},   // v0.32 the slower first morning has more to tell
   {t:7*60+55,text:'คุณออกจากบ้านมาตัวเปล่า ลองเดินดูของที่ตกอยู่ตามทาง'},
   {t:8*60+15,text:'วิทยุ: รถพยาบาลหลายคันวิ่งเข้าไปทางตลาดเมื่อเช้านี้',cls:'radio'},
@@ -60,7 +61,7 @@ function onNight(){
   fillNight(Math.min(1,REFILL.night*refillScale(Math.floor(G.min/1440)+1)*partyOf(partySize(),'loot')));feed('ของระดับ Police และ Military เกิดขึ้นทั่วเมือง','pol');
 }
 function onDay(){
-  G.phase='day';sfx.dawn();
+  G.phase='day';sfx.dawn();sfx.bell();   // v0.33 the temple bell at first light
   const day=Math.floor(G.min/1440)+1;
   say('รุ่งเช้า วันที่ '+day+' · ซอมบี้กลับมาเชื่องช้า ออกไปหาของได้','',6);
   const zs=zombies();

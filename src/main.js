@@ -12,6 +12,7 @@ import {buildExtras} from './world/extras.js';
 import {buildSuburb} from './world/suburb.js';
 import {buildRiver} from './world/river.js';
 import {buildCamp} from './world/camp.js';
+import {buildThai} from './world/thai.js';
 import {updateCamp} from './systems/camp.js';
 import {updateOcclusion} from './world/occlusion.js';
 import {agents,removeAgent} from './entities/agents.js';
@@ -57,6 +58,7 @@ buildExtras();   // v0.23: bus stops, benches, signs, billboards, a building sit
 buildSuburb();   // v0.24: the suburb south of town, through the gate; own rng, appended
 buildRiver();   // v0.25: the river and the bridge east of town; own rng, appended
 buildCamp();   // v0.26: the survivors' camp in the woods across the river; own rng, appended
+buildThai();   // v0.33: shop signs, power lines, spirit houses, scooters, food carts; own rng, after everything else
 initInput();
 initSettings();
 $('verLabel').textContent='ORDINARY DAY · PROTOTYPE '+VERSION;
