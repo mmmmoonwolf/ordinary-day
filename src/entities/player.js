@@ -13,7 +13,7 @@ import {aimAssist,finishReload,fireGun,meleeHit,die} from '../systems/combat.js'
 import {updateInfection,cureInfection} from '../systems/infection.js';
 import {updateNeeds} from '../systems/needs.js';
 import {LOW_NEED} from '../config/needs.js';
-import {SNEAK_SPEED} from '../config/stealth.js';
+import {STANCE,ADS,BLOOM} from '../config/handling.js';
 import {sfxFor} from '../systems/audio.js';
 import {nearDoor,nearFixDoor} from '../systems/doors.js';
 import {nearBoxOf,keepSearching} from '../systems/search.js';
@@ -29,11 +29,11 @@ export let player;
 export function setPlayer(p){player=p;}
 const LOOKS=[{shirt:'#c4612a',pants:'#24272c',skin:'#d8a882',hair:'#15130f'},{shirt:'#3d6fb6',pants:'#2d2a26',skin:'#b98762',hair:'#2a1d12'},
   {shirt:'#4f8f4a',pants:'#33302a',skin:'#e0b896',hair:'#5a3a1e'},{shirt:'#c9a227',pants:'#22252a',skin:'#8d5e3c',hair:'#0f0d0b'}];
-export const freshInput=()=>({mx:0,mz:0,mag:0,run:false,sneak:false,slow:false,aim:false,face:null,aimDist:0,fire:false,fireQ:0});
+export const freshInput=()=>({mx:0,mz:0,mag:0,run:false,sneak:false,slow:false,aim:false,face:null,aimDist:0,fire:false,fireQ:0,ads:false,stance:0});   // v0.29 aiming down the sights, 0 standing / 1 crouched / 2 prone
 export function makePlayer(i=0){
   const p=makeAgent(OFF+i*1.3,OFF,LOOKS[i%LOOKS.length]);
   Object.assign(p,{state:'player',id:i,name:'ผู้เล่น '+(i+1),local:false,away:false,token:null,hp:100,maxHp:100,alive:true,swing:0,swingDur:.4,hitDone:true,lastHit:-99,face:Math.PI*1.25,cool:0,reloadT:0,recoil:0,aimT:0,held:null,heldId:'fist',down:0,inv:0,
-    infect:0,infWarn:0,food:100,water:100,needWarn:0,starving:false,room:-1,nearDoor:-1,bleed:0,reviveT:0,helping:null,helpT:0,nearDown:null,fixDoor:-1,nearBox:-1,searching:-1,searchT:0,searchHit:0,near:null,full:null,sneak:false,runNoise:0,stay:null,endCause:null,gear:freshGear(),input:freshInput()});
+    infect:0,infWarn:0,food:100,water:100,needWarn:0,starving:false,room:-1,nearDoor:-1,bleed:0,reviveT:0,helping:null,helpT:0,nearDown:null,fixDoor:-1,nearBox:-1,searching:-1,searchT:0,searchHit:0,near:null,full:null,sneak:false,stance:0,ads:false,bloom:0,runNoise:0,stay:null,endCause:null,gear:freshGear(),input:freshInput()});
   return p;
 }
 // players that zombies can go after (v0.12: not one whose device has dropped out of the game, p.away)
@@ -59,14 +59,15 @@ export function updatePlayer(p,dt){
     return;}
   if(p.bleed>0){updateDowned(p,dt);return;}
   const I=p.input,mag=I.mag;
-  // sneak (v0.7): hold C, or on touch push the stick only a little (it is already that slow)
-  p.sneak=!I.run&&(I.slow||I.sneak);
+  // stances (v0.29): crouched (C, the old sneak; on touch also a lightly pushed stick) or prone (Z); running stands up
+  p.stance=I.run?0:Math.max(I.stance|0,I.slow||I.sneak?1:0);p.sneak=p.stance>0;
   if(I.face!==null)p.face=I.face;
   if(p.aimT>0)p.aimT-=dt;
   const w=curWeapon(p),def=DEF[w.id];
-  const heavy=def.heavy&&(I.fire||p.aimT>0)?.7:1;
+  p.ads=!!(I.ads&&def.gun&&!I.run&&p.reloadT<=0);p.bloom=Math.max(0,p.bloom-dt*BLOOM.decay);   // v0.29 aiming down the sights
+  const heavy=(def.heavy&&(I.fire||p.aimT>0)?.7:1)*(p.ads?ADS.speed:1);
   if(p.trapT>0){p.trapT-=dt;p.moving=0;}   // v0.26 caught in a bear trap
-  else if(mag>.08){moveAgent(p,I.mx,I.mz,(I.slow&&!I.run?SNEAK_SPEED:(I.run?5.8:3.4)*Math.max(.45,mag))*heavy,dt,I.aim||p.aimT>0);
+  else if(mag>.08){moveAgent(p,I.mx,I.mz,(p.stance?STANCE[p.stance].speed:(I.run?5.8:3.4)*Math.max(.45,mag))*heavy,dt,I.aim||p.aimT>0||p.ads);
     if(I.run&&G.phase==='night'){p.runNoise-=dt;if(p.runNoise<=0){p.runNoise=.5;makeNoise(p.pos.x,p.pos.z,5);}}}
   else p.moving=0;
   if(p.cool>0)p.cool-=dt;

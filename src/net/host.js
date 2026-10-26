@@ -70,7 +70,7 @@ const num=(v,lo,hi)=>Number.isFinite(v)?Math.min(hi,Math.max(lo,v)):0;
 function setInput(p,i){
   if(!i||typeof i!=='object')return;const I=p.input;
   Object.assign(I,{mx:num(i.mx,-1,1),mz:num(i.mz,-1,1),mag:num(i.mag,0,1),run:!!i.run,sneak:!!i.sneak,slow:!!i.slow,aim:!!i.aim,
-    face:Number.isFinite(i.face)?i.face:null,aimDist:num(i.aimDist,0,60),fire:!!i.fire});
+    face:Number.isFinite(i.face)?i.face:null,aimDist:num(i.aimDist,0,60),fire:!!i.fire,ads:!!i.ads,stance:Math.round(num(i.stance,0,2))});
   if(i.fireQ>0)I.fireQ=num(i.fireQ,0,.3);
 }
 function gone(c){

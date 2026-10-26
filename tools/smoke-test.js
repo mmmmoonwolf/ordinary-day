@@ -664,6 +664,20 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     for (const a of [z, z2, z3]) a.gone = true; T.G.traps = []; Cs.applyTraps();
     console.log('v0.26: camp ' + tents + ' tents, ' + Cw.camp.traps.length + ' traps (caught a zombie and the player, saved), fire burns, ' + Math.round(good / 6) + '% police / military loot, ' + guards + ' guards, flare calls zombies');
   }
+  // v0.29: aiming down the sights tightens the spread, bursts widen it, prone is slow and hard to notice
+  { const Cb3 = await import('../src/systems/combat.js'), H = await import('../src/config/handling.js'), It4 = await import('../src/config/items.js'), Ai3 = await import('../src/entities/ai.js');
+    const pl = T.player, def = It4.DEF.rifle_p, hip = Cb3.spreadOf(Object.assign({}, pl, { ads: false, stance: 0, bloom: 0 }), def), aim = Cb3.spreadOf(Object.assign({}, pl, { ads: true, stance: 2, bloom: 0 }), def), burst = Cb3.spreadOf(Object.assign({}, pl, { ads: false, stance: 0, bloom: H.BLOOM.max }), def);
+    if (!(aim < hip * .5 && burst > hip * 2)) vfail('spread: hip ' + hip + ', aimed prone ' + aim + ', after a burst ' + burst);
+    const x0 = pl.pos.x, z0 = pl.pos.z, inv0 = pl.inv; pl.inv = 1e9; const bag0 = pl.gear.eq.primary, act0 = pl.gear.active;
+    const walk = (stance, ads) => { pl.pos.x = x0; pl.pos.z = z0; Object.assign(pl.input, { mx: 1, mz: 0, mag: 1, run: false, stance, ads, face: Math.PI / 2, fire: false }); const x = pl.pos.x; for (let i = 0; i < 30; i++) P.updatePlayer(pl, 1 / 30); return pl.pos.x - x; };
+    pl.gear.eq.primary = { id: 'rifle_p', mag: 30 }; pl.gear.active = 'primary';
+    const dStand = walk(0, false), dAds = walk(0, true), dProne = walk(2, false), proneNow = pl.stance === 2 && pl.sneak;
+    pl.gear.eq.primary = { id: 'rifle_p', mag: 30 }; pl.bloom = 0; pl.cool = 0; Object.assign(pl.input, { mag: 0, stance: 0, ads: false, fire: true }); for (let i = 0; i < 45; i++) P.updatePlayer(pl, 1 / 30); const bl = pl.bloom;
+    Object.assign(pl.input, { fire: false, stance: 0, ads: false }); P.updatePlayer(pl, 1 / 30);
+    pl.gear.eq.primary = bag0; pl.gear.active = act0; pl.pos.x = x0; pl.pos.z = z0; pl.inv = inv0;
+    if (!(dAds < dStand * .7 && dProne < dStand * .3 && proneNow && bl > .25)) vfail('stances: walked ' + dStand.toFixed(2) + ' / aiming ' + dAds.toFixed(2) + ' / prone ' + dProne.toFixed(2) + ' m, prone flag ' + proneNow + ', bloom after a burst ' + bl);
+    console.log('v0.29: spread hip ' + hip.toFixed(3) + ' / aimed prone ' + aim.toFixed(3) + ' / after a burst ' + burst.toFixed(3) + ', walked 1 s ' + dStand.toFixed(1) + ' / aiming ' + dAds.toFixed(1) + ' / prone ' + dProne.toFixed(1) + ' m, bloom ' + bl.toFixed(2));
+  }
   // v0.28: first-person view: keys move relative to where the view looks, the player faces it, back to the isometric view
   { const Fp = await import('../src/ui/fps.js'), Rd = await import('../src/core/renderer.js'), In = await import('../src/ui/input.js'), Ct = await import('../src/core/controls.js');
     const pl = T.player; Fp.setFps(true); Rd.view.yaw = Math.PI / 2; Ct.keys.KeyW = true; In.pollInput(pl); Ct.keys.KeyW = false;

@@ -13,7 +13,7 @@ import {openBag,closeBag} from './bag.js';
 import {isMuted,toggleMute} from '../systems/audio.js';
 import {isSettingsOpen,closeSettings} from './settings.js';
 import {isPauseOpen,togglePause} from './pause.js';
-import {toggleFps,look,lockMouse,mouseLocked,fpsMove} from './fps.js';
+import {toggleFps,look,lockMouse,mouseLocked,fpsMove,isScoped} from './fps.js';
 
 // ---------- input ----------
 let rightId=null,lookId=null,lookX=0,lookY=0;   // v0.28 a finger turning the first-person view
@@ -29,7 +29,7 @@ function usePick(){if(player.full&&!player.near&&!player.nearDown)openBag();else
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),mray=new THREE.Raycaster();
 export function pollInput(p){
   const I=p.input;let ix=0,iy=0;
-  if(!$('bag').hidden||!$('pause').hidden){Object.assign(I,{mx:0,mz:0,mag:0,run:false,fire:false,fireQ:0,face:null});return;}   // a menu open while the world goes on (v0.11)
+  if(!$('bag').hidden||!$('pause').hidden){Object.assign(I,{mx:0,mz:0,mag:0,run:false,fire:false,fireQ:0,face:null,ads:false});return;}   // a menu open while the world goes on (v0.11)
   if(keys.KeyW||keys.ArrowUp)iy+=1;if(keys.KeyS||keys.ArrowDown)iy-=1;if(keys.KeyD||keys.ArrowRight)ix+=1;if(keys.KeyA||keys.ArrowLeft)ix-=1;
   if(joy.id!==null){ix+=joy.x;iy-=joy.y;}
   let mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1;}
@@ -37,9 +37,13 @@ export function pollInput(p){
   I.mx=(ix-iy)/Math.SQRT2;I.mz=(-ix-iy)/Math.SQRT2;I.mag=mag;
   if(view.fps)[I.mx,I.mz]=fpsMove(ix,iy);   // v0.28 relative to where the view looks
   I.run=!!(keys.ShiftLeft||keys.ShiftRight)||(joy.id!==null&&mag>.9);
-  I.slow=!!keys.KeyC;I.sneak=joy.id!==null&&mag>.08&&mag<.45;
+  I.slow=false;I.sneak=joy.id!==null&&mag>.08&&mag<.45;
+  // v0.29 C crouches, Z goes prone (toggles; running stands up), right mouse or 🎯 aims down the sights
+  if(I.run&&mag>.08)ctl.stance=0;
+  I.stance=ctl.stance;I.ads=ctl.ads||ctl.adsTouch;
+  view.breathKey=false;if(isScoped(p)){view.breathKey=I.run;I.run=false;}   // through the scope Shift holds the breath
   I.aim=mouse.active;I.face=null;
-  if(view.fps){I.face=view.yaw;I.aim=!isTouch;I.aimDist=40;}   // v0.28 face where the view looks; on a phone aim assist still helps
+  if(view.fps){I.face=view.yaw+view.sway;I.aim=!isTouch;I.aimDist=40;}   // v0.28 face where the view looks; on a phone aim assist still helps
   else if(mouse.active){mray.setFromCamera(mouse.ndc,camera);if(mray.ray.intersectPlane(groundPlane,mouse.world)){I.face=Math.atan2(mouse.world.x-p.pos.x,mouse.world.z-p.pos.z);I.aimDist=Math.hypot(mouse.world.x-p.pos.x,mouse.world.z-p.pos.z);}}
   I.fire=ctl.fireHeld;if(ctl.fireQ>0){I.fireQ=ctl.fireQ;ctl.fireQ=0;}
 }
@@ -63,6 +67,8 @@ export function initInput(){
     if(e.code==='KeyM'){toggleMute();showSound();return;}
     if(G.paused)return;
     if(e.code==='KeyV'&&!e.repeat){toggleFps();return;}   // v0.28
+    if(e.code==='KeyC'&&!e.repeat){ctl.stance=ctl.stance===1?0:1;return;}   // v0.29
+    if(e.code==='KeyZ'&&!e.repeat){ctl.stance=ctl.stance===2?0:2;return;}
     keys[e.code]=true;
     if(e.code==='Space'){e.preventDefault();if(!e.repeat){ctl.fireHeld=true;ctl.fireQ=.2;}}
     if(e.code==='Digit1')act('slot','primary');if(e.code==='Digit2')act('slot','secondary');if(e.code==='Digit3')act('slot','melee');
@@ -72,7 +78,9 @@ export function initInput(){
     if(e.code==='KeyQ'&&!e.repeat)act('throw');
   });
   addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Space')ctl.fireHeld=false;});
-  addEventListener('blur',()=>{for(const k in keys)keys[k]=false;ctl.fireHeld=false;});
+  addEventListener('blur',()=>{for(const k in keys)keys[k]=false;ctl.fireHeld=false;ctl.ads=false;});
+  cv.addEventListener('mousedown',e=>{if(e.button===2&&G.running)ctl.ads=true;});   // v0.29 (mousedown: a second button held with the first gives no pointerdown)
+  addEventListener('mouseup',e=>{if(e.button===2)ctl.ads=false;});
   cv.addEventListener('pointerdown',e=>{
     if(e.pointerType==='mouse'){mouse.active=true;if(view.fps&&!mouseLocked()){lockMouse();return;}if(e.button===0&&G.running){ctl.fireHeld=true;ctl.fireQ=.2;}return;}   // v0.28 the first click takes the mouse
     mouse.active=false;
@@ -87,11 +95,13 @@ export function initInput(){
     if(e.pointerType==='mouse'){mouse.active=true;mouse.ndc.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);return;}
     if(e.pointerId!==joy.id)return;let dx=e.clientX-joy.ox,dy=e.clientY-joy.oy;const l=Math.hypot(dx,dy),M=56;if(l>M){dx=dx/l*M;dy=dy/l*M;}joy.x=dx/M;joy.y=dy/M;$('knob').style.transform=`translate(${dx}px,${dy}px)`;
   });
-  const endPtr=e=>{if(e.pointerType==='mouse'){ctl.fireHeld=false;return;}if(e.pointerId===joy.id){joy.id=null;joy.x=joy.y=0;$('joy').hidden=true;}if(e.pointerId===rightId){rightId=null;ctl.fireHeld=false;}if(e.pointerId===lookId)lookId=null;};
+  const endPtr=e=>{if(e.pointerType==='mouse'){if(e.button!==2)ctl.fireHeld=false;return;}if(e.pointerId===joy.id){joy.id=null;joy.x=joy.y=0;$('joy').hidden=true;}if(e.pointerId===rightId){rightId=null;ctl.fireHeld=false;}if(e.pointerId===lookId)lookId=null;};
   cv.addEventListener('pointerup',endPtr);cv.addEventListener('pointercancel',endPtr);
   cv.addEventListener('contextmenu',e=>e.preventDefault());
   cv.addEventListener('wheel',e=>{e.preventDefault();if(view.fps)return;zoom(e.deltaY>0?1.1:1/1.1);},{passive:false});
   $('bView').addEventListener('click',toggleFps);
+  $('bAds').addEventListener('click',()=>{ctl.adsTouch=!ctl.adsTouch;});   // v0.29 touch: aim down the sights on / off
+  $('bStance').addEventListener('click',()=>{ctl.stance=(ctl.stance+1)%3;});
   $('bZin').addEventListener('click',()=>zoom(1/1.2));$('bZout').addEventListener('click',()=>zoom(1.2));
   $('bSpeed').addEventListener('click',()=>{if(!isSolo())return;G.speedIdx=(G.speedIdx+1)%SPEEDS.length;$('bSpeed').textContent='×'+SPEEDS[G.speedIdx];});
   $('bBag').addEventListener('click',()=>{$('bag').hidden?openBag():closeBag();});
@@ -112,13 +122,13 @@ export function initInput(){
   $('bFix').addEventListener('click',()=>act('fix'));
   $('bThrow').addEventListener('click',()=>act('throw'));
   for(const c of chipEls)c.addEventListener('click',()=>act('slot',c.dataset.slot));
-  $('bStart').addEventListener('click',()=>{clearSave();reset();$('overlay').hidden=true;G.running=true;});
+  $('bStart').addEventListener('click',()=>{clearSave();reset();ctl.stance=0;ctl.adsTouch=false;$('overlay').hidden=true;G.running=true;});
   $('bContinue').addEventListener('click',()=>{if(!loadGame()){showContinue();return;}$('overlay').hidden=true;G.running=true;say('เล่นต่อจากเซฟ · '+$('contInfo').textContent,'',4);});
   showContinue();
   for(const id of ['bSound','bSound2'])$(id).addEventListener('click',()=>{toggleMute();showSound();});showSound();
-  $('bAgain').addEventListener('click',()=>{reset();$('overlay').hidden=true;G.running=true;});
+  $('bAgain').addEventListener('click',()=>{reset();ctl.stance=0;ctl.adsTouch=false;$('overlay').hidden=true;G.running=true;});
   if(isTouch){$('atkKey').textContent='กดค้าง';}
   $('keys').innerHTML=isTouch
-    ?'<kbd>นิ้วซ้าย</kbd><span>ลากเพื่อเดิน ดันสุดเพื่อวิ่ง</span><kbd>ปุ่มโจมตี</kbd><span>กดค้างเพื่อยิงต่อเนื่อง เล็งให้อัตโนมัติ</span><kbd>1 2 3</kbd><span>สลับอาวุธหลัก รอง ประชิด</span><kbd>👁</kbd><span>มุมมองบุคคลที่หนึ่ง (ทดลอง) นิ้วขวาลากเพื่อหันมอง</span><kbd>กระเป๋า</kbd><span>ติดตั้ง ใช้ หรือทิ้งของ (เกมหยุดระหว่างเปิด)</span>'
-    :'<kbd>W A S D</kbd><span>เดิน (Shift วิ่ง กลางคืนเสียงวิ่งเรียกซอมบี้)</span><kbd>เมาส์</kbd><span>เล็ง · คลิกค้างเพื่อโจมตี</span><kbd>1 2 3</kbd><span>สลับอาวุธหลัก รอง ประชิด</span><kbd>R · E · H</kbd><span>รีโหลด · เก็บของ · ใช้ยา</span><kbd>Tab</kbd><span>เปิดกระเป๋า (เกมหยุดระหว่างเปิด)</span><kbd>V</kbd><span>มุมมองบุคคลที่หนึ่ง (ทดลอง) เมาส์หันมอง</span>';
+    ?'<kbd>นิ้วซ้าย</kbd><span>ลากเพื่อเดิน ดันสุดเพื่อวิ่ง</span><kbd>ปุ่มโจมตี</kbd><span>กดค้างเพื่อยิงต่อเนื่อง เล็งให้อัตโนมัติ</span><kbd>1 2 3</kbd><span>สลับอาวุธหลัก รอง ประชิด</span><kbd>👁</kbd><span>มุมมองบุคคลที่หนึ่ง (ทดลอง) นิ้วขวาลากเพื่อหันมอง ปุ่ม 🎯 เล็งศูนย์ ปุ่มท่าทาง ยืน หมอบ นอน</span><kbd>กระเป๋า</kbd><span>ติดตั้ง ใช้ หรือทิ้งของ (เกมหยุดระหว่างเปิด)</span>'
+    :'<kbd>W A S D</kbd><span>เดิน (Shift วิ่ง กลางคืนเสียงวิ่งเรียกซอมบี้)</span><kbd>เมาส์</kbd><span>เล็ง · คลิกค้างเพื่อโจมตี</span><kbd>1 2 3</kbd><span>สลับอาวุธหลัก รอง ประชิด</span><kbd>R · E · H</kbd><span>รีโหลด · เก็บของ · ใช้ยา</span><kbd>Tab</kbd><span>เปิดกระเป๋า (เกมหยุดระหว่างเปิด)</span><kbd>V</kbd><span>มุมมองบุคคลที่หนึ่ง (ทดลอง) เมาส์หันมอง</span><kbd>คลิกขวา</kbd><span>เล็งศูนย์ (ปืน) · Sniper มองผ่านกล้อง กด Shift กลั้นหายใจ</span><kbd>C · Z</kbd><span>หมอบ · นอนราบ (เดินช้า เสียงเบา ซอมบี้เห็นยาก ยิงแม่นขึ้น)</span>';
 }

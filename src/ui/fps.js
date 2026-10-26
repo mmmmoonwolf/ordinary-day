@@ -3,6 +3,7 @@ import {cv,view,fpsCam} from '../core/renderer.js';
 import {G} from '../core/state.js';
 import {DEF} from '../config/items.js';
 import {STUB_H} from '../config/shelter.js';
+import {ADS,STANCE,SWAY,BREATH,BREATH_REST,KICK} from '../config/handling.js';
 import {curWeapon} from '../systems/inventory.js';
 import {weaponModel} from '../world/item-models.js';
 import {rooms,shownRoom,slab} from '../world/interiors.js';
@@ -14,35 +15,42 @@ import {player} from '../entities/player.js';
 // the keys and the stick move relative to it, and the player always faces where the view looks. Shots stay level, as in
 // the isometric game (the pitch is only for looking). The own body is hidden and the weapon is drawn in front of the
 // camera; inside a building the cut-away walls are raised to full height under a ceiling.
-const SENS=.0022,TOUCH_SENS=.0055,PITCH=[-.8,.6];   // mouse / finger look speed (rad per pixel), how far down and up
-const EYE=1.62,EYE_DOWN=.5,CEIL=3.1,DOOR_TOP=2.2;   // eye height standing / down (m), room ceiling, top of the door
+// v0.29: aiming down the sights zooms in (the sniper rifle through a scope), the aim drifts and every shot kicks the
+// view up, the eyes drop when crouched or prone (config/handling.js)
+const SENS=.0022,TOUCH_SENS=.0055,PITCH=[-.8,.6],FOV=72;   // mouse / finger look speed (rad per pixel), how far down and up, field of view
+const EYE_DOWN=.5,CEIL=3.1,DOOR_TOP=2.2;   // eye height when down (m), room ceiling, top of the door
 export function setFps(on){
   view.fps=on;if(document.body)document.body.classList.toggle('fps',on);
   if(on){view.yaw=player.face;view.pitch=-.08;}
   else if(document.pointerLockElement===cv)document.exitPointerLock();
   for(const r of rooms)if(r.shell)r.shell.visible=on;
   vm.visible=false;vmId=null;
+  view.sway=0;adsT=0;zoom=1;fpsCam.fov=FOV;fpsCam.updateProjectionMatrix();
+  if(!on){for(const id of ['bAds','bStance'])$(id).hidden=true;if(document.body)document.body.classList.remove('scoped','ads');}
 }
 export const toggleFps=()=>setFps(!view.fps);
-export function look(dx,dy,touch){const k=touch?TOUCH_SENS:SENS;view.yaw-=dx*k;view.pitch=clamp(view.pitch-dy*k,...PITCH);}
+export function look(dx,dy,touch){const k=(touch?TOUCH_SENS:SENS)/zoom;view.yaw-=dx*k;view.pitch=clamp(view.pitch-dy*k,...PITCH);}
+// looking through a scope right now (Shift then holds the breath instead of running)
+export function isScoped(p){if(!view.fps||!p.input.ads)return false;const d=DEF[curWeapon(p).id];return !!d.gun&&ADS.scope.includes(d.model);}
 export const mouseLocked=()=>document.pointerLockElement===cv;
 export function lockMouse(){if(!isTouch&&cv.requestPointerLock)try{cv.requestPointerLock();}catch(_){}}
 // stick / keys (right, forward) -> a ground direction, relative to where the view looks
 export function fpsMove(ix,iy){const fx=Math.sin(view.yaw),fz=Math.cos(view.yaw);return [-fz*ix+fx*iy,fx*ix+fz*iy];}
 
 // the weapon in front of the camera
-const vm=new THREE.Group();fpsCam.add(vm);vm.visible=false;let vmId=null,vmModel=null;
-function viewModel(v){
+const vm=new THREE.Group();fpsCam.add(vm);vm.visible=false;let vmId=null,vmModel=null,adsT=0,zoom=1;
+function viewModel(v,ads,scoped){
   const id=curWeapon(v).id;
   if(id!==vmId){vmId=id;if(vmModel){vm.remove(vmModel);vmModel=null;}
     if(id!=='fist'){const def=DEF[id];vmModel=weaponModel(def.model);vmModel.scale.setScalar(.42);vmModel.rotation.order='YXZ';vm.add(vmModel);
       vmModel.traverse(o=>{if(o.isMesh){o.castShadow=false;o.renderOrder=10;}});}}
-  vm.visible=!!vmModel&&v.alive&&!(v.down>0)&&!(v.bleed>0);if(!vm.visible)return;
+  vm.visible=!!vmModel&&v.alive&&!(v.down>0)&&!(v.bleed>0)&&!scoped;if(!vm.visible)return;
   const def=DEF[id],gun=def.gun,t=performance.now()/1000,mv=Math.min(1,(v.moving||0)/4),sway=Math.sin(t*8)*.012*mv;
   let x=gun?.13:.22,y=(gun?-.13:-.26)+Math.abs(sway),z=gun?-.3:-.36,rx=gun?0:-1,ry=Math.PI+(gun?0:.25);   // a melee weapon held up
   if(gun){z+=v.recoil*.06;rx+=v.recoil*.12;if(v.reloadT>0){y-=.12;rx-=.5;}}
   else if(v.swing>0){const k=1-v.swing/Math.max(.05,v.swingDur),a=Math.sin(k*Math.PI);rx=-1+a*1.5;ry=Math.PI+.6-k*1.2;x-=a*.12;}   // down and across
-  vmModel.position.set(x+sway,y,z);vmModel.rotation.set(rx,ry,0);
+  if(gun&&adsT>0){const k=adsT;x+=(0-x)*k;y+=(-.085-y)*k;z+=(-.24-z)*k;rx*=1-k*.6;}   // up to the eye, along the sights
+  vmModel.position.set(x+sway*(1-adsT*.8),y,z);vmModel.rotation.set(rx,ry,0);
 }
 // full-height walls, the space above the doorway, a tall door and a ceiling for room k, made the first time it is seen
 function shell(r){
@@ -56,14 +64,34 @@ function shell(r){
   r.cut.add(g);return (r.shell=g);
 }
 // once a frame, for the player the camera follows (the local one, or a teammate once dead)
-let bob=0;
+let bob=0,eyeY=STANCE[0].eye,lastRecoil=0,breathT=0,breathRest=0,swayP=0;
 export function updateFps(v,dt){
-  if(v!==player)view.yaw+=Math.atan2(Math.sin(v.face-view.yaw),Math.cos(v.face-view.yaw))*Math.min(1,dt*6);   // watching a teammate
-  const low=!v.alive||v.down>0||v.bleed>0;bob+=dt*(v.moving||0)*2.2;
-  const eye=low?EYE_DOWN:EYE+Math.sin(bob)*.035*Math.min(1,(v.moving||0)/3);
-  fpsCam.position.set(v.pos.x,(v.y||0)+eye,v.pos.z);fpsCam.rotation.set(view.pitch,view.yaw+Math.PI,0,'YXZ');
+  const mine=v===player;
+  if(!mine)view.yaw+=Math.atan2(Math.sin(v.face-view.yaw),Math.cos(v.face-view.yaw))*Math.min(1,dt*6);   // watching a teammate
+  const low=!v.alive||v.down>0||v.bleed>0,st=STANCE[v.stance|0]||STANCE[0];bob+=dt*(v.moving||0)*2.2;
+  eyeY+=((low?EYE_DOWN:st.eye)-eyeY)*Math.min(1,dt*8);
+  const eye=eyeY+Math.sin(bob)*.035*Math.min(1,(v.moving||0)/3)*(v.stance===2?.3:1);
+  // aiming down the sights: zoom in by gun, through the scope for a sniper rifle
+  const d=DEF[curWeapon(v).id],ads=mine&&!low&&!!v.input.ads&&!!d.gun&&!(v.reloadT>0),scoped=ads&&ADS.scope.includes(d.model)&&adsT>.7;
+  adsT+=((ads?1:0)-adsT)*Math.min(1,dt*12);
+  const zt=ads?ADS.zoom[d.model]||1.3:1;zoom+=(zt-zoom)*Math.min(1,dt*10);
+  if(Math.abs(fpsCam.fov-FOV/zoom)>.01){fpsCam.fov=FOV/zoom;fpsCam.updateProjectionMatrix();}
+  const B=document.body;if(B){if(B.classList.contains('scoped')!==scoped)B.classList.toggle('scoped',scoped);if(B.classList.contains('ads')!==adsT>.5)B.classList.toggle('ads',adsT>.5);}
+  // the aim drifts (steadier crouched or prone, wider through a scope; Shift holds the breath for a few seconds)
+  const holding=scoped&&view.breathKey&&breathRest<=0;
+  if(holding){breathT+=dt;if(breathT>BREATH){breathRest=BREATH_REST;breathT=0;}}else{if(breathRest>0)breathRest-=dt;breathT=Math.max(0,breathT-dt);}
+  const t=performance.now()/1000,amp=mine&&!low?SWAY.base*((v.moving||0)>.3?SWAY.moving:1)*st.spread*(ads?SWAY.ads:1)*(scoped?SWAY.scope:1)*(holding?.08:1):0;
+  view.sway+=((Math.sin(t*1.1)+.5*Math.sin(t*2.7+1))/1.5*amp-view.sway)*Math.min(1,dt*6);
+  swayP+=((Math.sin(t*1.6+2)+.4*Math.sin(t*3.3))/1.4*amp*.7-swayP)*Math.min(1,dt*6);
+  // every shot kicks the view up and a little sideways, more as the spread grows
+  if(mine&&(v.recoil||0)>lastRecoil+.3){const k=1+(v.bloom||0);view.pitch=clamp(view.pitch+KICK.pitch*k*(ads?.7:1),...PITCH);view.yaw+=(Math.random()-.5)*2*KICK.yaw*k;}
+  lastRecoil=v.recoil||0;
+  fpsCam.position.set(v.pos.x,(v.y||0)+eye,v.pos.z);fpsCam.rotation.set(view.pitch+swayP,view.yaw+view.sway+Math.PI,0,'YXZ');
   v.b.root.visible=false;   // no own body in front of the eyes (animate() shows it again next frame)
-  viewModel(v);
+  viewModel(v,ads,scoped);
+  const cr=$('cross');if(cr){const s='scale('+(1+(v.bloom||0)*.7).toFixed(2)+')';if(cr.style.transform!==s)cr.style.transform=s;}
+  if(isTouch){const g=!!d.gun&&!low;if($('bAds').hidden===g)$('bAds').hidden=!g;if($('bStance').hidden)$('bStance').hidden=false;
+    $('bAds').classList.toggle('on',!!v.input.ads);const sn=st.name||'ยืน';if($('bStance').textContent!==sn)$('bStance').textContent=sn;}
   const k=shownRoom();if(k>=0){const r=rooms[k],s=shell(r);s.visible=true;r.shellDoor.visible=r.cutDoor.visible;}
   // the cursor comes back for the bag and the pause menu; a click on the game takes the mouse again
   if(mouseLocked()&&(!$('bag').hidden||!$('pause').hidden||!$('overlay').hidden))document.exitPointerLock();

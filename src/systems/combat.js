@@ -3,6 +3,7 @@ import {muzzle} from '../core/renderer.js';
 import {G} from '../core/state.js';
 import {ctl} from '../core/controls.js';
 import {DEF,durPct} from '../config/items.js';
+import {ADS,BLOOM,STANCE} from '../config/handling.js';
 import {diffOf} from '../config/difficulty.js';
 import {BLEED_SECONDS,BLEED_PER_DMG} from '../config/party.js';
 import {rayWall} from '../world/collision.js';
@@ -70,6 +71,9 @@ export function startReload(p){
   p.reloadT=def.reload;p.reloadFor=w;sfxFor(p).reload(def.model);
 }
 export function finishReload(p){const w=p.reloadFor,def=DEF[w.id];if(w!==curWeapon(p))return;w.mag+=takeAmmo(p,def.ammo,def.mag-w.mag);uiFor(p).updateLoadout(true);}
+// how far a shot may stray (rad, either side): the gun's spread, tighter aiming down the sights and crouched or prone,
+// wider after a burst (v0.29)
+export function spreadOf(p,def){return def.spread*(p.ads?ADS.spread:1)*STANCE[p.stance|0].spread*(1+(p.bloom||0));}
 export function fireGun(p,w,def){
   const U=uiFor(p);
   if(w.mag<=0){p.cool=.3;sfxFor(p).empty();if(countAmmo(p,def.ammo)>0)startReload(p);else U.feedOnce('noammo','กระสุนหมด · หา '+DEF[def.ammo].name,'warn');return;}
@@ -77,7 +81,7 @@ export function fireGun(p,w,def){
   const fx=Math.sin(p.face),fz=Math.cos(p.face),ox=p.pos.x+fx*.7,oz=p.pos.z+fz*.7;
   const pel=def.pellets||1,pd=def.pellets?def.dmg*1.4/def.pellets:def.dmg;
   for(let k0=0;k0<pel;k0++){
-    const ang=p.face+rnd(-def.spread,def.spread),dx=Math.sin(ang),dz=Math.cos(ang);
+    const sp=spreadOf(p,def),ang=p.face+rnd(-sp,sp),dx=Math.sin(ang),dz=Math.cos(ang);
     let wall=rayWall(ox,oz,dx,dz,def.range);const tank=tankOnRay(ox,oz,dx,dz,wall+.6);if(tank)wall=Math.min(wall,tank[0]);   // v0.23 a gas cylinder stops the bullet, and goes off
     const hits=[];
     for(const z of agents){if(z.state!=='zombie')continue;const rx=z.pos.x-ox,rz=z.pos.z-oz,t=rx*dx+rz*dz;if(t<-.3||t>wall)continue;if(Math.abs(rx*dz-rz*dx)<.45+(z.rad-.34))hits.push([Math.max(t,0),z]);}
@@ -87,6 +91,7 @@ export function fireGun(p,w,def){
     tracer(ox,oz,ox+dx*end,oz+dz*end,armor?'#a9d4ff':null);
     if(tank&&hits.length<(def.pierce||1))blowTank(tank[1],p);
   }
+  p.bloom=Math.min(BLOOM.max,(p.bloom||0)+BLOOM.add);   // v0.29 each shot scatters the next a little more
   muzzle.position.set(ox,1.4,oz);muzzle.intensity=4;
   makeNoise(p.pos.x,p.pos.z,def.noise);
   if(p.local&&!G.gunTip){G.gunTip=true;U.feed('เสียงปืนดึงดูดซอมบี้ กลางคืนได้ยินไกลขึ้น 1.5 เท่า','warn');}

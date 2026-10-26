@@ -6,7 +6,7 @@ import {POOLS,MED_W} from '../config/loot.js';
 import {collide} from '../world/collision.js';
 import {rooms,roomAt,navStep,doorDist,walledOff} from '../world/interiors.js';
 import {HEAR_WALL,INDOOR_NOISE} from '../config/shelter.js';
-import {SNEAK_SENSE} from '../config/stealth.js';
+import {STANCE} from '../config/handling.js';
 import {nearestNode} from '../world/sidewalk.js';
 import {agents,becomeZombie} from './agents.js';
 import {lerpAng,moveAgent,wander,d2} from './movement.js';
@@ -71,7 +71,7 @@ export function updateZombie(a,dt){
   for(const p of targets()){
     const dP=d2(a,p),w=walledOff(a.pos.x,a.pos.z,p.pos.x,p.pos.z);
     if(day){if(dP<reachP*reachP&&!w&&dP<td){tgt=p;td=dP;walled=false;}}    // Walkers never chase the player, but hit when adjacent
-    else if(dP<td&&(!w||dP<HEAR_WALL*HEAR_WALL)&&(!p.sneak||a.seenP===p||dP<C.sense*C.sense*SNEAK_SENSE*SNEAK_SENSE)){tgt=p;td=dP;walled=w;}   // walls block sight, but not a player right behind them; a sneaking player is noticed closer (v0.7)
+    else if(dP<td&&(!w||dP<HEAR_WALL*HEAR_WALL)&&(!p.sneak||a.seenP===p||dP<C.sense*C.sense*STANCE[p.stance|0].sense**2)){tgt=p;td=dP;walled=w;}   // walls block sight, but not a player right behind them; a sneaking player is noticed closer (v0.7)
   }
   const isP=!!tgt&&tgt.state==='player';
   // lost sight of the player it was chasing behind a wall or a shut door: go where they were last seen

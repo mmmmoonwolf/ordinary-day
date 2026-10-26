@@ -17,6 +17,7 @@ import {FX} from '../systems/effects.js';
 import {throwPick} from '../systems/throw.js';
 const THROW_ICON={bottle:'🍾',molotov:'🔥',grenade:'💣',flare:'🎆'};
 import {clearTip} from './tips.js';
+import {STANCE} from '../config/handling.js';
 
 // ---------- messages ----------
 let msgTimer=0;
@@ -74,7 +75,9 @@ export function updateLoadout(force){
 }
 function fmtReal(s){s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+pad(s%60);}
 let soloShown=true;
+let stanceShown=-1;
 export function updateHUD(dt){
+  const sv=player.alive&&!(player.bleed>0)?player.stance|0:0;if(sv!==stanceShown){stanceShown=sv;$('stanceTag').hidden=!sv;$('stanceTag').textContent=STANCE[sv].name;}   // v0.29
   const solo=isSolo();if(solo!==soloShown){soloShown=solo;$('bSpeed').hidden=!solo;$('bSpeed').textContent='×'+SPEEDS[G.speedIdx];}   // ×2 / ×4 only alone (v0.11)
   const m=Math.floor(G.min),tod=m%1440,day=Math.floor(m/1440)+1;
   if(m!==G.lastMinShown){G.lastMinShown=m;$('clock').textContent=hhmm(m);$('dayline').innerHTML='วันที่ '+day+'<span class="wd"> · '+DAYS[(2+day-1)%7]+'</span> · รอด '+Math.min(nightsSurvived(m),GOAL_NIGHTS)+'/'+GOAL_NIGHTS+' คืน';}
