@@ -1,7 +1,7 @@
 import {rnd,pick,clamp,wpick} from '../core/util.js';
 import {G} from '../core/state.js';
 import {inWorld} from '../config/world.js';
-import {ZC} from '../config/zombies.js';
+import {ZC,RISE} from '../config/zombies.js';
 import {POOLS,MED_W} from '../config/loot.js';
 import {collide} from '../world/collision.js';
 import {rooms,roomAt,navStep,doorDist,walledOff} from '../world/interiors.js';
@@ -23,7 +23,9 @@ import {damageDoor} from '../systems/doors.js';
 
 // ---------- AI ----------
 export function updateHuman(a,dt){
-  if(a.state==='infected'){a.turnT-=dt;const k=clamp(1-a.turnT/8,0,1);a.b.mats[2].color.copy(a.b.base.skin).lerp(new THREE.Color(ZC.walker.skin),k*.7);if(a.turnT<=0){becomeZombie(a);return;}}
+  if(a.state==='infected'){a.turnT-=dt;const k=clamp(1-a.turnT/8,0,1);a.b.mats[2].color.copy(a.b.base.skin).lerp(new THREE.Color(ZC.walker.skin),k*.7);
+    if(a.turnT<=0){becomeZombie(a);a.rise=RISE.up;return;}
+    if(a.turnT<RISE.fall){a.moving=0;return;}}   // v0.27 down on the ground, about to turn
   if(G.outbreak){let th=null,td=81;for(const z of agents){if(z.state!=='zombie'||z.retreat)continue;const d=d2(a,z);if(z.kind==='walker'&&d>12.25)continue;if(d<td){td=d;th=z;}}
     if(th){a.panic=rnd(4,6);a.tx=a.pos.x-th.pos.x+rnd(-1,1);a.tz=a.pos.z-th.pos.z+rnd(-1,1);a.vendor=false;}}
   const slow=a.state==='infected'?.7:1;
@@ -52,6 +54,7 @@ export function updateZombie(a,dt){
   const C=ZC[a.kind];
   if(a.hitT>0){a.hitT-=dt;a.b.mats[0].emissive.setRGB(Math.max(0,a.hitT)*4,0,0);}
   if(a.trapT>0){a.trapT-=dt;a.moving=0;return;}   // v0.26 caught in a bear trap
+  if(a.rise>0){a.rise-=dt;a.moving=0;return;}   // v0.27 just turned, still getting up
   if(a.retreat){let near=null,nd=1e9;for(const p of players){const d=Math.hypot(a.pos.x-p.pos.x,a.pos.z-p.pos.z);if(d<nd){nd=d;near=p;}}   // walk away from the nearest player
     const dx=a.pos.x-near.pos.x,dz=a.pos.z-near.pos.z,d=nd;moveAgent(a,dx,dz,Math.max(1.6,C.speed*.6),dt);
     if(d>36||!inWorld(a.pos.x,a.pos.z,.5)){a.gone=true;}return;}

@@ -1,16 +1,21 @@
 // Builds assets/characters/ from Quaternius' Ultimate Modular Men / Women packs (CC0, glTF "Individual Characters").
 // Every character shares one 62-bone rig and the same animations, so the clips are written once (anims.glb) and each
 // character keeps only its meshes, quantized. Not part of the game or the tests; run it again when characters change:
-//   npm i --no-save @gltf-transform/core@4 @gltf-transform/extensions@4 @gltf-transform/functions@4
+//   npm i --no-save fbx2gltf@0.9.7-p1 @gltf-transform/core@4 @gltf-transform/extensions@4 @gltf-transform/functions@4
 //   node tools/build-characters.mjs <folder with "Ultimate modular men pack" and "Women Pack">
+//     <folder with Mixamo's "Not So Scary Zombie Pack" (FBX, T-pose X Bot included), v0.27; see tools/mixamo-clips.mjs>
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { prune, dedup, quantize, resample, weld } from '@gltf-transform/functions';
+import { execFileSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { ZCLIPS, addMixamoClips } from './mixamo-clips.mjs';
 
-const src = process.argv[2];
-if (!src) { console.error('usage: node tools/build-characters.mjs <pack folder>'); process.exit(1); }
+const src = process.argv[2], mixamo = process.argv[3];
+if (!src || !mixamo) { console.error('usage: node tools/build-characters.mjs <pack folder> <Mixamo zombie pack folder>'); process.exit(1); }
 const out = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'assets', 'characters');
 fs.mkdirSync(out, { recursive: true });
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
@@ -42,6 +47,14 @@ for (const [name, [pack, file]] of Object.entries(CHARS)) {
   const doc = await io.read(path.join(src, MEN, 'Worker.gltf'));
   const root = doc.getRoot();
   for (const a of root.listAnimations()) if (!CLIPS.includes(a.getName())) dropAnim(a);
+  // v0.27 the zombie clips, retargeted from Mixamo while the skin (the rest pose) is still there
+  const bin = path.join(path.dirname(createRequire(import.meta.url).resolve('fbx2gltf/package.json')), 'bin', os.type(), os.type() === 'Windows_NT' ? 'FBX2glTF.exe' : 'FBX2glTF');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'mixamo-'));
+  const fbx = async f => { const o = path.join(tmp, f.replace(/ /g, '_').replace(/[()]/g, '')); execFileSync(bin, ['--binary', '-i', path.join(mixamo, f + '.fbx'), '-o', o], { stdio: 'ignore' }); return io.read(o + '.glb'); };
+  const files = {};
+  for (const f of fs.readdirSync(mixamo)) if (f.endsWith('.fbx') && f !== 'X Bot.fbx') { const k = f.slice(0, -4).replace(/ /g, '_').replace(/[()]/g, ''); if (Object.values(ZCLIPS).some(c => c[0] === k)) files[k] = await fbx(f.slice(0, -4)); }
+  addMixamoClips(doc, doc, await fbx('X Bot'), files);
+  fs.rmSync(tmp, { recursive: true, force: true });
   for (const n of root.listNodes()) if (n.getMesh()) { n.setMesh(null); n.setSkin(null); }
   for (const m of root.listMeshes()) m.dispose();
   await doc.transform(resample(), prune({ keepLeaves: true }), dedup());

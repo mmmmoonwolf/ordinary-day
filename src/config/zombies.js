@@ -14,4 +14,7 @@ export const ZC={
 };
 // PLACEHOLDER: in-game minutes from bite to turning (~100 real seconds at ×1)
 export const INFECT_MINUTES=8*60;
+// v0.27 a bitten person falls down for the last seconds before turning, then needs a moment to get up as a zombie
+// (it does not move or bite meanwhile). PLACEHOLDER seconds
+export const RISE={fall:1.2,up:2};
 export const isSpecial=k=>k==='sprinter'||k==='boomer'||k==='armor'||k==='tyrant';

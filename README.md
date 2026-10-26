@@ -133,7 +133,7 @@
 
 ```
 index.html                     HTML + CSS ของ HUD แล้วโหลด src/main.js
-assets/characters/             โมเดลตัวละคร 16 แบบ + ท่าทาง (anims.glb) จาก Quaternius
+assets/characters/             โมเดลตัวละคร 16 แบบ + ท่าทาง (anims.glb) จาก Quaternius และท่าซอมบี้จาก Mixamo (v0.27)
 assets/sounds/                 เสียงจริงทั้งหมด 45 ไฟล์ (mp3 โมโน จาก Pixabay, v0.19–v0.21)
 assets/props/props.glb         โมเดลปืน ของ รถ เฟอร์นิเจอร์ และของในเมือง (Quaternius v0.14–v0.16, City Pack และ Weapons Pack v0.18)
 src/main.js                    จุดเริ่ม: สร้างเมือง ผูก input เริ่มเกม และวน loop
@@ -151,6 +151,7 @@ tools/smoke-test.js            ทดสอบตรรกะเกมแบบ�
 tools/net-test.js              ทดสอบเล่นออนไลน์: host กับเพื่อนเป็น 2 process คุยกันแทน WebRTC (npm test รันทั้งสองไฟล์)
 tools/headless.js              stub ของ THREE และ DOM ที่เทสต์ทั้งสองใช้
 tools/build-characters.mjs     แปลงตัวละครจากแพ็ก Quaternius เป็น assets/characters/ (ไม่ได้ใช้ตอนเล่นหรือเทสต์)
+tools/mixamo-clips.mjs         แปลงท่าซอมบี้ของ Mixamo เข้าโครงกระดูก Quaternius ให้ build-characters.mjs (v0.27)
 tools/build-props.mjs          แปลงปืน ของ และรถจากแพ็ก Quaternius (FBX) และแพ็ก glTF (v0.18) เป็น assets/props/props.glb (ไม่ได้ใช้ตอนเล่นหรือเทสต์)
 .github/workflows/             CI รัน smoke test ทุก PR
 ```
@@ -158,6 +159,7 @@ tools/build-props.mjs          แปลงปืน ของ และรถ�
 ## เครดิต
 
 - ตัวละคร: [Quaternius](https://quaternius.com) — Ultimate Modular Men Pack และ Ultimate Modular Women Pack (CC0)
+- ท่าซอมบี้ (v0.27): [Mixamo](https://www.mixamo.com) — Not So Scary Zombie Pack แปลงเข้าโครงกระดูกของ Quaternius (ใช้ในเกมได้ตามเงื่อนไขของ Mixamo ไม่มีไฟล์ต้นฉบับใน repo)
 - ปืน ของ รถ เฟอร์นิเจอร์ ต้นไม้ และป้ายถนน: [Quaternius](https://quaternius.com) — Guns, Survival, Food, Cars, Furniture, Trees, Nature และ Streets (CC0)
 - ฟาร์ม (v0.22): [Kenney](https://kenney.nl) — Retro Urban Kit และ Building Kit (CC0)
 - ข้าวโพด ต้นไม้ เต็นท์ กองไฟ กับดัก วิทยุ ปืนพลุ แพ ถังแก๊ส (v0.23–v0.26): [Quaternius](https://quaternius.com) Nature / Survival / Streets (CC0) · ป้ายรถเมล์ ม้านั่ง ป้าย ATM เรือนกระจก ราวตากผ้า และอาวุธฟาร์ม: City Pack และ Weapons Pack 002 (เหมือน v0.18)
@@ -175,6 +177,7 @@ tools/build-props.mjs          แปลงปืน ของ และรถ�
 
 | เวอร์ชัน | สิ่งที่เพิ่ม |
 | --- | --- |
+| v0.27 | **ซอมบี้ขยับเหมือนซอมบี้**: ท่าทางใหม่จาก Mixamo ซอมบี้เดินหลังค่อมโซเซ บางตัวลากขา วิ่งโงนเงน ยืนโยกหรือเกาตัว ตีด้วยท่าซอมบี้ สะดุ้งตอนโดนยิง ล้มหงายตอนตาย และ Tyrant ยกสองแขนทุบ · คนที่โดนกัดล้มลงก่อนกลายร่างแล้วค่อย ๆ ลุกขึ้นเป็นซอมบี้ (ช่วงนั้นยังไม่ไล่ตาม) |
 | v0.26 | **ค่ายผู้รอดชีวิตร้าง**: ลานโล่งในป่าฝั่งตรงข้ามแม่น้ำ มีเต็นท์ กองไฟที่ยังลุก คบไฟ วิทยุที่ยังเปิดอยู่ กับดักหมีรอบค่าย และของระดับดี (อาวุธ Police / Military กลางวันก็มี) มี Walker เฝ้า · ของขว้างใหม่ "พลุ" ไหม้สีแดงล่อซอมบี้ทั้งย่าน |
 | v0.25 | **แม่น้ำและสะพาน**: ถนนกลางเมืองฝั่งตะวันออกออกไปถึงสะพานข้ามแม่น้ำ มีด่านตรวจทหารร้างที่ปลายสะพาน กระท่อมตกปลา แพยาง และป่าทึบฝั่งตรงข้าม · บางคืนฝูงซอมบี้ออกจากป่าข้ามสะพานเข้าเมือง |
 | v0.24 | **ย่านบ้านชานเมือง**: ถนนกลางเมืองฝั่งใต้มีประตูออกไปย่านบ้าน 6 หลังบนสนามหญ้ารก เข้าไปค้นของและหลบได้ 5 หลัง มีรั้วระแนง ตู้จดหมาย รถจอดหน้าบ้าน และถนนทางตัน · แผนที่เล็กเลื่อนตามไปทุกพื้นที่นอกเมือง |

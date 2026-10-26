@@ -2,7 +2,7 @@ import {clamp} from '../core/util.js';
 import {camera} from '../core/renderer.js';
 import {loadGltf} from '../core/gltf.js';
 import {DEF} from '../config/items.js';
-import {ZC} from '../config/zombies.js';
+import {ZC,RISE} from '../config/zombies.js';
 import {curWeapon} from '../systems/inventory.js';
 import {agents} from './agents.js';
 import {players} from './player.js';
@@ -14,6 +14,9 @@ import {players} from './player.js';
 // own clothes. Until the models have loaded, on "low" graphics, or if they fail to load, everyone keeps the old
 // blocky body (a.b), which also stays underneath, hidden, for the animation code that still writes to it.
 // The game logic never reads any of this: the model only follows the agent's state (a.sk).
+// v0.27 zombies move with Mixamo's zombie clips (Z_*, retargeted into anims.glb by tools/mixamo-clips.mjs): a hunched
+// shamble, a lurching run, a punch, the Tyrant's two-armed slam, a flinch when hit, a fall on the back when killed, and
+// a bitten person getting back up as a zombie. Without them (an older anims.glb) zombies use the people's clips as before.
 const BASE='assets/characters/';
 const CIVS=['m_casual','m_hoodie','m_beach','m_suit','m_worker','m_farmer','m_punk','f_casual','f_formal','f_suit','f_worker','f_punk'];
 const PLAYERS=['m_adventurer','f_adventurer','m_adventurer','f_adventurer'];
@@ -60,7 +63,7 @@ export function dress(a){
   });
   if(a.state==='player'&&PLAYER_TINT[a.id%PLAYER_TINT.length])for(const m of mats)if(!/Skin|Hair|Eye|Brow|Black/i.test(m.name)){m.color.lerp(new THREE.Color(PLAYER_TINT[a.id%PLAYER_TINT.length]),.55);m.userData.base.copy(m.color);}
   a.b.root.add(o);a.b.body.visible=false;
-  a.sk={o,id,bones,mats,mixer:new THREE.AnimationMixer(o),clip:'',act:null,zombie:false,flash:false,acc:0,swell:1};
+  a.sk={o,id,bones,mats,mixer:new THREE.AnimationMixer(o),clip:'',act:null,zombie:false,flash:false,acc:0,swell:1,react:0};
   if(a.state==='zombie'||a.state==='dead'&&a.kind)zombify(a);
   if(a.state==='player')a.heldId=null;   // the weapon goes into the model's hand (syncHeld)
 }
@@ -81,7 +84,10 @@ export function zombify(a){
   for(const m of s.mats){if(/Skin/i.test(m.name))m.color.copy(skin);else m.color.copy(m.userData.base).multiplyScalar(.62).lerp(dirt,.25);}
 }
 // once a frame per agent, after animate() has placed the root
-const CLIPS={walk:'Walk',run:'Run',idle:'Idle',die:'Death',hit:'HitRecieve',shoot:'Gun_Shoot',gunIdle:'Idle_Gun',gunRun:'Run_Shoot',use:'Interact',punch:'Punch_Right',slash:'Sword_Slash'};
+const CLIPS={walk:'Walk',run:'Run',idle:'Idle',die:'Death',hit:'HitRecieve',shoot:'Gun_Shoot',gunIdle:'Idle_Gun',gunRun:'Run_Shoot',use:'Interact',punch:'Punch_Right',slash:'Sword_Slash',
+  zIdle:'Z_Idle',zIdle2:'Z_Idle2',zWalk:'Z_Walk',zWalk2:'Z_Walk2',zRun:'Z_Run',zPunch:'Z_Punch',zSlam:'Z_Attack',zHit:'Z_Hit',zDie:'Z_Fall',zRise:'Z_StandUp'};
+// how fast the zombie clips go at speed 1 (m/s, a 1.85 m model), from the root motion the build took out of them
+const ZV={zWalk:.46,zWalk2:.29,zRun:2.67};
 const frustum=new THREE.Frustum(),pv=new THREE.Matrix4(),sphere=new THREE.Sphere(),qa=new THREE.Quaternion(),qb=new THREE.Quaternion();
 // once a frame, before the agents: what the camera sees
 export function beginSkins(){if(!skins.ready)return;pv.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);frustum.setFromProjectionMatrix(pv);}
@@ -92,14 +98,26 @@ export function skinFrame(a,dt){
   s.acc+=dt;if(!seen&&s.acc<.25)return;   // off screen: catch up four times a second
   const step=s.acc;s.acc=0;
   let clip='idle',speed=1,once=false;
-  const dead=a.state==='dead'||(a.state==='player'&&!a.alive);
-  if(dead||a.bleed>0||a.down>0){clip='die';once=true;}
+  const dead=a.state==='dead'||(a.state==='player'&&!a.alive),Z=s.zombie&&clips.Z_Walk;
+  s.react-=step;if(a.hitT>.1&&s.react<-.3)s.react=.5;   // a flinch when hit, not again straight away
+  if(Z&&dead){clip='zDie';once=true;speed=1.6;}
+  else if(dead||a.bleed>0||a.down>0||a.state==='infected'&&a.turnT<RISE.fall){clip='die';once=true;}
   else if(a.state==='player'){
     const w=curWeapon(a),def=DEF[w.id];
     if(a.swing>0){clip=w.id==='fist'?'punch':'slash';speed=CLIPS_LEN[clip]/Math.max(.2,a.swingDur);}
     else if(a.reloadT>0)clip='use';
     else if(a.moving>.3){clip=def.gun?'gunRun':a.moving>4?'run':'walk';speed=clip==='walk'?clamp(a.moving/1.5,.5,2):clamp(a.moving/5.5,.6,1.6);}
     else clip=def.gun?(a.recoil>.3?'shoot':'gunIdle'):'idle';
+  }
+  else if(Z){
+    const sc=ZC[a.kind]&&ZC[a.kind].scale?ZC[a.kind].scale[1]:1,c=s.clip;
+    if(a.rise>0){clip='zRise';once=true;speed=1.5;}
+    else if(a.wind>0){clip='zSlam';once=true;speed=1.3;}   // the slam lands as the wind-up ends
+    else if(a.swingT>0){clip='zPunch';once=true;speed=1.6;}
+    else if(s.react>0){clip='zHit';once=true;speed=1.8;}
+    else if(a.moving>(c==='zRun'?1.3:1.6)){clip='zRun';speed=clamp(a.moving/(ZV.zRun*sc),.6,2);}
+    else if(a.moving>.3){clip=a.nid%3===0&&a.moving<(c==='zWalk2'?.85:.75)?'zWalk2':'zWalk';speed=clamp(a.moving/(ZV[clip]*sc),.5,2.2);}
+    else clip=a.nid%2?'zIdle2':'zIdle';
   }
   else if(a.state==='zombie'){
     if(a.wind>0)clip='slash';
@@ -112,7 +130,7 @@ export function skinFrame(a,dt){
   s.mixer.update(step);
   // zombies: arms reaching forward, head hanging (on top of the clip, not while striking or dead)
   const b=s.bones;
-  if(s.zombie&&!dead&&clip!=='slash'&&clip!=='punch'&&b.UpperArmL){b.UpperArmL.rotation.z-=1.25;b.UpperArmR.rotation.z+=1.25;b.LowerArmL.rotation.z-=.2;b.LowerArmR.rotation.z+=.2;b.Head.rotation.x+=.3;}
+  if(s.zombie&&!Z&&!dead&&clip!=='slash'&&clip!=='punch'&&b.UpperArmL){b.UpperArmL.rotation.z-=1.25;b.UpperArmR.rotation.z+=1.25;b.LowerArmL.rotation.z-=.2;b.LowerArmR.rotation.z+=.2;b.Head.rotation.x+=.3;}
   // a gun in the hand points where the player faces whatever the clip does with the wrist (v0.14.1): the run and shoot clips
   // turn the wrist so far that the barrel ended up pointing up or backwards
   if(a.state==='player'&&a.held&&a.held.parent===b.WristR&&DEF[curWeapon(a).id].gun){
