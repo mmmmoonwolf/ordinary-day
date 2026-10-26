@@ -18,6 +18,7 @@ import {throwPick} from '../systems/throw.js';
 const THROW_ICON={bottle:'🍾',molotov:'🔥',grenade:'💣',flare:'🎆'};
 import {clearTip} from './tips.js';
 import {STANCE} from '../config/handling.js';
+import {shake} from './feel.js';
 
 // ---------- messages ----------
 let msgTimer=0;
@@ -27,7 +28,7 @@ export function say(...a){showSay(...a);send('*','say',a);}
 export function feed(...a){showFeed(...a);send('*','feed',a);}
 function showFeed(text,cls){const f=$('feed');const el=document.createElement('div');el.textContent=text;el.className=cls||'get';f.appendChild(el);while(f.children.length>4)f.removeChild(f.firstChild);setTimeout(()=>el.remove(),3000);}
 const once={};export function feedOnce(key,text,cls,gap){const t=performance.now();if(once[key]&&t-once[key]<(gap||2500))return;once[key]=t;showFeed(text,cls);}
-function hurtFlash(){$('hurt').style.opacity=.85;playLocal('hurt');}
+function hurtFlash(){$('hurt').style.opacity=.85;playLocal('hurt');shake(.35);}   // v0.31 the camera jolts
 // messages meant for one player: shown when it is the player on this device, otherwise sent to theirs (v0.11;
 // nothing goes anywhere while nobody plays online)
 const LOCAL={say:showSay,feed:showFeed,feedOnce,updateLoadout:f=>updateLoadout(f),hurt:hurtFlash};

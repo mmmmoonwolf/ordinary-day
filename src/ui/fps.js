@@ -8,6 +8,7 @@ import {curWeapon} from '../systems/inventory.js';
 import {weaponModel} from '../world/item-models.js';
 import {rooms,shownRoom,slab} from '../world/interiors.js';
 import {player} from '../entities/player.js';
+import {settings} from './settings.js';
 
 // ---------- first-person view (v0.28, experimental) ----------
 // V or the 👁 button switches between the isometric camera and the eyes of the player this device follows. Only the
@@ -29,7 +30,7 @@ export function setFps(on){
   if(!on){for(const id of ['bAds','bStance'])$(id).hidden=true;if(document.body)document.body.classList.remove('scoped','ads');}
 }
 export const toggleFps=()=>setFps(!view.fps);
-export function look(dx,dy,touch){const k=(touch?TOUCH_SENS:SENS)/zoom;view.yaw-=dx*k;view.pitch=clamp(view.pitch-dy*k,...PITCH);}
+export function look(dx,dy,touch){const k=(touch?TOUCH_SENS:SENS)*settings.sens/zoom;view.yaw-=dx*k;view.pitch=clamp(view.pitch-dy*k,...PITCH);}
 // looking through a scope right now (Shift then holds the breath instead of running)
 export function isScoped(p){if(!view.fps||!p.input.ads)return false;const d=DEF[curWeapon(p).id];return !!d.gun&&ADS.scope.includes(d.model);}
 export const mouseLocked=()=>document.pointerLockElement===cv;

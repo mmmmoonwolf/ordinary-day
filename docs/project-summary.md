@@ -43,6 +43,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.23 | ฟาร์มเสริม (ข้าวโพด 3D `crop`, ข้าวสาลี, บ่อน้ำ `farm.pond`, เรือนกระจก, ราวตากผ้า), อาวุธฟาร์ม `FARM_POOL`, ของเมือง `world/extras.js` (ป้ายรถเมล์ ม้านั่ง ป้าย Stop ป้ายโฆษณา ATM ไซต์ก่อสร้าง), ถังแก๊สระเบิดได้ `tanks` / `G.blown` / `systems/blast.js` (`blast()`, `ignite()`, `blowTank()`, `tankOnRay()`), Molotov และระเบิดมือ (`throwPick()`, `pickThrow`, `p.gear.throwId`), `config/blast.js`, `world/live-props.js` |
 | v0.24 | ย่านบ้านชานเมือง (`world/suburb.js` `buildSuburb()`), พื้นที่นอกเมืองเป็นรายการ `AREAS` (`areaAt()`, `beyond()`, `inWorld()` / `clampWorld()` รวมทุกพื้นที่, ประตูใน `navStep`, `areaWander`, จุดเกิดซอมบี้ในพื้นที่), `mapPaint` สำหรับแผนที่เล็ก, `cityWall.south` |
 | v0.25 | แม่น้ำและสะพานฝั่งตะวันออก (`world/river.js` `buildRiver()`, พื้นที่ `EAST`, `RIVER` / `riverSide()` และทางข้ามสะพานใน `navStep`), ฝูงซอมบี้ข้ามสะพาน (`HORDE.bridge`), กระท่อมตกปลา, ด่านตรวจ (จุดของ police), ป่าฝั่งตรงข้าม |
+| v0.31 | ความรู้สึกตอนต่อสู้: `impact()` / `updateImpacts()` / `hooks` ใน `systems/effects.js` (FX `impact` ส่งทุกเครื่อง), `sfx.splat`, `ui/feel.js` (`initFeel()` `updateFeel()` `shake()` `feel.stop` hit stop), `#hitmark`, `settings.shake` `settings.sens`, ซอมบี้ที่ตายกระเด็นเพิ่ม |
 | v0.30 | กระโดดข้ามสิ่งกีดขวาง (`systems/vault.js` `vaultTarget()` `startVault()` `updateVault()`, `VAULT` ใน `config/handling.js`, กล่องชน `low` ใน `props.js` `city.js` `clutter.js` `interiors.js` `farm.js`, `p.vault` `p.hop` `p.airH` ส่งใน snapshot, `I.jumpQ` / `ctl.jumpQ` Space ในมุมบุคคลที่หนึ่ง) |
 | v0.29 | เล็งศูนย์ ซูม scope แรงถีบ ปืนส่าย และท่าทาง (`config/handling.js` `ADS` `BLOOM` `STANCE` `SWAY` `BREATH` `KICK`, `spreadOf()` ใน `systems/combat.js`, `p.ads` `p.stance` `p.bloom`, `I.ads` `I.stance` รับจากเพื่อนใน `host.js`, ท่าทางส่งใน snapshot แทน `sneak`, `ctl.stance` `ctl.ads` `ctl.adsTouch`, `isScoped()`, `view.sway` `view.breathKey`, ปุ่ม `bAds` `bStance` `#scope` `#stanceTag`, ท่านอนใน `animate()`) |
 | v0.28 | มุมมองบุคคลที่หนึ่งแบบทดลอง (`ui/fps.js`: `setFps()` `toggleFps()` `look()` `fpsMove()` `updateFps()`, `view` / `fpsCam` / `activeCam()` / `screenAngle()` ใน `core/renderer.js`), pointer lock, นิ้วขวาหันมองบนมือถือ, อาวุธหน้ากล้อง, ผนังเต็มความสูงและเพดานของห้อง (`r.walls` `r.y0` `r.wallMat` `r.shell` ใน `world/interiors.js`, `slab()` export), หมอกใกล้ขึ้น, ไม่ทำให้ตึกโปร่งใส, ปุ่ม 👁 และแถบปุ่มบนจอแคบเล็กลง |
@@ -611,6 +612,17 @@ HP และกติกาการเกิดมาจาก Draft 01 ขอ�
 - **กด Space โดยไม่มีอะไรให้ข้าม:** กระโดดตัวเปล่า 0.42 วินาที สูง 0.3 ม. เป็นแค่ภาพ (นอนราบอยู่ไม่กระโดด) มุมบน Space ยังเป็นการโจมตีเหมือนเดิม
 - **ออนไลน์:** เพื่อนส่ง `jumpQ` มาที่ host เหมือนปุ่มยิง ความสูง `airH` ส่งกลับใน snapshot ทุกเครื่องเห็นท่ากระโดด
 - ค่าใน `VAULT` เป็น PLACEHOLDER ทั้งหมด
+
+## ยิงโดนแล้วรู้สึก (v0.31)
+
+ทั้งหมดเป็นภาพและเสียง ไม่เปลี่ยนตรรกะเกม ยกเว้นซอมบี้ที่ตายกระเด็นไกลขึ้นอีก 0.45 ม. × ตัวคูณแรงกระแทกของคลาส
+- **เลือดกระเซ็น (`impact()` ใน `systems/effects.js`):** ทุกครั้งที่ `hurtZombie()` ทำดาเมจ เศษเลือดกระเด็นไปทางที่กระสุนหรือการตีไป กระสุน 4 ชิ้น ตีประชิด 8 ชิ้น ตาย 14 ชิ้น โดนเกราะด้านหน้าของ Armor Walker เป็นประกายไฟสีเหลือง 6 ชิ้น (ใช้ชิ้นเล็ก 90 ชิ้นวนใช้ซ้ำ อยู่ 0.35–0.6 วินาทีหรือจนตกพื้น) ส่งเป็น FX `impact` ถึงทุกเครื่องในห้องออนไลน์
+- **เสียงโดน (`sfx.splat`):** กระสุนโดนเนื้อเสียงตุบเบา ๆ ตายเสียงหนักขึ้น โดนเกราะเสียงโลหะ ไม่เกินหนึ่งเสียงทุก 45 มิลลิวินาที (ลูกซองไม่ดังซ้อน 7 เสียง)
+- **เครื่องหมายโดนเป้า (`#hitmark`):** X ตรงตัวที่โดน (มุมบุคคลที่หนึ่งอยู่กลางจอ) เฉพาะผู้เล่นที่ยิงหรือตีโดน ขาว = โดน แดงและใหญ่ = ตาย ฟ้า = โดนเกราะ ค้าง 0.22 วินาที (ตาย 0.4)
+- **กล้องสั่น (`ui/feel.js` `shake()`):** ยิงเอง Pistol 0.05 · SMG 0.035 · Rifle/LMG 0.06 · Shotgun 0.2 · ลูกซองสองลำกล้อง 0.24 · Sniper 0.26, ตีโดน 0.2 (ตาย 0.32), ยิงตาย 0.12, โดนตี 0.35, ระเบิดในระยะ 28 ม. สูงสุด 0.75 ตามระยะ (ค่า trauma 0–1 ลดลง 1.8 ต่อวินาที ภาพสั่นตามกำลังสอง) มุมบนเลื่อนกล้อง มุมบุคคลที่หนึ่งหมุนกล้องเล็กน้อย ปิดได้ในหน้าตั้งค่า เครื่องที่ตั้งลดการเคลื่อนไหวสั่นเหลือ 40%
+- **หยุดชั่วพริบตา (hit stop, `feel.stop`):** ตีประชิดโดนแล้วเกมหยุด 0.06 วินาที (ตาย 0.11) ทั้งการจำลองและท่าทาง ใช้เฉพาะเล่นคนเดียว เพราะตอนออนไลน์ host เดินเกมให้ทุกคน
+- **ตั้งค่าใหม่:** "กล้องสั่นตอนยิง โดนตี และระเบิด" และ "ความไวเมาส์ / นิ้ว มุมบุคคลที่หนึ่ง" 0.3–2.5×
+- ค่าทั้งหมดเป็น PLACEHOLDER (ปรับจากความรู้สึกตอนเล่น)
 
 ## ระบบ loot
 

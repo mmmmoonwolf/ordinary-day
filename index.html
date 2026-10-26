@@ -80,6 +80,12 @@ body.scoped #cross,body.fps.ads #cross{display:none}
 #bAds,#bStance{position:absolute;right:max(26px,calc(env(safe-area-inset-right,0px) + 26px));width:54px;height:54px;border-radius:50%;border:1.5px solid var(--line);background:var(--panel);font-size:13px;font-weight:700;display:grid;place-items:center;padding:0;touch-action:manipulation}
 #bAds{top:36%;font-size:22px}#bAds.on{border-color:rgba(226,166,74,.85);background:rgba(226,166,74,.3)}
 #bStance{top:calc(36% + 62px)}
+/* v0.31 hit marker: an X where this player's shot or blow landed (red and bigger for a kill, pale on armour) */
+#hitmark{position:absolute;left:0;top:0;width:18px;height:18px;margin:-9px 0 0 -9px;pointer-events:none;will-change:transform,opacity}
+#hitmark::before,#hitmark::after{content:'';position:absolute;left:8px;top:-1px;width:2px;height:20px;background:#f2ede2;box-shadow:0 0 2px rgba(0,0,0,.8)}
+#hitmark::before{transform:rotate(45deg)}#hitmark::after{transform:rotate(-45deg)}
+#hitmark.kill::before,#hitmark.kill::after{background:#e8483a}
+#hitmark.armor::before,#hitmark.armor::after{background:#a9d4ff}
 #fpsHint{position:absolute;left:50%;top:66%;transform:translateX(-50%);padding:6px 12px;background:var(--panel);border:1px solid var(--line);font-size:13px;pointer-events:none;white-space:nowrap}
 .loadout{position:absolute;right:max(22px,calc(env(safe-area-inset-right,0px) + 22px));bottom:calc(env(safe-area-inset-bottom,0px) + 132px);width:236px;display:grid;gap:6px;background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--wg,var(--line));padding:9px 10px;backdrop-filter:blur(4px)}
 .wrow{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
@@ -298,6 +304,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
   </div>
   <div id="feed"></div>
   <div id="cross" aria-hidden="true"></div>
+  <div id="hitmark" hidden aria-hidden="true"></div>
   <div id="stanceTag" hidden></div>
   <button id="bAds" hidden aria-label="เล็งศูนย์">🎯</button>
   <button id="bStance" hidden aria-label="ท่าทาง ยืน หมอบ นอน">ยืน</button>
@@ -363,6 +370,8 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
     <label class="setrow" for="vol_music"><span>เพลง <b id="volN_music">60</b></span><input type="range" id="vol_music" min="0" max="100"></label>
     <label class="setrow" for="vol_sfx"><span>เสียงเอฟเฟกต์ <b id="volN_sfx">100</b></span><input type="range" id="vol_sfx" min="0" max="100"></label>
     <label class="setrow check"><input type="checkbox" id="optFilm"> ภาพฟิล์มเก่า (สีซีด เกรนฟิล์ม)</label>
+    <label class="setrow check"><input type="checkbox" id="optShake"> กล้องสั่นตอนยิง โดนตี และระเบิด</label>
+    <label class="setrow" for="optSens"><span>ความไวเมาส์ / นิ้ว มุมบุคคลที่หนึ่ง <b id="optSensN">1.0×</b></span><input type="range" id="optSens" min="30" max="250"></label>
     <label class="setrow check"><input type="checkbox" id="optFps"> แสดง FPS (ช่วยแจ้งปัญหาเครื่องกระตุก)</label>
     <button class="go" id="setClose">กลับ</button>
   </div>
