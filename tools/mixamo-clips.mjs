@@ -6,13 +6,24 @@
 // The Quaternius feet are IK bones under Root (not under the shin), so they are placed where the retargeted shin ends.
 // Root motion is taken out (the game moves the zombies): the hips keep their sway but end where they started.
 
-// clip name in the game -> Mixamo file (FBX2glTF output, spaces as _), optional [from, to] seconds, loop
+// clip name in the game -> Mixamo file (FBX2glTF output, spaces as _), optional [from, to] seconds, loop, options
 export const ZCLIPS = {
   Z_Idle: ['zombie_idle', null, true], Z_Idle2: ['zombie_scratch_idle', null, true],
   Z_Walk: ['walking', null, true], Z_Walk2: ['walking_2', null, true], Z_Run: ['zombie_running', null, true],
   Z_Punch: ['zombie_punching', null, false], Z_Attack: ['zombie_attack', [.7, 2.4], false],   // arms up and down: the Tyrant's slam
   Z_Hit: ['zombie_reaction_hit', [.25, 1.2], false], Z_Fall: ['zombie_stumbling', [1.1, 3.83], false],   // falls on its back: a zombie's death
   Z_StandUp: ['zombie_stand_up', null, false],   // a bitten person getting up as a zombie
+};
+// v0.39 the player's own clips (rifle, pistol, melee, stepping back and sideways, kneeling, a hop), from single Mixamo animations
+// (the melee swings cut down to the swing itself).
+// They are made facing +z already and a rifle stance turns the shoulders on purpose, so they keep the facing they have
+// (yaw 0) instead of being turned by the shoulder line like the zombies.
+const KEEP = { yaw: 0 };
+export const PCLIPS = {
+  P_Walk: ['Rifle_Walk', null, true, KEEP], P_Run: ['Run_Forward', null, true, KEEP], P_Back: ['Stepping_Backward', null, true, KEEP],
+  P_Strafe: ['Strafing', null, true, KEEP], P_Fire: ['Firing_Rifle', null, false, KEEP], P_Aim: ['Firing_Rifle', [0, .05], true, KEEP],
+  P_Pistol: ['Shooting', null, false, KEEP], P_Reload: ['Reload', null, false, KEEP], P_Kneel: ['Pistol_Kneeling_Idle', null, true, KEEP],
+  P_Stab: ['Stabbing', [.35, 1.3], false, KEEP], P_Slash: ['Stable_Sword_Inward_Slash', [.45, 1.75], false, KEEP], P_Jump: ['Jump_Up', null, false, KEEP],
 };
 // Quaternius bone <- Mixamo bone (without "mixamorig:"); bones not listed keep their rest pose
 const MAP = {
@@ -67,8 +78,8 @@ function sample(sampler, t) {
 }
 
 // workerDoc: a Quaternius character with its skin (rest pose, bone lengths); botDoc: Mixamo's X Bot in a T-pose (rest pose);
-// srcDocs: name -> Mixamo animation document; animsDoc: the clip file the new animations go into
-export function addMixamoClips(animsDoc, workerDoc, botDoc, srcDocs) {
+// srcDocs: name -> Mixamo animation document; animsDoc: the clip file the new animations go into; table: ZCLIPS or PCLIPS
+export function addMixamoClips(animsDoc, workerDoc, botDoc, srcDocs, table = ZCLIPS) {
   const tRest = bindPose(workerDoc.getRoot().listSkins()[0]), sRest = {};
   for (const [k, v] of Object.entries(bindPose(botDoc.getRoot().listSkins()[0]))) sRest[k.replace('mixamorig:', '')] = v;
   const root = animsDoc.getRoot(), nodes = {};
@@ -96,7 +107,7 @@ export function addMixamoClips(animsDoc, workerDoc, botDoc, srcDocs) {
   const bodyRest = restLocal.Body.t;
 
   const buffer = root.listBuffers()[0];
-  for (const [name, [file, span, loop]] of Object.entries(ZCLIPS)) {
+  for (const [name, [file, span, loop, opt]] of Object.entries(table)) {
     const src = srcDocs[file]; if (!src) { console.warn('missing ' + file); continue; }
     const sAnim = src.getRoot().listAnimations()[0], ch = {};
     for (const c of sAnim.listChannels()) ch[c.getTargetNode().getName().replace('mixamorig:', '') + '/' + c.getTargetPath()] = c.getSampler();
@@ -122,7 +133,7 @@ export function addMixamoClips(animsDoc, workerDoc, botDoc, srcDocs) {
     for (let f = 0; f < (loop ? n : 1); f++) {   // across the shoulders (to the left) is +x at rest
       const W = sPose(t0 + (t1 - t0) * f / (n - 1), 0), l = W('LeftArm').p, r = W('RightArm').p; fx += l[0] - r[0]; fz += l[2] - r[2];
     }
-    const yaw = Math.atan2(fz, fx);
+    const yaw = opt && 'yaw' in opt ? opt.yaw : Math.atan2(fz, fx);
     const times = [], frames = [];
     for (let f = 0; f < n; f++) {
       const t = t0 + (t1 - t0) * f / (n - 1); times.push(t - t0);

@@ -7,7 +7,8 @@ import {ADS,STANCE,SWAY,BREATH,BREATH_REST,KICK} from '../config/handling.js';
 import {curWeapon} from '../systems/inventory.js';
 import {weaponModel} from '../world/item-models.js';
 import {rooms,shownRoom,slab} from '../world/interiors.js';
-import {player} from '../entities/player.js';
+import {player,HOLD} from '../entities/player.js';
+import {skins,makeArms,dropArms,armsFrame} from '../entities/skins.js';
 import {settings} from './settings.js';
 
 // ---------- first-person view (v0.28, experimental) ----------
@@ -26,7 +27,7 @@ export function setFps(on){
   if(on){view.yaw=player.face;view.pitch=-.08;if(isTouch){touchHint=performance.now()+5000;$('fpsHint').textContent='ลากนิ้วด้านขวาของจอเพื่อหันมอง';}}   // v0.35
   else if(document.pointerLockElement===cv)document.exitPointerLock();
   for(const r of rooms)if(r.shell)r.shell.visible=on;
-  vm.visible=false;vmId=null;
+  vm.visible=false;vmId=null;if(arms)arms.o.visible=false;
   view.sway=0;adsT=0;zoom=1;fpsCam.fov=FOV;fpsCam.updateProjectionMatrix();
   if(!on){for(const id of ['bAds','bStance'])$(id).hidden=true;if(document.body)document.body.classList.remove('scoped','ads');}
 }
@@ -49,9 +50,29 @@ export function clearEdge(){edge=0;}
 // stick / keys (right, forward) -> a ground direction, relative to where the view looks
 export function fpsMove(ix,iy){const fx=Math.sin(view.yaw),fz=Math.cos(view.yaw);return [-fz*ix+fx*iy,fx*ix+fz*iy];}
 
+// v0.39 the player's own arms (entities/skins.js makeArms): where the head bone sits against the camera (right, up, back; m;
+// level with the camera: further ahead the shoulders and the backpack come into view) and how far a shot pushes them back. PLACEHOLDER, set by eye.
+// Aiming down the sights only zooms (moving the hands under the crosshair put the left hand across the view).
+const ARMS={eye:[.03,-.12,0],kick:.07};
+let arms=null;const hv=new THREE.Vector3();
+const heldModel=def=>{const m=weaponModel(def.model);HOLD(m,def);return m;};
+function viewArms(v,dt,scoped){
+  if(arms&&(arms.p!==v||!skins.on)){dropArms(arms);arms=null;}
+  if(!arms&&skins.ready&&skins.on){arms=makeArms(v);if(arms){arms.o.rotation.y=Math.PI;fpsCam.add(arms.o);}}
+  if(!arms)return false;
+  const show=v.alive&&!(v.down>0)&&!(v.bleed>0)&&!scoped;arms.o.visible=show;if(!show)return true;
+  armsFrame(arms,v,dt,heldModel);
+  const o=arms.o,head=arms.bones.Head;if(!head)return true;
+  fpsCam.updateMatrixWorld();o.updateMatrixWorld(true);
+  head.getWorldPosition(hv);fpsCam.worldToLocal(hv);
+  const [x,y]=ARMS.eye,z=ARMS.eye[2]+(v.recoil||0)*ARMS.kick;
+  o.position.x+=x-hv.x;o.position.y+=y-hv.y;o.position.z+=z-hv.z;
+  return true;
+}
 // the weapon in front of the camera
 const vm=new THREE.Group();fpsCam.add(vm);vm.visible=false;let vmId=null,vmModel=null,adsT=0,zoom=1;
-function viewModel(v,ads,scoped){
+function viewModel(v,ads,scoped,dt){
+  if(viewArms(v,dt,scoped)){vm.visible=false;return;}
   const id=curWeapon(v).id;
   if(id!==vmId){vmId=id;if(vmModel){vm.remove(vmModel);vmModel=null;}
     if(id!=='fist'){const def=DEF[id];vmModel=weaponModel(def.model);vmModel.scale.setScalar(.42);vmModel.rotation.order='YXZ';vm.add(vmModel);
@@ -101,7 +122,7 @@ export function updateFps(v,dt){
   fpsCam.position.set(v.pos.x,(v.y||0)+eye+(v.airH||0),v.pos.z);   // v0.30 over an obstacle or hopping
   fpsCam.rotation.set(view.pitch+swayP,view.yaw+view.sway+Math.PI,0,'YXZ');   // v0.37 this line had been swallowed by the comment above since v0.30
   v.b.root.visible=false;   // no own body in front of the eyes (animate() shows it again next frame)
-  viewModel(v,ads,scoped);
+  viewModel(v,ads,scoped,dt);
   const cr=$('cross');if(cr){const s='scale('+(1+(v.bloom||0)*.7).toFixed(2)+')';if(cr.style.transform!==s)cr.style.transform=s;}
   if(isTouch){const g=!!d.gun&&!low;if($('bAds').hidden===g)$('bAds').hidden=!g;if($('bStance').hidden)$('bStance').hidden=false;
     $('bAds').classList.toggle('on',!!v.input.ads);const sn=st.name||'ยืน';if($('bStance').textContent!==sn)$('bStance').textContent=sn;}

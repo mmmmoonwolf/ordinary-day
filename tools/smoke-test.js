@@ -790,6 +790,13 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     const names = JSON.parse(json).animations.map(a => a.name), want = ['Z_Idle', 'Z_Idle2', 'Z_Walk', 'Z_Walk2', 'Z_Run', 'Z_Punch', 'Z_Attack', 'Z_Hit', 'Z_Fall', 'Z_StandUp', 'Walk', 'Death'];
     const miss = want.filter(n => !names.includes(n)); if (miss.length) vfail('anims.glb is missing ' + miss.join(', '));
     console.log('v0.27: a bitten person fell, turned and got up in ' + Zc.RISE.up + ' s without moving; ' + names.filter(n => n.startsWith('Z_')).length + ' zombie clips in anims.glb');
+    // v0.39 the player's Mixamo clips: every P_ clip skins.js plays is in anims.glb and moves the spine, arms and legs
+    const skSrc = fs2.readFileSync(new URL('../src/entities/skins.js', import.meta.url), 'utf8'), used = [...new Set(skSrc.match(/'P_[A-Za-z]+'/g).map(n => n.slice(1, -1)))];
+    const gl = JSON.parse(json), nodeName = i => gl.nodes[i].name, pMiss = used.filter(n => !names.includes(n));
+    if (pMiss.length) vfail('anims.glb is missing the player clips ' + pMiss.join(', '));
+    for (const n of used.filter(n => names.includes(n))) { const tg = new Set(gl.animations.find(a => a.name === n).channels.map(c => nodeName(c.target.node))); const lack = ['Body', 'Abdomen', 'UpperArm.R', 'LowerArm.L', 'UpperLeg.L', 'Head'].filter(b => !tg.has(b)); if (lack.length) vfail(n + ' does not move ' + lack); }
+    if (!/if\(up\|\|s\.up\)layer\(s,up,step\)/.test(skSrc)) vfail('skinFrame no longer plays the upper-body layer');
+    console.log('v0.39: ' + used.length + ' player clips in anims.glb (' + used.join(' ') + ')');
   }
   // v0.23: gas cylinders blow up when shot (chain, blown list saved), Molotov fire, grenades, farm weapons, town extras
   { const Ex = await import('../src/world/extras.js'), Bl = await import('../src/systems/blast.js'), Th = await import('../src/systems/throw.js'), Cb = await import('../src/systems/combat.js'), It2 = await import('../src/config/items.js'), Cl2 = await import('../src/world/clutter.js'), Col2 = await import('../src/world/collision.js');
