@@ -153,5 +153,5 @@ export function syncHeld(p){
   p.held=m;
 }
 // how a weapon sits in the model's hand (WristR's axes)
-const HOLD=(m,def)=>{m.position.set(...HAND.pos);m.rotation.set(...(def.gun?HAND.gun:HAND.melee));};
+export const HOLD=(m,def)=>{m.position.set(...HAND.pos);m.rotation.set(...(def.gun?HAND.gun:HAND.melee));};
 export const HAND={pos:[0,.1,0],gun:[0,-Math.PI/2,0],melee:[Math.PI/2,0,0]};   // barrel forward; a bat or pipe upright in the fist

@@ -133,7 +133,7 @@
 
 ```
 index.html                     HTML + CSS ของ HUD แล้วโหลด src/main.js
-assets/characters/             โมเดลตัวละคร 16 แบบ + ท่าทาง (anims.glb) จาก Quaternius และท่าซอมบี้จาก Mixamo (v0.27)
+assets/characters/             โมเดลตัวละคร 16 แบบ + ท่าทาง (anims.glb) จาก Quaternius ท่าซอมบี้ (v0.27) และท่าผู้เล่น (v0.39) จาก Mixamo
 assets/sounds/                 เสียงจริงทั้งหมด 45 ไฟล์ (mp3 โมโน จาก Pixabay, v0.19–v0.21)
 assets/props/props.glb         โมเดลปืน ของ รถ เฟอร์นิเจอร์ และของในเมือง (Quaternius v0.14–v0.16, City Pack และ Weapons Pack v0.18)
 src/main.js                    จุดเริ่ม: สร้างเมือง ผูก input เริ่มเกม และวน loop
@@ -151,7 +151,7 @@ tools/smoke-test.js            ทดสอบตรรกะเกมแบบ�
 tools/net-test.js              ทดสอบเล่นออนไลน์: host กับเพื่อนเป็น 2 process คุยกันแทน WebRTC (npm test รันทั้งสองไฟล์)
 tools/headless.js              stub ของ THREE และ DOM ที่เทสต์ทั้งสองใช้
 tools/build-characters.mjs     แปลงตัวละครจากแพ็ก Quaternius เป็น assets/characters/ (ไม่ได้ใช้ตอนเล่นหรือเทสต์)
-tools/mixamo-clips.mjs         แปลงท่าซอมบี้ของ Mixamo เข้าโครงกระดูก Quaternius ให้ build-characters.mjs (v0.27)
+tools/mixamo-clips.mjs         แปลงท่าซอมบี้ (v0.27) และท่าผู้เล่น (v0.39) ของ Mixamo เข้าโครงกระดูก Quaternius ให้ build-characters.mjs
 tools/build-props.mjs          แปลงปืน ของ และรถจากแพ็ก Quaternius (FBX) และแพ็ก glTF (v0.18) เป็น assets/props/props.glb (ไม่ได้ใช้ตอนเล่นหรือเทสต์)
 .github/workflows/             CI รัน smoke test ทุก PR
 ```
@@ -160,6 +160,7 @@ tools/build-props.mjs          แปลงปืน ของ และรถ�
 
 - ตัวละคร: [Quaternius](https://quaternius.com) — Ultimate Modular Men Pack และ Ultimate Modular Women Pack (CC0)
 - ท่าซอมบี้ (v0.27): [Mixamo](https://www.mixamo.com) — Not So Scary Zombie Pack แปลงเข้าโครงกระดูกของ Quaternius (ใช้ในเกมได้ตามเงื่อนไขของ Mixamo ไม่มีไฟล์ต้นฉบับใน repo)
+- ท่าผู้เล่น (v0.39): [Mixamo](https://www.mixamo.com) — Rifle Walk, Run Forward, Stepping Backward, Strafing, Firing Rifle, Shooting, Reload, Pistol Kneeling Idle, Stabbing, Stable Sword Inward Slash, Jump Up (เงื่อนไขเดียวกัน ไม่มีไฟล์ต้นฉบับใน repo)
 - ปืน ของ รถ เฟอร์นิเจอร์ ต้นไม้ และป้ายถนน: [Quaternius](https://quaternius.com) — Guns, Survival, Food, Cars, Furniture, Trees, Nature และ Streets (CC0)
 - ฟาร์ม (v0.22): [Kenney](https://kenney.nl) — Retro Urban Kit และ Building Kit (CC0)
 - ข้าวโพด ต้นไม้ เต็นท์ กองไฟ กับดัก วิทยุ ปืนพลุ แพ ถังแก๊ส (v0.23–v0.26): [Quaternius](https://quaternius.com) Nature / Survival / Streets (CC0) · ป้ายรถเมล์ ม้านั่ง ป้าย ATM เรือนกระจก ราวตากผ้า และอาวุธฟาร์ม: City Pack และ Weapons Pack 002 (เหมือน v0.18)
@@ -177,6 +178,7 @@ tools/build-props.mjs          แปลงปืน ของ และรถ�
 
 | เวอร์ชัน | สิ่งที่เพิ่ม |
 | --- | --- |
+| v0.39 | **ท่าผู้เล่นและมือในมุมบุคคลที่หนึ่ง**: ตัวผู้เล่นใช้ท่าจาก Mixamo ถือปืนพร้อมยิงตอนยืน เดิน วิ่ง ถอยหลัง และเดินข้าง นั่งคุกเข่าตอนหมอบ นอนราบเล็งปืน กระโดดข้ามของ ส่วนบนของตัวยิง รีโหลด ฟาดไม้ แทงมีด หรือต่อยได้ระหว่างที่ขายังเดิน · มุมบุคคลที่หนึ่งเห็นมือของตัวเองถือปืน (ยิงแล้วดีด รีโหลดแล้วยกปืนขึ้นทำ) พิสทอลจับสองมือ ไม้หรืออาวุธประชิดยกพร้อมฟาดแล้วเห็นแขนเหวี่ยง กราฟิก "ต่ำ" กลับเป็นปืนแบบเดิม |
 | v0.38 | **ยิงขณะเล็งศูนย์**: คลิกขวาค้างเล็งแล้วคลิกซ้ายยิงได้แล้ว (เดิมยิงไม่ออก) ทั้งมุมบนและมุมบุคคลที่หนึ่ง และถ้าเบราว์เซอร์ไม่ยอมล็อกเมาส์ คลิกก็ยิงได้แทนที่จะพยายามล็อกไม่จบ |
 | v0.37 | **AI เดินอ้อม เป้กับกระสุนหาง่ายขึ้น**: แก้กล้องมุมบุคคลที่หนึ่งที่ไม่หันตามเมาส์หรือนิ้วตั้งแต่ v0.30 (ตัวละครหันแต่จอไม่หัน) ตอนนี้หันซ้ายขวาและก้มเงยได้ · คนและซอมบี้ที่ชนรถ แผงกั้น หรือผนังจะเลี้ยวอ้อมแล้วกลับมาเดินตรงเมื่อทางโล่ง ซอมบี้ไม่ติดหลังรถจนเลิกไล่ · เกมใหม่มีกระเป๋าเป้ใกล้จุดเกิด ช่องเป้าหมายชี้ไปหา และระหว่างที่ยังไม่มีเป้ เป้เจอบ่อยขึ้นทั้งตามถนน กลางคืน และในตู้ · กระสุนเจอบ่อยขึ้น และมักเป็นขนาดที่ปืนในมือใช้ |
 | v0.36 | **หันมองบนคอม**: มุมบุคคลที่หนึ่งเลื่อนเมาส์ก็หันได้ทันทีแม้ยังไม่ได้คลิกล็อกเมาส์ (หลังกด 👁 เปิดกระเป๋า หยุดเกม กด Esc หรือเบราว์เซอร์ไม่ยอมล็อก) พาเมาส์ไปขอบซ้ายหรือขวาจอเพื่อหันต่อเนื่อง คลิกยังล็อกเมาส์ได้เหมือนเดิม และมีข้อความบอกเมื่อเบราว์เซอร์ไม่ให้ล็อก |
