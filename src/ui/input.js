@@ -13,7 +13,7 @@ import {openBag,closeBag} from './bag.js';
 import {isMuted,toggleMute} from '../systems/audio.js';
 import {isSettingsOpen,closeSettings} from './settings.js';
 import {isPauseOpen,togglePause} from './pause.js';
-import {toggleFps,look,lockMouse,mouseLocked,fpsMove,isScoped} from './fps.js';
+import {toggleFps,look,lockMouse,mouseLocked,fpsMove,isScoped,freeLook,clearEdge} from './fps.js';
 
 // ---------- input ----------
 let rightId=null,lookId=null,lookX=0,lookY=0;   // v0.28 a finger turning the first-person view
@@ -91,11 +91,13 @@ export function initInput(){
   });
   cv.addEventListener('pointermove',e=>{
     if(e.pointerType==='mouse'&&view.fps&&mouseLocked()){look(e.movementX||0,e.movementY||0,false);return;}
+    if(e.pointerType==='mouse'&&view.fps&&G.running){mouse.active=true;freeLook(e);return;}   // v0.36 not locked: the mouse still turns the view
     if(e.pointerId===lookId){look(e.clientX-lookX,e.clientY-lookY,true);lookX=e.clientX;lookY=e.clientY;return;}
     if(e.pointerType==='mouse'){mouse.active=true;mouse.ndc.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);return;}
     if(e.pointerId!==joy.id)return;let dx=e.clientX-joy.ox,dy=e.clientY-joy.oy;const l=Math.hypot(dx,dy),M=56;if(l>M){dx=dx/l*M;dy=dy/l*M;}joy.x=dx/M;joy.y=dy/M;$('knob').style.transform=`translate(${dx}px,${dy}px)`;
   });
   const endPtr=e=>{if(e.pointerType==='mouse'){if(e.button!==2)ctl.fireHeld=false;return;}if(e.pointerId===joy.id){joy.id=null;joy.x=joy.y=0;$('joy').hidden=true;}if(e.pointerId===rightId){rightId=null;ctl.fireHeld=false;}if(e.pointerId===lookId)lookId=null;};
+  cv.addEventListener('pointerleave',clearEdge);
   cv.addEventListener('pointerup',endPtr);cv.addEventListener('pointercancel',endPtr);
   cv.addEventListener('contextmenu',e=>e.preventDefault());
   cv.addEventListener('wheel',e=>{e.preventDefault();if(view.fps)return;zoom(e.deltaY>0?1.1:1/1.1);},{passive:false});
