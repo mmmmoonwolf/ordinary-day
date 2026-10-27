@@ -10,7 +10,7 @@ import {EVENTS} from './phases.js';
 import {updateLoadout} from '../ui/hud.js';
 import {clearTip} from '../ui/tips.js';
 import {restoreObstacles} from './obstacles.js';
-import {REFILL} from '../config/loot.js';
+import {REFILL,BAG_HELP} from '../config/loot.js';
 import {restoreDoors} from './doors.js';
 import {clearThrows} from './throw.js';
 import {applyTanks,clearFires} from './blast.js';
@@ -35,6 +35,9 @@ export function reset(){
   const me=makePlayer(0);me.local=true;players.push(me);setPlayer(me);spawnPopulation();camTarget.set(player.pos.x,0,player.pos.z);   // one player on this device; more join with addPlayer() (v0.9)
   let near=null,nd=1e9;for(const s of lootSpots){if(s.zone!=='city')continue;const d=Math.hypot(s.x-player.pos.x,s.z-player.pos.z);if(d>4&&d<nd){nd=d;near=s;}}
   if(near)spawnDrop(makeItem(pick(['pipe_c','knife_c','bat_c'])),near.x,near.z,near);
+  // v0.37 and a backpack a little further on (config/loot.js BAG_HELP.start)
+  const far=lootSpots.filter(s=>s.zone==='city'&&!s.drop&&(d=>d>BAG_HELP.start[0]&&d<BAG_HELP.start[1])(Math.hypot(s.x-player.pos.x,s.z-player.pos.z)));
+  if(far.length){const s=pick(far);spawnDrop(makeItem('backpack'),s.x,s.z,s);}
   for(const s of lootSpots)if(s.zone==='ambulance')spawnDrop(makeItem('resurrect'),s.x,s.z,s);
   fillDay(REFILL.start);
   $('hurt').style.opacity=0;$('boss').hidden=true;clearTip();updateLoadout(true);

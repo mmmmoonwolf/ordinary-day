@@ -12,7 +12,7 @@ import {tipsOff} from './tips.js';
 
 // ---------- what to do now (v0.32) ----------
 // For the first day and the next morning, a line under the clock says what is worth doing next, with an arrow and the
-// distance to where it is: pick up the weapon lying nearby, find food, water and medicine, get into a building and close
+// distance to where it is: pick up the weapon lying nearby, a backpack (v0.37), find food, water and medicine, get into a building and close
 // the door before dark, board it up, last the night, then go to the shops. It reads the local player's state only
 // (also on a friend's device online) and goes away for good once day 2 afternoon starts, or with the tips turned off.
 const DUSK=15*60;   // when finding shelter becomes the goal
@@ -24,11 +24,13 @@ export function currentGoal(p){
   if(day>2||day===2&&tod>=DUSK||!p.alive)return null;
   const night=tod>=NIGHT_START||tod<DAY_START;
   const armed=!!(g.eq.melee||g.eq.primary||g.eq.secondary),at=d=>d?{x:d.x,z:d.z}:{};
-  if(day===1&&!G.outbreak)return armed?{text:'เดินดูเมือง · วันนี้มีอะไรแปลก ๆ'}:{text:'หยิบอาวุธที่ตกอยู่ใกล้ ๆ',...at(nearestDrop(p,d=>d.kind==='weapon',40))};
+  const bag=g.cap<DEF.backpack.slots&&nearestDrop(p,d=>d.kind==='bag',60);   // v0.37 a backpack lying near someone without one
+  if(day===1&&!G.outbreak)return !armed?{text:'หยิบอาวุธที่ตกอยู่ใกล้ ๆ',...at(nearestDrop(p,d=>d.kind==='weapon',40))}:bag?{text:'หยิบกระเป๋าเป้ · ใส่ของได้ 14 ช่อง',...at(bag)}:{text:'เดินดูเมือง · วันนี้มีอะไรแปลก ๆ'};
   if(night)return {text:'รอดให้ถึง 06:00 · เสียงปืนเรียกซอมบี้มา'};
   if(day===2)return {text:'ออกหาเสบียง · ร้านค้ากับโรงพยาบาลมีของดี',...at(nearestPoi(p))};
   if(tod<DUSK){
     if(!armed)return {text:'หาอาวุธ',...at(nearestDrop(p,d=>d.kind==='weapon'))};
+    if(bag)return {text:'หยิบกระเป๋าเป้ · ใส่ของได้ 14 ช่อง',...at(bag)};
     const food=count(g,'food');if(food<2)return {text:'เก็บอาหารหรือน้ำ '+food+'/2',...at(nearestDrop(p,d=>d.kind==='food'))};
     if(count(g,'heal')<1)return {text:'หายาไว้สักชิ้น',...at(nearestDrop(p,d=>d.kind==='heal'))};
     return {text:'หาของเพิ่มก่อนมืด · กระสุน ไม้กระดาน',...at(nearestDrop(p,(d,id)=>d.kind==='ammo'||id==='planks',40))};
