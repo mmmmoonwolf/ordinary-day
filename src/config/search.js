@@ -16,4 +16,12 @@ export const BOX={
   gunrack:{name:'ชั้นวางปืน',items:[1,3],empty:.15,w:{ammo:65,weapon:30,mat:5}},
   grocery:{name:'ชั้นวางสินค้า',items:[2,3],empty:.1,w:{food:85,bottle:15}},
   tools:{name:'ชั้นเครื่องมือ',items:[1,3],empty:.15,w:{mat:50,bottle:20,melee:20,ammo:10}},
+  // v0.40 cars in the street (world/interiors.js moreBoxes): guns and ammo left in the glovebox and the boot. "weapon" here
+  // is a gun only; a police car holds Police Grade ones
+  car:{name:'รถ',items:[1,2],empty:.3,w:{ammo:45,weapon:25,food:10,med:10,bottle:10}},
+  cop:{name:'รถตำรวจ',items:[1,3],empty:.15,w:{ammo:55,weapon:35,med:10}},
+  wreck:{name:'ซากรถ',items:[1,1],empty:.6,w:{ammo:60,weapon:20,mat:20}},
 };
+// v0.40 extra cupboards along the walls of every room: [kind, depth, height], picked at random (shops use their own kind)
+export const MORE_FURN=[['shelf',.5,1.9],['drawer',.6,1.1],['kitchen',.8,.85],['drawer',.6,1.1],['shelf',.45,1.6]];
+export const MORE_GAP=.45;   // m left free between two pieces along a wall

@@ -16,7 +16,7 @@ import {partySize} from '../entities/player.js';
 // G.searched lists the furniture (indices into world/interiors.js boxes) already emptied; it is saved and sent online.
 const searched=i=>G.searched.includes(i);
 // the unsearched furniture in reach of the player, in the room they stand in, or -1
-export function nearBoxOf(p){const k=roomAt(p.pos.x,p.pos.z);if(k<0)return -1;const i=boxNear(p.pos.x,p.pos.z,k,SEARCH_RANGE);return i>=0&&!searched(i)?i:-1;}
+export function nearBoxOf(p){const k=roomAt(p.pos.x,p.pos.z);const i=boxNear(p.pos.x,p.pos.z,k,SEARCH_RANGE);return i>=0&&!searched(i)?i:-1;}   // outdoors (-1): the cars (v0.40)
 export const boxName=i=>BOX[boxes[i].kind].name;
 export function startSearch(p,i){
   if(!p.alive||p.bleed>0||p.down>0||!boxes[i]||searched(i))return false;
@@ -38,7 +38,8 @@ export function keepSearching(p,dt){
   U.feed(BOX[b.kind].name+' · เจอ '+items.map(it=>DEF[it.id].name).join(', '),'get');
   return false;
 }
-// what a piece of furniture holds (civilian things only)
+// what a piece of furniture holds (civilian things only; a police car Police Grade guns and ammo, v0.40)
+const CARS=['car','cop','wreck'];
 export function rollBox(kind){
   const t=BOX[kind];if(Math.random()<t.empty)return [];
   const n=Math.round(rnd(t.items[0]-.49,t.items[1]+.49)),out=[];
@@ -46,7 +47,8 @@ export function rollBox(kind){
   for(let k=0;k<n;k++){
     const c=wpick(bag?{...t.w,bag:BAG_HELP.search}:t.w);   // v0.37 a backpack for whoever still has none
     if(c==='bag'){out.push(makeItem('backpack'));bag=false;continue;}
-    out.push(makeItem(c==='food'?wpick(FOOD_W):c==='med'?wpick(MED_W.day):c==='bottle'?wpick(THROW_W):c==='mat'?'planks':c==='weapon'?pick(POOLS.civ.weapons):c==='melee'?pick(kind==='farm'?FARM_POOL.melee:POOLS.civ.melee):pickAmmo(POOLS.civ.ammo)));
+    const pool=kind==='cop'?POOLS.pol:POOLS.civ,weapons=CARS.includes(kind)?pool.weapons.filter(id=>DEF[id].gun):pool.weapons;
+    out.push(makeItem(c==='food'?wpick(FOOD_W):c==='med'?wpick(MED_W.day):c==='bottle'?wpick(THROW_W):c==='mat'?'planks':c==='weapon'?pick(weapons):c==='melee'?pick(kind==='farm'?FARM_POOL.melee:POOLS.civ.melee):pickAmmo(pool.ammo)));
   }
   return out;
 }

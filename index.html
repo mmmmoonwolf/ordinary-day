@@ -20,6 +20,12 @@ html,body{height:100%}
 body{background:var(--ground);color:var(--ink);font-family:var(--f-ui);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 #game{position:fixed;inset:0}
 #game canvas{display:block;width:100%;height:100%}
+/* v0.40 names over the players' heads (src/ui/tags.js); at the screen edge with an arrow when off screen */
+#tags{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.tag{position:absolute;left:0;top:0;color:var(--c,#ffd34a);font:700 13px/1.15 system-ui,sans-serif;text-align:center;white-space:nowrap;text-shadow:0 1px 2px #000,0 0 6px rgba(0,0,0,.9)}
+.tag b{display:block}.tag i{display:block;font-style:normal;font-size:11px;font-weight:600;opacity:.9}
+.tag.down{color:#ff6a58}
+.tag.edge::before{content:'➤';display:block;font-size:15px;transform:rotate(var(--a,0rad))}
 /* v0.17 old film: faded colour on the 3D view, and a grain layer that jumps four times a second (settings: ภาพฟิล์มเก่า) */
 body.film #game canvas{filter:sepia(.22) saturate(.68) contrast(1.08) brightness(.93)}
 #grain{position:fixed;inset:-40px;pointer-events:none;opacity:0;background-size:180px 180px;animation:grain .5s steps(4) infinite}

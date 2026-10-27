@@ -4,7 +4,7 @@ import {G} from './core/state.js';
 import {$} from './core/util.js';
 import {RATE,SPEEDS,CALM_PACE} from './config/time.js';
 import {buildCity} from './world/city.js';
-import {buildInteriors,roomAt} from './world/interiors.js';
+import {buildInteriors,roomAt,moreBoxes} from './world/interiors.js';
 import {buildDecor} from './world/decor.js';
 import {buildClutter} from './world/clutter.js';
 import {buildFarm} from './world/farm.js';
@@ -44,6 +44,8 @@ import {hostFrame} from './net/host.js';
 import {clientStep} from './net/client.js';
 import {initOnline} from './ui/online.js';
 import {updateFps} from './ui/fps.js';
+import {updateTags} from './ui/tags.js';
+import {updateGlow} from './world/glow.js';
 import {feel,updateFeel,initFeel} from './ui/feel.js';
 import {loadSkins,beginSkins} from './entities/skins.js';
 import {loadProps,props} from './world/prop-models.js';
@@ -58,7 +60,8 @@ buildExtras();   // v0.23: bus stops, benches, signs, billboards, a building sit
 buildSuburb();   // v0.24: the suburb south of town, through the gate; own rng, appended
 buildRiver();   // v0.25: the river and the bridge east of town; own rng, appended
 buildCamp();   // v0.26: the survivors' camp in the woods across the river; own rng, appended
-buildOldTown();   // v0.34: an old European town, abandoned: shop boards, balconies, posters, body bags, barriers; own rng, last
+buildOldTown();   // v0.34: an old European town, abandoned: shop boards, balconies, posters, body bags, barriers; own rng
+moreBoxes();   // v0.40: more cupboards in every room and the cars to search; own rng, appended to `boxes`, last
 initInput();
 initSettings();
 $('verLabel').textContent='ORDINARY DAY · PROTOTYPE '+VERSION;
@@ -105,7 +108,7 @@ function loop(now){
     if(blast.userData.t>0){blast.userData.t-=dt;const k=1-blast.userData.t/.4;blast.scale.setScalar(.5+k*4);blast.material.opacity=Math.max(0,.75*(1-k));}else blast.material.opacity=0;
     for(const d of drops)d.m.rotation.y+=dt*.6;
     const pulse=.62+.25*Math.sin(now/280);for(const k in ringMats)ringMats[k].opacity=pulse;for(const k in glowMats)glowMats[k].opacity=.14+.1*Math.sin(now/280);
-    updateSky(dt,now);updateFireFx(dt,now);
+    updateSky(dt,now);updateFireFx(dt,now);updateGlow(now);   // v0.40 doors and what is left to search glow after dark
     updateGoal(dt,now);
     updateTips(dt);updateObjective(dt);   // v0.32 the goal line under the clock
   }
@@ -122,6 +125,7 @@ function loop(now){
   camera.position.copy(camTarget).add(camOffset);camera.lookAt(camTarget);
   if(cam.fps)updateFps(view,dt);   // v0.28 first-person view
   updateFeel(dt);   // v0.31 camera shake, hit marker
+  updateTags();   // v0.40 names over heads, lights at the feet
   ring.position.set(player.pos.x,player.y+.03,player.pos.z);ring.visible=player.alive&&!cam.fps;
   if(G.alertT>0&&G.alertA){G.alertT-=dt;alertRing.position.set(G.alertA.pos.x,G.alertA.y+.04,G.alertA.pos.z);alertRing.material.opacity=Math.min(1,G.alertT)*(.5+.5*Math.sin(now/120));alertRing.scale.setScalar(1+.25*Math.sin(now/200));}else alertRing.material.opacity=0;
   const fx=Math.sin(view.face),fz=Math.cos(view.face);

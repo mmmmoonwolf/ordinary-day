@@ -81,6 +81,7 @@ function furnModel(b){
 }
 function setFurniture(){
   for(const b of boxes){
+    if(!b.mesh)continue;   // v0.40 a car (its model is the car's own)
     const on=props.ready&&props.on;
     if(on&&!b.model){b.model=furnModel(b);if(b.model)b.cut.add(b.model);}
     if(b.model)b.model.visible=on;b.mesh.visible=!(on&&b.model);
