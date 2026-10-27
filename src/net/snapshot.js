@@ -9,6 +9,7 @@ import {applyDoors} from '../systems/doors.js';
 import {applyBroken,restoreObstacles} from '../systems/obstacles.js';
 import {applyTanks} from '../systems/blast.js';
 import {applyTraps} from '../systems/camp.js';
+import {cleanName,cleanLook} from '../core/profile.js';
 import {applyEvents} from '../systems/events.js';
 
 // ---------- world snapshot (v0.12) ----------
@@ -17,7 +18,7 @@ import {applyEvents} from '../systems/events.js';
 // looks of new characters, doors, broken obstacles, loot and the client's own gear only go out when they change.
 const ST=['human','infected','zombie','dead'];
 const r2=v=>Math.round((v||0)*100)/100;
-export function freshSent(){return {seen:new Set(),doors:'',broken:-1,drops:'',gear:'',drop:'',searched:''};}
+export function freshSent(){return {seen:new Set(),doors:'',broken:-1,drops:'',gear:'',drop:'',searched:'',who:''};}
 export function encodeWorld(c,me){
   const s={t:'s',g:{min:r2(G.min),ph:G.phase,rt:G.rainTarget,ob:G.outbreak,bo:G.blackout,ov:G.over,k:G.kills,kb:G.killsBy,df:G.diff,ec:G.endCause,fg:G.fog,ht:G.heat,st:G.site,bl:G.blown,tr:G.traps}};   // v0.23 blown gas cylinders   // fog / heat / event site (v0.18)
   const dj=JSON.stringify(G.doors);if(dj!==c.doors){c.doors=dj;s.doors=G.doors;}
@@ -26,6 +27,7 @@ export function encodeWorld(c,me){
   const dr=JSON.stringify(G.drop);if(dr!==c.drop){c.drop=dr;s.crate=G.drop||0;}
   s.pl=players.map(p=>[p.id,r2(p.pos.x),r2(p.pos.z),r2(p.face),Math.ceil(p.hp),p.alive?1:0,r2(p.bleed),r2(p.down),r2(p.moving),curWeapon(p).id,
     p.stance|0,r2(p.reloadT),r2(p.swing),r2(p.swingDur),r2(p.recoil),p.inv>0?1:0,p.away?1:0,r2(p.reviveT),r2(p.airH||0)]);   // v0.30 airH: off the ground, vaulting or hopping
+  const who=players.map(p=>[p.id,p.name,p.wear||null]),wj=JSON.stringify(who);if(wj!==c.who){c.who=wj;s.who=who;}   // v0.41 names and clothes, when they change
   const gj=JSON.stringify(me.gear);
   s.me={id:me.id,inf:r2(me.infect),fo:r2(me.food),wa:r2(me.water),ec:me.endCause,near:me.near?me.near.nid:0,full:me.full?me.full.nid:0,
     nd:me.nearDoor,fd:me.fixDoor,dn:me.nearDown?me.nearDown.id:-1,hp:me.helping?me.helping.id:-1,ht:r2(me.helpT),starv:me.starving?1:0,nb:me.nearBox,sb:me.searching,st:r2(me.searchT)};
@@ -65,6 +67,7 @@ export function applyWorld(s,myId){
     if(p!==player||!s.me||!s.me.gear){if(p!==player){const d=DEF[w];p.gear=freshGear();if(d&&d.slot){p.gear.eq[d.slot]={id:w,mag:0};p.gear.active=d.slot;}}}
   }
   for(let i=players.length-1;i>=0;i--)if(!ids.has(players[i].id)){removeAgent(players[i]);players.splice(i,1);}
+  if(s.who)for(const [id,name,wear] of s.who){const p=players.find(q=>q.id===id);if(p){p.name=cleanName(name)||p.name;p.wear=cleanLook(wear);}}   // v0.41
   // loot on the ground
   if(s.dr){
     const keep=new Set(s.dr.map(d=>d[0]));

@@ -8,7 +8,7 @@ import {curWeapon} from '../systems/inventory.js';
 import {weaponModel} from '../world/item-models.js';
 import {rooms,shownRoom,slab} from '../world/interiors.js';
 import {player,HOLD} from '../entities/player.js';
-import {skins,makeArms,dropArms,armsFrame} from '../entities/skins.js';
+import {skins,makeArms,dropArms,armsFrame,skinId} from '../entities/skins.js';
 import {settings} from './settings.js';
 
 // ---------- first-person view (v0.28, experimental) ----------
@@ -57,7 +57,7 @@ const ARMS={eye:[.03,-.12,0],kick:.07};
 let arms=null;const hv=new THREE.Vector3();
 const heldModel=def=>{const m=weaponModel(def.model);HOLD(m,def);return m;};
 function viewArms(v,dt,scoped){
-  if(arms&&(arms.p!==v||!skins.on)){dropArms(arms);arms=null;}
+  if(arms&&(arms.p!==v||!skins.on||arms.id!==skinId(v))){dropArms(arms);arms=null;}   // v0.41 or new clothes
   if(!arms&&skins.ready&&skins.on){arms=makeArms(v);if(arms){arms.o.rotation.y=Math.PI;fpsCam.add(arms.o);}}
   if(!arms)return false;
   const show=v.alive&&!(v.down>0)&&!(v.bleed>0)&&!scoped;arms.o.visible=show;if(!show)return true;

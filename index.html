@@ -169,6 +169,26 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 .joinrow{display:flex;gap:8px;margin-top:14px;max-width:330px}
 .joinrow input{flex:1;min-width:0;height:48px;padding:0 12px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:var(--ink);font:700 20px var(--f-clock);letter-spacing:.18em;text-transform:uppercase}
 .joinrow .go{padding:12px 16px;white-space:nowrap}
+/* v0.41 name and the character creator (src/ui/creator.js) */
+.whorow{display:flex;gap:8px;margin:0 0 12px;max-width:330px}
+.whorow input{flex:1;min-width:0;height:44px;padding:0 12px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:var(--ink);font:700 16px var(--f-ui)}
+.whorow .go{padding:10px 14px;white-space:nowrap;font-size:15px}
+#pChar{max-width:560px}
+.charwrap{display:flex;gap:14px;align-items:flex-start;margin:6px 0 14px}
+.charview{position:relative;flex:0 0 200px}
+#charView{width:200px;height:266px;display:block;background:radial-gradient(circle at 50% 40%,rgba(255,255,255,.08),rgba(0,0,0,.3));touch-action:none;cursor:grab}
+#charWait{position:absolute;left:0;right:0;top:45%;text-align:center;margin:0}
+.charopts{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
+.partrow{display:grid;grid-template-columns:76px 32px 1fr 32px;align-items:center;gap:4px}
+.partrow span,.swatches span{font:600 13px var(--f-ui);color:var(--ink);opacity:.8}
+.partrow b{font:700 14px var(--f-ui);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.partrow button{height:32px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:13px;cursor:pointer}
+.swatches{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.swatches span{flex:0 0 76px}
+.swatches button{width:22px;height:22px;border:1px solid rgba(255,255,255,.25);cursor:pointer;padding:0;background:var(--c)}
+.swatches button.on{outline:2px solid var(--amber);outline-offset:1px}
+.swatches button.orig{background:repeating-linear-gradient(45deg,#666 0 4px,#999 4px 8px)}
+@media (max-width:520px){.charwrap{flex-direction:column;align-items:center}.charview{flex-basis:auto}#charView{width:150px;height:200px}.charopts{width:100%}}
 #roomMsg b{color:var(--amber);font-size:16px;letter-spacing:.12em}
 .linkbtn{background:none;border:0;color:var(--ink-dim);text-decoration:underline;font:500 13px var(--f-ui);padding:8px 0;cursor:pointer;margin-top:4px}
 #fps{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 6px);transform:translateX(-50%);z-index:4;font:700 11px var(--f-clock);color:var(--ink-dim);text-shadow:0 1px 3px #000;pointer-events:none}
@@ -404,6 +424,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
     <h1>วันธรรมดา</h1>
     <p class="lede">รอดให้ครบ 7 คืน แล้วไปขึ้นเฮลิคอปเตอร์กู้ภัย กลางวันซอมบี้ยังเชื่องช้า ใช้เวลานี้เก็บอาวุธและยา พอ 18:30 กลางคืนจะมาพร้อมซอมบี้ที่เร็ว หูไว และของระดับ Police กับ Military ให้เสี่ยงออกไปหา ทุกวันมีเหตุการณ์ไม่คาดฝันเกิดขึ้นในเมือง</p>
     <div class="keys" id="keys"></div>
+    <div class="whorow"><input id="pName" maxlength="16" placeholder="ชื่อของคุณ" autocomplete="off" spellcheck="false" aria-label="ชื่อที่ขึ้นเหนือหัว"><button class="go alt" id="bChar">แต่งตัวละคร</button></div>
     <div class="diffs" role="radiogroup" aria-label="ระดับความยาก (ใช้กับเกมใหม่)"><button data-diff="easy" role="radio">ง่าย</button><button data-diff="normal" role="radio">ปกติ</button><button data-diff="hard" role="radio">ยาก</button></div>
     <p class="savenote" id="diffNote"></p>
     <div class="starts">
@@ -415,6 +436,25 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
     <p class="savenote" id="skinNote" hidden></p>
     <button class="linkbtn" id="bSettings2">ตั้งค่ากราฟิกและเสียง</button>
     <p class="savenote" id="saveNote" hidden>เกมบันทึกอัตโนมัติ เริ่มวันใหม่จะลบเซฟเดิม และเซฟจะหายเมื่อตัวละครตาย</p>
+  </div>
+  <div class="panel" id="pChar" hidden>
+    <div class="eyebrow">ตัวละคร</div>
+    <h1>แต่งตัว</h1>
+    <div class="charwrap">
+      <div class="charview"><canvas id="charView" width="240" height="320"></canvas><p class="savenote" id="charWait">กำลังโหลดตัวละคร…</p></div>
+      <div class="charopts">
+        <div class="diffs" id="charSex" role="radiogroup" aria-label="เพศ"><button data-sex="m" role="radio">ชาย</button><button data-sex="f" role="radio">หญิง</button></div>
+        <div class="partrow" data-part="hd"><span>หัว / ผม</span><button class="prev" aria-label="ก่อนหน้า">◀</button><b></b><button class="next" aria-label="ถัดไป">▶</button></div>
+        <div class="partrow" data-part="bd"><span>เสื้อ</span><button class="prev" aria-label="ก่อนหน้า">◀</button><b></b><button class="next" aria-label="ถัดไป">▶</button></div>
+        <div class="partrow" data-part="lg"><span>กางเกง</span><button class="prev" aria-label="ก่อนหน้า">◀</button><b></b><button class="next" aria-label="ถัดไป">▶</button></div>
+        <div class="partrow" data-part="ft"><span>รองเท้า</span><button class="prev" aria-label="ก่อนหน้า">◀</button><b></b><button class="next" aria-label="ถัดไป">▶</button></div>
+        <div class="swatches" data-col="shirt"><span>สีเสื้อ</span></div>
+        <div class="swatches" data-col="pants"><span>สีกางเกง</span></div>
+        <div class="swatches" data-col="hair"><span>สีผม / หมวก</span></div>
+        <div class="swatches" data-col="skin"><span>สีผิว</span></div>
+      </div>
+    </div>
+    <div class="starts"><button class="go alt" id="bCharRandom">สุ่ม</button><button class="go" id="bCharDone">เสร็จ</button></div>
   </div>
   <div class="panel" id="pOver" hidden>
     <div class="eyebrow" id="oEyebrow">GAME OVER</div>

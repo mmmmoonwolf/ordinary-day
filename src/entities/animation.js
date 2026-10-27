@@ -4,12 +4,13 @@ import {DEF} from '../config/items.js';
 import {agents} from './agents.js';
 import {players} from './player.js';
 import {curWeapon} from '../systems/inventory.js';
-import {skins,dress,skinFrame} from './skins.js';
+import {skins,dress,undress,skinFrame,skinId} from './skins.js';
 
 // ---------- animation ----------
 export function animate(a,dt){
   const p=a.b;
   // with the character models loaded (v0.13) the model plays clips from the agent's state; the blocky body stays hidden
+  if(a.sk&&a.state==='player'&&a.sk.id!==skinId(a))undress(a);   // v0.41 a player changed clothes (here or online)
   if(!a.sk&&skins.ready&&skins.on)dress(a);
   if(a.sk){
     a.y+=(groundY(a.pos.x,a.pos.z)-a.y)*Math.min(1,dt*12);p.root.position.set(a.pos.x,a.y,a.pos.z);p.root.rotation.y=a.face;

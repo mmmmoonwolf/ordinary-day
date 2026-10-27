@@ -62,6 +62,7 @@ function noZoom(){
 export function initInput(){
   noZoom();
   addEventListener('keydown',e=>{
+    if(e.target&&/^(INPUT|TEXTAREA)$/.test(e.target.tagName))return;   // v0.41 typing a name or a room code
     if(e.code==='Tab'||e.code==='KeyI'){e.preventDefault();if(!isPauseOpen())$('bag').hidden?openBag():closeBag();return;}
     if(e.code==='Escape'||e.code==='KeyP'){if(isSettingsOpen())closeSettings();else if(!$('bag').hidden)closeBag();else togglePause();return;}
     if(e.code==='KeyM'){toggleMute();showSound();return;}

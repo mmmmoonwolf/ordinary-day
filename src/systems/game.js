@@ -17,6 +17,7 @@ import {applyTanks,clearFires} from './blast.js';
 import {applyTraps} from './camp.js';
 import {clearFireFx} from './effects.js';
 import {resetEvents} from './events.js';
+import {applyProfile} from '../core/profile.js';
 
 // ---------- new game ----------
 // a second (third, fourth) player in the same game; driven by its p.input (a bot in the tests, the network later)
@@ -32,7 +33,7 @@ export function clearWorld(){
 }
 export function reset(){
   clearWorld();
-  const me=makePlayer(0);me.local=true;players.push(me);setPlayer(me);spawnPopulation();camTarget.set(player.pos.x,0,player.pos.z);   // one player on this device; more join with addPlayer() (v0.9)
+  const me=makePlayer(0);me.local=true;applyProfile(me);players.push(me);setPlayer(me);   // v0.41 the name and clothes made on the start screenspawnPopulation();camTarget.set(player.pos.x,0,player.pos.z);   // one player on this device; more join with addPlayer() (v0.9)
   let near=null,nd=1e9;for(const s of lootSpots){if(s.zone!=='city')continue;const d=Math.hypot(s.x-player.pos.x,s.z-player.pos.z);if(d>4&&d<nd){nd=d;near=s;}}
   if(near)spawnDrop(makeItem(pick(['pipe_c','knife_c','bat_c'])),near.x,near.z,near);
   // v0.37 and a backpack a little further on (config/loot.js BAG_HELP.start)
