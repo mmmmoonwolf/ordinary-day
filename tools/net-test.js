@@ -37,6 +37,7 @@ if (isClient) {
     else if (m.ctl) {
       const [cmd, ...a] = m.ctl; let r = null;
       if (cmd === 'join') { $('roomCode').value = a[0]; $('bJoin').fire('click'); await sleep(60); }
+      else if (cmd === 'profile') { const Pr = await import('../src/core/profile.js'); Object.assign(Pr.profile, a[0]); }   // v0.41
       else if (cmd === 'step') step(a[0]);
       else if (cmd === 'key') key(a[0], a[1]);
       else if (cmd === 'act') act(...a);
@@ -46,7 +47,7 @@ if (isClient) {
       r = { role: bus.role, overlay: $('overlay').hidden, over: G.over, again: $('bAgain').hidden, joinMsg: $('joinMsg').textContent, min: G.min, id: net.net.id,
         n: P.players.length, me: me && { id: me.id, x: me.pos.x, z: me.pos.z, gear: me.gear, alive: me.alive }, agents: agents.length,
         zombies: agents.filter(x => x.state === 'zombie').map(x => x.kind), drops: drops.length, doors: G.doors.map(d => d.open),
-        feed: $('feed').children.map(c => c.textContent), msg: $('msg').textContent, errs: errs.length };
+        feed: $('feed').children.map(c => c.textContent), msg: $('msg').textContent, errs: errs.length, who: P.players.map(p => p.name + '|' + (p.wear ? p.wear.bd : '')) };
       process.send({ ctlr: r });
     }
   });
@@ -77,6 +78,9 @@ if (isClient) {
   const { die } = await import('../src/systems/combat.js');
   const { becomeZombie, makeAgent } = await import('../src/entities/agents.js');
 
+  // v0.41 both have made a character on the start screen
+  const Pr = await import('../src/core/profile.js'), lookOf = (s, id) => Pr.cleanLook({ s, hd: id, bd: id, lg: id, ft: id, c: { shirt: '#8a1f1f' } });
+  Object.assign(Pr.profile, { name: 'Moon', look: lookOf('m', 'm_punk') }); await ask('profile', { name: 'Nok', look: lookOf('f', 'f_soldier') });
   els.bStart.fire('click'); step(5); P.player.inv = 1e9;
   els.bRoom.fire('click'); await sleep(20);
   if (!H.room.open || !/^[A-Z2-9]{5}$/.test(H.room.code)) fail('room did not open: ' + JSON.stringify(H.room.code));
@@ -85,7 +89,9 @@ if (isClient) {
   const p2 = P.players[1];
   if (c.role !== 'client' || !c.overlay || c.n !== 2 || c.id !== 1 || !p2 || p2.away) fail('join: ' + JSON.stringify({ role: c.role, overlay: c.overlay, n: c.n, id: c.id, msg: c.joinMsg }));
   p2.inv = 1e9;
-  const hostAgents = agents.filter(a => !a.gone).length; const seen = { agents: c.agents + '/' + hostAgents, drops: c.drops + '/' + drops.length };
+  const who = c.who.join(' / ');
+  if (p2.name !== 'Nok' || !p2.wear || p2.wear.bd !== 'f_soldier' || c.who.join() !== 'Moon|m_punk,Nok|f_soldier') fail('names and clothes: host sees ' + p2.name + ' ' + JSON.stringify(p2.wear) + ', friend sees ' + c.who);
+  const hostAgents = agents.filter(a => !a.gone).length; const seen = { who, agents: c.agents + '/' + hostAgents, drops: c.drops + '/' + drops.length };
   if (Math.abs(c.agents - hostAgents) > 2 || Math.abs(c.min - G.min) > 2) fail('world differs: agents ' + c.agents + '/' + hostAgents + ', min ' + c.min.toFixed(1) + '/' + G.min.toFixed(1));
   if (c.drops !== drops.length) fail('drops differ: ' + c.drops + '/' + drops.length);
   // the friend walks: their keys move their player on the host, and they see it

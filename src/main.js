@@ -45,6 +45,7 @@ import {clientStep} from './net/client.js';
 import {initOnline} from './ui/online.js';
 import {updateFps} from './ui/fps.js';
 import {updateTags} from './ui/tags.js';
+import {initCreator} from './ui/creator.js';
 import {updateGlow} from './world/glow.js';
 import {feel,updateFeel,initFeel} from './ui/feel.js';
 import {loadSkins,beginSkins} from './entities/skins.js';
@@ -70,6 +71,7 @@ initSave();
 initAudio();
 initOnline();
 initFeel();
+initCreator();   // v0.41 the name and the character on the start screen
 
 // ---------- loop ----------
 // The game state moves in fixed steps of 1/60 s (v0.9), however fast the screen draws, so every device (and later

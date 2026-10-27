@@ -11,6 +11,7 @@ import {clearWorld} from '../systems/game.js';
 import {receive,gameOver,updateLoadout} from '../ui/hud.js';
 import {renderBag} from '../ui/bag.js';
 import {joinRoom,cleanCode} from './link.js';
+import {profile} from '../core/profile.js';
 import {applyWorld,clearClientMaps} from './snapshot.js';
 
 // ---------- playing in a friend's room (v0.12) ----------
@@ -40,7 +41,7 @@ export async function join(raw){
       else if(m.t==='bye')leave('เจ้าของห้องปิดห้องแล้ว');
     });
     link.onClose(()=>{clearTimeout(timer);if(!inside)no(new Error('การเชื่อมต่อหลุด ลองใหม่อีกครั้ง'));else leave('หลุดจากห้อง '+code+' · กรอกรหัสเดิมเพื่อกลับเข้าไป');});
-    link.send({t:'hi',v:VERSION,token:token()});
+    link.send({t:'hi',v:VERSION,token:token(),name:profile.name,look:profile.look});   // v0.41
   });
 }
 function enter(link,code){

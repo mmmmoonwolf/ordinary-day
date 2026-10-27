@@ -6,6 +6,7 @@ import {ZC,RISE} from '../config/zombies.js';
 import {curWeapon} from '../systems/inventory.js';
 import {agents} from './agents.js';
 import {players,HAND} from './player.js';
+import {lookKey} from '../core/profile.js';
 
 // ---------- character models (v0.13) ----------
 // People, players and zombies wear Quaternius' Ultimate Modular Men / Women characters (CC0; built into
@@ -59,7 +60,7 @@ function pick(a){
 }
 export function dress(a){
   if(a.sk||!skins.ready||!skins.on)return;
-  const id=pick(a),{o,bones,mats}=outfit(a,id);
+  const {o,bones,mats,id}=build(a);
   a.b.root.add(o);a.b.body.visible=false;
   a.sk={o,id,bones,mats,mixer:new THREE.AnimationMixer(o),clip:'',act:null,zombie:false,flash:false,acc:0,swell:1,react:0};
   if(a.state==='zombie'||a.state==='dead'&&a.kind)zombify(a);
@@ -72,8 +73,57 @@ function outfit(a,id){
     if(x.isBone)bones[x.name]=x;
     if(x.isMesh){x.material=[].concat(x.material).map(m=>{m=m.clone();m.userData.base=m.color.clone();mats.push(m);return m;});if(x.material.length===1)x.material=x.material[0];}
   });
-  if(a.state==='player'&&PLAYER_TINT[a.id%PLAYER_TINT.length])for(const m of mats)if(!/Skin|Hair|Eye|Brow|Black/i.test(m.name)){m.color.lerp(new THREE.Color(PLAYER_TINT[a.id%PLAYER_TINT.length]),.55);m.userData.base.copy(m.color);}
+  if(a.state==='player'&&!a.wear&&PLAYER_TINT[a.id%PLAYER_TINT.length])for(const m of mats)if(!/Skin|Hair|Eye|Brow|Black/i.test(m.name)){m.color.lerp(new THREE.Color(PLAYER_TINT[a.id%PLAYER_TINT.length]),.55);m.userData.base.copy(m.color);}
   return {o,bones,mats};
+}
+// v0.41 a player's own character (p.wear, a look from core/profile.js; p.look is the blocky body's): the top's outfit gives the skeleton (and a backpack that goes with
+// it); the head, legs and feet of other outfits of the same body are moved onto it and bound to its bones (every outfit has
+// the same rig), then the colours go over them
+const PART=/^(.+_(Body|Head|Legs|Pants|Feet)|Backpack)$/,slotOf=n=>/Head$/.test(n)?'hd':/(Legs|Pants)$/.test(n)?'lg':/Feet$/.test(n)?'ft':'bd';
+const partsOf=o=>{const out=[];o.traverse(x=>{if(PART.test(x.name))out.push(x);});return out;};
+function assemble(a,L){
+  const {o,bones}=outfit(a,L.bd),byName={};o.traverse(x=>{byName[x.name]=x;});
+  for(const slot of ['hd','lg','ft']){
+    if(L[slot]===L.bd||!tpl[L[slot]])continue;
+    for(const x of partsOf(o))if(slotOf(x.name)===slot)x.parent.remove(x);
+    for(const x of partsOf(outfit(a,L[slot]).o)){
+      if(slotOf(x.name)!==slot)continue;
+      const to=byName[x.parent.name]||o;
+      x.traverse(m=>{if(m.isSkinnedMesh)m.bind(new THREE.Skeleton(m.skeleton.bones.map(b=>bones[b.name]||b),m.skeleton.boneInverses),m.bindMatrix);});
+      to.add(x);
+    }
+  }
+  paint(o,L);
+  const mats=[];o.traverse(x=>{if(x.isMesh)for(const m of [].concat(x.material))if(!mats.includes(m))mats.push(m);});
+  return {o,bones,mats};
+}
+const lin=hex=>new THREE.Color(hex).convertSRGBToLinear();
+// skin everywhere; the shirt, the trousers and the hair (or hat) are each the biggest coloured piece of their part, or the
+// one named in MAIN where that is something else (the woman explorer's biggest piece of the legs is a belt pouch)
+const MAIN={f_adventurer:{lg:'Brown_02'}};
+function paint(o,L){
+  const c=L.c||{};
+  for(const x of partsOf(o)){
+    const ms=[];x.traverse(m=>{if(m.isMesh&&!Array.isArray(m.material))ms.push(m);});
+    if(c.skin)for(const m of ms)if(/Skin/i.test(m.material.name)){m.material.color.copy(lin(c.skin));m.material.userData.base.copy(m.material.color);}
+    const slot=slotOf(x.name),want=x.name==='Backpack'?null:slot==='bd'?c.shirt:slot==='lg'?c.pants:slot==='hd'?c.hair:null;if(!want)continue;
+    let best=null,most=0;const named=MAIN[L[slot]]&&MAIN[L[slot]][slot];
+    for(const m of ms){if(named?m.material.name!==named:/Skin|Eye|Earring|Visor/i.test(m.material.name))continue;const n=m.geometry.index?m.geometry.index.count:m.geometry.attributes.position.count;if(n>most){most=n;best=m.material;}}
+    if(best){best.color.copy(lin(want));best.userData.base.copy(best.color);}
+  }
+}
+// what a character wears: a player's own look, else the outfit picked for them
+function build(a){
+  if(a.state==='player'&&a.wear&&tpl[a.wear.bd])return {...assemble(a,a.wear),id:'look:'+lookKey(a.wear)};
+  const id=pick(a);return {...outfit(a,id),id};
+}
+export const skinId=a=>a.state==='player'&&a.wear?'look:'+lookKey(a.wear):pick(a);
+// the creator's turning model (ui/creator.js): the character for a look, standing idle
+export function previewModel(look){
+  if(!skins.ready)return null;
+  const a={state:'player',id:0,wear:look},{o}=build(a),mixer=new THREE.AnimationMixer(o);
+  if(clips.Idle)mixer.clipAction(clips.Idle).play();
+  return {o,mixer};
 }
 // graphics quality "low" goes back to the blocky people; anything else puts the models back on as they are drawn
 export function setSkinsOn(on){
@@ -169,7 +219,7 @@ function aimHeld(held,wrist,root,reload,tilt){
 const MELEE_UP=.9;   // rad
 export function makeArms(p){
   if(!skins.ready||!skins.on||!clips.P_Aim)return null;
-  const id=pick(p),{o,bones,mats}=outfit(p,id);
+  const {o,bones,mats,id}=build(p);
   o.traverse(x=>{if(x.isMesh){x.castShadow=false;x.renderOrder=10;}});
   for(const k of ['Head','UpperLegL','UpperLegR'])if(bones[k])bones[k].scale.setScalar(1e-3);
   return {o,id,p,bones,mats,mixer:new THREE.AnimationMixer(o),clip:'',act:null,up:null,held:null,heldId:null};

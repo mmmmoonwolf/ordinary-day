@@ -14,6 +14,7 @@ import {reset,addPlayer} from './game.js';
 import {feed,updateLoadout} from '../ui/hud.js';
 import {applyBroken} from './obstacles.js';
 import {applyDoors} from './doors.js';
+import {cleanName,cleanLook} from '../core/profile.js';
 import {applyEvents} from './events.js';
 
 // ---------- save ----------
@@ -28,7 +29,7 @@ const validItem=it=>it&&DEF[it.id];
 function snapshot(){
   const g=Object.assign({},G,{alertA:null,alertT:0,running:false,paused:false,over:false,lastMinShown:-1});
   return {v:SAVE_VERSION,savedAt:Date.now(),G:g,
-    players:players.map(p=>({x:p.pos.x,z:p.pos.z,face:p.face,hp:p.hp,alive:p.alive,down:p.down,bleed:p.bleed,inv:p.inv,infect:p.infect,infWarn:p.infWarn,food:p.food,water:p.water,sinceHit:performance.now()/1000-p.lastHit,stay:p.stay,gear:p.gear,token:p.token})),
+    players:players.map(p=>({x:p.pos.x,z:p.pos.z,face:p.face,hp:p.hp,alive:p.alive,down:p.down,bleed:p.bleed,inv:p.inv,infect:p.infect,infWarn:p.infWarn,food:p.food,water:p.water,sinceHit:performance.now()/1000-p.lastHit,stay:p.stay,gear:p.gear,token:p.token,name:p.name,wear:p.wear||null})),   // v0.41 name and clothes (friends'; this device's come from the profile)
     agents:agents.filter(a=>a.state!=='dead'&&!a.gone).map(a=>{const o={x:a.pos.x,z:a.pos.z,look:a.look};for(const k of AGENT_KEYS)o[k]=a[k];return o;}),
     drops:drops.map(d=>({item:d.item,x:d.x,z:d.z,spot:d.spot?lootSpots.indexOf(d.spot):-1,mine:!!d.mine}))};
 }
@@ -62,7 +63,7 @@ export function loadGame(){
     tidyBag(p.gear);   // saves from before v0.14.1 can hold several stacks of one item
     Object.assign(p.pos,{x:o.x,z:o.z});Object.assign(p,{face:o.face,hp:o.hp,down:o.down,bleed:o.bleed||0,inv:o.inv,infect:o.infect||0,infWarn:o.infWarn||0,food:o.food??100,water:o.water??100,stay:o.stay||null,lastHit:performance.now()/1000-o.sinceHit});
     if(o.alive===false)Object.assign(p,{alive:false,state:'dead',deadT:30});
-    if(i)Object.assign(p,{token:o.token||null,away:true});   // friends wait as they were until they join the room again (v0.12)
+    if(i)Object.assign(p,{token:o.token||null,away:true,name:cleanName(o.name)||p.name,wear:cleanLook(o.wear)});   // friends wait as they were until they join the room again (v0.12)
   });
   delete G.stay;camTarget.set(player.pos.x,0,player.pos.z);
   for(const o of s.agents){

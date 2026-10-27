@@ -867,5 +867,22 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   console.log('v0.14.1: bag ' + g.bag.map(e => e.id + (e.n ? ' ×' + e.n : '')).join(', '));
 }
 
+// v0.41: the name and clothes made on the start screen; anything from a friend is cleaned; a friend's are saved
+{
+  const vfail = m => errs.push('v0.41 test: ' + m), Pr = await import('../src/core/profile.js'), S = await import('../src/systems/save.js');
+  if (Pr.cleanLook({ s: 'x' }) !== null || Pr.cleanLook('m') !== null) vfail('a look with no body');
+  const l = Pr.cleanLook({ s: 'f', hd: 'm_punk', bd: 'f_suit', lg: 'f_worker', ft: '<b>', c: { shirt: '#AA0000', pants: 'red', hair: '#123', skin: null } });
+  if (!l || l.hd !== 'f_casual' || l.bd !== 'f_suit' || l.lg !== 'f_worker' || l.ft !== 'f_casual' || l.c.shirt !== '#aa0000' || l.c.pants !== null || l.c.hair !== null) vfail('cleanLook: ' + JSON.stringify(l));
+  if (Pr.cleanName('  <i>Nok</i>  ') !== 'iNok/i' || Pr.cleanName('x'.repeat(40)).length !== Pr.NAME_MAX) vfail('cleanName: ' + Pr.cleanName('  <i>Nok</i>  '));
+  Object.assign(Pr.profile, { name: 'Moon', look: Pr.cleanLook({ s: 'm', hd: 'm_swat', bd: 'm_punk', lg: 'm_suit', ft: 'm_worker', c: {} }) });
+  els.bAgain.fire('click'); T.G.running = true; step(2);
+  const me = T.player, G2 = await import('../src/systems/game.js'), fr = G2.addPlayer(); fr.name = 'Nok'; fr.wear = Pr.cleanLook({ s: 'f', hd: 'f_punk', bd: 'f_punk', lg: 'f_punk', ft: 'f_punk', c: {} });
+  if (me.name !== 'Moon' || !me.wear || me.wear.bd !== 'm_punk') vfail('a new game did not wear the profile: ' + me.name + ' ' + JSON.stringify(me.wear));
+  const Pl = await import('../src/entities/player.js'); S.saveGame(); S.loadGame(); const f2 = Pl.players[1];
+  if (!f2 || f2.name !== 'Nok' || !f2.wear || f2.wear.bd !== 'f_punk' || Pl.player.name !== 'Moon') vfail('names and clothes after a load: ' + Pl.players.map(p => p.name + ' ' + (p.wear && p.wear.bd)));
+  Object.assign(Pr.profile, { name: '', look: null });
+  console.log('v0.41: profile Moon in ' + me.wear.hd + ' / ' + me.wear.bd + ' / ' + me.wear.lg + ' / ' + me.wear.ft + ', friend\'s name and clothes saved, bad looks and names cleaned');
+}
+
 console.log(errs.length ? `FAILED: ${errs.length} runtime errors\n` + errs.slice(0, 3).join('\n---\n') : 'PASSED: no runtime errors');
 process.exit(errs.length ? 1 : 0);
