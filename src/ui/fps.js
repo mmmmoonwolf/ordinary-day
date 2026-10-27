@@ -94,7 +94,8 @@ export function updateFps(v,dt){
   // every shot kicks the view up and a little sideways, more as the spread grows
   if(mine&&(v.recoil||0)>lastRecoil+.3){const k=1+(v.bloom||0);view.pitch=clamp(view.pitch+KICK.pitch*k*(ads?.7:1),...PITCH);view.yaw+=(Math.random()-.5)*2*KICK.yaw*k;}
   lastRecoil=v.recoil||0;
-  fpsCam.position.set(v.pos.x,(v.y||0)+eye+(v.airH||0),v.pos.z);   // v0.30 over an obstacle or hoppingfpsCam.rotation.set(view.pitch+swayP,view.yaw+view.sway+Math.PI,0,'YXZ');
+  fpsCam.position.set(v.pos.x,(v.y||0)+eye+(v.airH||0),v.pos.z);   // v0.30 over an obstacle or hopping
+  fpsCam.rotation.set(view.pitch+swayP,view.yaw+view.sway+Math.PI,0,'YXZ');   // v0.37 this line had been swallowed by the comment above since v0.30
   v.b.root.visible=false;   // no own body in front of the eyes (animate() shows it again next frame)
   viewModel(v,ads,scoped);
   const cr=$('cross');if(cr){const s='scale('+(1+(v.bloom||0)*.7).toFixed(2)+')';if(cr.style.transform!==s)cr.style.transform=s;}

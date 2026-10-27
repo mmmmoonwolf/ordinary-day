@@ -686,6 +686,10 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     pl.gear.eq.primary = T.makeItem('shotgun_c'); let a12 = 0; for (let i = 0; i < 600; i++) if (Dr.pickAmmo(['a9', 'a9', 'a12']) === 'a12') a12++;
     pl.gear.eq.primary = null;
     if (a12 < 600 * .6) vfail('ammo for the carried shotgun only ' + a12 + ' of 600');
+    // two code lines had ended up inside the comment before them (v0.17, v0.30): the first-person camera never turned
+    const fs = await import('fs'), fpsSrc = fs.readFileSync(new URL('../src/ui/fps.js', import.meta.url), 'utf8'), citySrc = fs.readFileSync(new URL('../src/world/city.js', import.meta.url), 'utf8');
+    if (!/^\s*fpsCam\.rotation\.set\(/m.test(fpsSrc)) vfail('the first-person camera is not turned (fpsCam.rotation.set commented out?)');
+    if (!/^\s*mats\.push\(det\)/m.test(citySrc)) vfail('rooftop units are not in their building\'s materials');
     console.log('v0.37: went round ' + round + ' of ' + tried + ' cars; backpack ' + Math.round(Math.hypot(startBag.x - pl.pos.x, startBag.z - pl.pos.z)) + ' m from the start, night bags ' + bags + '/600 without one, ' + bags2 + ' with; shotgun shells ' + a12 + '/600');
   }
   // v0.34: the old town: shop boards, balconies, posters, columns, body bags, barriers built; none of their collision

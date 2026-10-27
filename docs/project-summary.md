@@ -43,7 +43,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.23 | ฟาร์มเสริม (ข้าวโพด 3D `crop`, ข้าวสาลี, บ่อน้ำ `farm.pond`, เรือนกระจก, ราวตากผ้า), อาวุธฟาร์ม `FARM_POOL`, ของเมือง `world/extras.js` (ป้ายรถเมล์ ม้านั่ง ป้าย Stop ป้ายโฆษณา ATM ไซต์ก่อสร้าง), ถังแก๊สระเบิดได้ `tanks` / `G.blown` / `systems/blast.js` (`blast()`, `ignite()`, `blowTank()`, `tankOnRay()`), Molotov และระเบิดมือ (`throwPick()`, `pickThrow`, `p.gear.throwId`), `config/blast.js`, `world/live-props.js` |
 | v0.24 | ย่านบ้านชานเมือง (`world/suburb.js` `buildSuburb()`), พื้นที่นอกเมืองเป็นรายการ `AREAS` (`areaAt()`, `beyond()`, `inWorld()` / `clampWorld()` รวมทุกพื้นที่, ประตูใน `navStep`, `areaWander`, จุดเกิดซอมบี้ในพื้นที่), `mapPaint` สำหรับแผนที่เล็ก, `cityWall.south` |
 | v0.25 | แม่น้ำและสะพานฝั่งตะวันออก (`world/river.js` `buildRiver()`, พื้นที่ `EAST`, `RIVER` / `riverSide()` และทางข้ามสะพานใน `navStep`), ฝูงซอมบี้ข้ามสะพาน (`HORDE.bridge`), กระท่อมตกปลา, ด่านตรวจ (จุดของ police), ป่าฝั่งตรงข้าม |
-| v0.37 | AI เดินอ้อมสิ่งกีดขวาง (`STEER` `detour()` `clearAhead()` ใน `entities/movement.js`, `a.det` `a.detSide` `a.nodeT`), เป้หาง่าย (`BAG_HELP`, `needBag()` ใน `systems/drops.js`, เป้ตอนเริ่มใน `reset()`, เป้าหมาย "หยิบกระเป๋าเป้"), กระสุนหาง่าย (`CAT_W` `INDOOR_W` `BOX`, `AMMO_MATCH` `pickAmmo()`) |
+| v0.37 | กล้องมุมบุคคลที่หนึ่งหันได้อีกครั้ง (`fpsCam.rotation.set` ใน `updateFps()` ถูกคอมเมนต์ทับตั้งแต่ v0.30), กล่องบนหลังคาอยู่ใน `b.mats`, AI เดินอ้อมสิ่งกีดขวาง (`STEER` `detour()` `clearAhead()` ใน `entities/movement.js`, `a.det` `a.detSide` `a.nodeT`), เป้หาง่าย (`BAG_HELP`, `needBag()` ใน `systems/drops.js`, เป้ตอนเริ่มใน `reset()`, เป้าหมาย "หยิบกระเป๋าเป้"), กระสุนหาง่าย (`CAT_W` `INDOOR_W` `BOX`, `AMMO_MATCH` `pickAmmo()`) |
 | v0.36 | หันมองด้วยเมาส์ตอนยังไม่ล็อกเมาส์: `freeLook()` `clearEdge()` `EDGE_TURN` `lockFailT` ใน `ui/fps.js`, `pointermove` / `pointerleave` ใน `ui/input.js` |
 | v0.35 | หันมองบนมือถือในมุมบุคคลที่หนึ่ง: ลากปุ่มโจมตีเพื่อหันมอง, ลากจากปุ่มทางขวาของจอ (`slideId` ใน `ui/input.js`), แผงอาวุธให้นิ้วผ่าน (`body.fps .loadout`), ข้อความแนะนำบนมือถือ (`touchHint` ใน `ui/fps.js`) |
 | v0.34 | เมืองยุโรปเก่าที่ร้าง (แทน v0.33): `world/oldtown.js` `buildOldTown()` (rng ของตัวเอง หลัง `buildCamp()`, `Batch` รวมกล่องเป็น mesh เดียว, atlas ป้าย โปสเตอร์ สเปรย์ `makeAtlas()`), `config/oldtown.js` (`OLD` `OLD_SIGNS` `OLD_HANG` `OLD_POSTERS` `OLD_SPRAY`), ผนังหิน ปูน อิฐ บานเกล็ด (`wallTex()`), ทางเท้าหิน `pavingTex()`, ป้ายร้านภาษาอังกฤษแบบยุโรป, `sfx.bell` ระฆังโบสถ์ `crow` อีกา |
@@ -733,6 +733,9 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 
 ## AI เดินอ้อมสิ่งกีดขวาง เป้หาง่าย กระสุนหาง่าย (v0.37)
 
+- **กล้องมุมบุคคลที่หนึ่งไม่หัน (บั๊กตั้งแต่ v0.30):** บรรทัดที่หมุนกล้อง (`fpsCam.rotation.set`) ไปต่อท้ายคอมเมนต์ใน `ui/fps.js` ตั้งแต่ v0.30 เลยไม่ทำงาน ตัวละครหันตามเมาส์หรือนิ้ว แต่จอยังมองทิศเดิมและก้มเงยไม่ได้ (v0.35 และ v0.36 แก้ที่การรับเมาส์และนิ้ว ซึ่งไม่ใช่สาเหตุ) แยกกลับเป็นบรรทัดของตัวเองแล้ว ตอนนี้จอหันซ้ายขวาและก้มเงยตาม
+  - เจอแบบเดียวกันอีกที่ใน `world/city.js` ตั้งแต่ v0.17: กล่องบนหลังคาไม่โปร่งใสพร้อมตึก แก้แล้ว
+  - smoke test ตรวจว่าทั้งสองบรรทัดไม่ถูกคอมเมนต์ทับอีก
 - **AI เดินอ้อม (`entities/movement.js` `moveAgent()`):**
   - **ใช้กับใคร:** คนและซอมบี้ (ไม่รวมผู้เล่น และไม่รวม Tyrant ที่ทุบทางเอา)
   - **เมื่อชน:** ถ้าก้าวหนึ่งเดินได้ไม่ถึง 45% ของระยะที่ตั้งใจ (ชนรถ แผงกั้น ม้านั่ง ผนัง) จะเลี้ยวไปด้านข้าง
