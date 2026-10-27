@@ -35,11 +35,15 @@ export function look(dx,dy,touch){const k=(touch?TOUCH_SENS:SENS)*settings.sens/
 // looking through a scope right now (Shift then holds the breath instead of running)
 export function isScoped(p){if(!view.fps||!p.input.ads)return false;const d=DEF[curWeapon(p).id];return !!d.gun&&ADS.scope.includes(d.model);}
 export const mouseLocked=()=>document.pointerLockElement===cv;
-export function lockMouse(){if(isTouch||!cv.requestPointerLock)return;try{const r=cv.requestPointerLock();if(r&&r.catch)r.catch(()=>{lockFailT=performance.now();});}catch(_){lockFailT=performance.now();}}
+export function lockMouse(){if(isTouch||!cv.requestPointerLock)return;try{const r=cv.requestPointerLock();if(r&&r.catch)r.catch(refused);}catch(_){refused();}}
+// v0.38 a browser that refuses the lock twice in a row is left alone: clicks then shoot instead of asking again
+let lockFails=0;
+function refused(){lockFailT=performance.now();lockFails++;}
+export const lockRefused=()=>lockFails>=2;
 // v0.36 without the lock (not clicked yet, the browser refused it, or Esc just let it go) the mouse still turns the view:
 // moving it over the game turns by how far it moved, and resting it near the left or right edge keeps turning
 let lockFailT=0,edge=0;
-if(globalThis.document&&document.addEventListener)document.addEventListener('pointerlockerror',()=>{lockFailT=performance.now();});
+if(globalThis.document&&document.addEventListener){document.addEventListener('pointerlockerror',refused);document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement)lockFails=0;});}
 export function freeLook(e){look(e.movementX||0,e.movementY||0,false);const x=e.clientX/innerWidth;edge=x<.05?1:x>.95?-1:0;}
 export function clearEdge(){edge=0;}
 // stick / keys (right, forward) -> a ground direction, relative to where the view looks

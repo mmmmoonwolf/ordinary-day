@@ -13,7 +13,7 @@ import {openBag,closeBag} from './bag.js';
 import {isMuted,toggleMute} from '../systems/audio.js';
 import {isSettingsOpen,closeSettings} from './settings.js';
 import {isPauseOpen,togglePause} from './pause.js';
-import {toggleFps,look,lockMouse,mouseLocked,fpsMove,isScoped,freeLook,clearEdge} from './fps.js';
+import {toggleFps,look,lockMouse,mouseLocked,lockRefused,fpsMove,isScoped,freeLook,clearEdge} from './fps.js';
 
 // ---------- input ----------
 let rightId=null,lookId=null,lookX=0,lookY=0;   // v0.28 a finger turning the first-person view
@@ -79,10 +79,11 @@ export function initInput(){
   });
   addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Space')ctl.fireHeld=false;});
   addEventListener('blur',()=>{for(const k in keys)keys[k]=false;ctl.fireHeld=false;ctl.ads=false;});
-  cv.addEventListener('mousedown',e=>{if(e.button===2&&G.running)ctl.ads=true;});   // v0.29 (mousedown: a second button held with the first gives no pointerdown)
-  addEventListener('mouseup',e=>{if(e.button===2)ctl.ads=false;});
+  cv.addEventListener('mousedown',e=>{if(e.button===2&&G.running)ctl.ads=true;   // v0.29 (mousedown: a second button held with the first gives no pointerdown)
+    if(e.button===0&&(e.buttons&~1)&&G.running&&(!view.fps||mouseLocked()||lockRefused())){ctl.fireHeld=true;ctl.fireQ=.2;}});   // v0.38 the left button pressed while the right one aims: no pointerdown for it either
+  addEventListener('mouseup',e=>{if(e.button===2)ctl.ads=false;if(e.button===0)ctl.fireHeld=false;});   // nor a pointerup when the right one is still held
   cv.addEventListener('pointerdown',e=>{
-    if(e.pointerType==='mouse'){mouse.active=true;if(view.fps&&!mouseLocked()){lockMouse();return;}if(e.button===0&&G.running){ctl.fireHeld=true;ctl.fireQ=.2;}return;}   // v0.28 the first click takes the mouse
+    if(e.pointerType==='mouse'){mouse.active=true;if(view.fps&&!mouseLocked()&&!lockRefused()){lockMouse();return;}if(e.button===0&&G.running){ctl.fireHeld=true;ctl.fireQ=.2;}return;}   // v0.28 the first click takes the mouse
     mouse.active=false;
     if(e.clientX<innerWidth*.55&&joy.id===null){joy.id=e.pointerId;joy.ox=e.clientX;joy.oy=e.clientY;joy.x=joy.y=0;const j=$('joy');j.style.left=e.clientX+'px';j.style.top=e.clientY+'px';j.hidden=false;$('knob').style.transform='';}
     else if(view.fps&&lookId===null){lookId=e.pointerId;lookX=e.clientX;lookY=e.clientY;}   // v0.28 right half turns the view, the attack button fires
