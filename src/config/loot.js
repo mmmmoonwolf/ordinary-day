@@ -18,11 +18,19 @@ export const MED_W={day:{},night:{}};
 export function setMedTables(){for(const ph of ['day','night']){MED_W[ph]={...MED_ALL[ph]};if(!INFECTION.on)delete MED_W[ph].antibiotic;}}
 setMedTables();
 // food (v0.5), planks and bottles (v0.7) weights are PLACEHOLDERS
-export const CAT_W={day:{weapon:22,ammo:38,med:30,bag:6,food:24,mat:10,throw:8},night:{weapon:32,ammo:42,med:26,food:16,mat:6,throw:6}};
+// v0.37 ammo weights raised (day 38 -> 50, night 42 -> 54; indoors 26 -> 34, 32 -> 42): ammo was too hard to find (PLACEHOLDER)
+export const CAT_W={day:{weapon:22,ammo:50,med:30,bag:6,food:24,mat:10,throw:8},night:{weapon:32,ammo:54,med:26,food:16,mat:6,throw:6}};
 export const FOOD_W={canned:1,water:1.2};
 // v0.14 food is mostly found indoors (PLACEHOLDERS): the two loot spots in each enterable building roll from this table
 // instead of CAT_W (food about 1 in 3 instead of 1 in 6). Since v0.15 the rest is in the furniture (config/search.js).
-export const INDOOR_W={day:{weapon:12,ammo:26,med:28,bag:4,food:44,mat:10,throw:8},night:{weapon:18,ammo:32,med:24,food:38,mat:6,throw:6}};
+export const INDOOR_W={day:{weapon:12,ammo:34,med:28,bag:4,food:44,mat:10,throw:8},night:{weapon:18,ammo:42,med:24,food:38,mat:6,throw:6}};
+// v0.37 easier to find (PLACEHOLDERS). An ammo roll gives a calibre that a player's gun takes with `AMMO_MATCH` chance, when
+// that calibre is in the roll's own pool (so Police / Military ammo still only turns up where and when it did). While a
+// player has no backpack and none lies within `near` m of them: one is placed near the start of a new game, the bag
+// weight of the street and indoor tables is multiplied by `mult` (and is `night` at night, where it was 0), and searched
+// furniture can hold one (weight `search`)
+export const AMMO_MATCH=.6;
+export const BAG_HELP={mult:3,night:8,search:12,near:45,start:[12,35]};
 // v0.7 scarcity, all PLACEHOLDERS. Chance that an empty loot spot gets an item: at a new game, each 06:00 and each 18:30.
 // The 06:00 / 18:30 chances shrink by `fade` per day (never below `floor` of the day-1 value), so later days are leaner.
 export const REFILL={start:.6,day:.3,night:.4,fade:.85,floor:.4};

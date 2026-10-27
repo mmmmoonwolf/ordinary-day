@@ -1,12 +1,12 @@
 import {rnd,pick,wpick} from '../core/util.js';
 import {G} from '../core/state.js';
 import {DEF} from '../config/items.js';
-import {POOLS,MED_W,FOOD_W,FARM_POOL,THROW_W} from '../config/loot.js';
+import {POOLS,MED_W,FOOD_W,FARM_POOL,THROW_W,BAG_HELP} from '../config/loot.js';
 import {SEARCH_SECONDS,SEARCH_RANGE,SEARCH_NOISE,RESTOCK,BOX} from '../config/search.js';
 import {partyOf} from '../config/party.js';
 import {boxes,boxNear,roomAt,rooms} from '../world/interiors.js';
 import {PLACE_RESTOCK} from '../config/places.js';
-import {makeItem,spawnDrop} from './drops.js';
+import {makeItem,spawnDrop,needBag,pickAmmo} from './drops.js';
 import {sfxFor} from './audio.js';
 import {uiFor} from '../ui/hud.js';
 import {makeNoise} from '../entities/ai.js';
@@ -42,9 +42,11 @@ export function keepSearching(p,dt){
 export function rollBox(kind){
   const t=BOX[kind];if(Math.random()<t.empty)return [];
   const n=Math.round(rnd(t.items[0]-.49,t.items[1]+.49)),out=[];
+  let bag=needBag();
   for(let k=0;k<n;k++){
-    const c=wpick(t.w);
-    out.push(makeItem(c==='food'?wpick(FOOD_W):c==='med'?wpick(MED_W.day):c==='bottle'?wpick(THROW_W):c==='mat'?'planks':c==='weapon'?pick(POOLS.civ.weapons):c==='melee'?pick(kind==='farm'?FARM_POOL.melee:POOLS.civ.melee):pick(POOLS.civ.ammo)));
+    const c=wpick(bag?{...t.w,bag:BAG_HELP.search}:t.w);   // v0.37 a backpack for whoever still has none
+    if(c==='bag'){out.push(makeItem('backpack'));bag=false;continue;}
+    out.push(makeItem(c==='food'?wpick(FOOD_W):c==='med'?wpick(MED_W.day):c==='bottle'?wpick(THROW_W):c==='mat'?'planks':c==='weapon'?pick(POOLS.civ.weapons):c==='melee'?pick(kind==='farm'?FARM_POOL.melee:POOLS.civ.melee):pickAmmo(POOLS.civ.ammo)));
   }
   return out;
 }

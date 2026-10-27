@@ -599,7 +599,7 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     const farmRooms = I2.rooms.filter(r => W.inFarm(r.b.cx, r.b.cz)), barn = farmRooms.find(r => r.place && r.place.type === 'farm');
     const spots = lootSpots.filter(sp => W.inFarm(sp.x, sp.z)), fb = I2.boxes.filter(b => W.inFarm(b.x, b.z));
     if (farmRooms.length !== 3 || !barn || spots.length < 8 || !fb.length) vfail('farm: rooms ' + farmRooms.length + ', barn ' + !!barn + ', loot spots ' + spots.length + ', furniture ' + fb.length);
-    const walk = (x, z, tx, tz, n) => { const a = { pos: { x, z }, rad: .34, face: 0 }; for (let i = 0; i < n; i++) Mv.moveAgent(a, tx - a.pos.x, tz - a.pos.z, 4, 1 / 30); return a.pos; };
+    const walk = (x, z, tx, tz, n) => { const a = { pos: { x, z }, rad: .34, face: 0, state: 'player' }; for (let i = 0; i < n; i++) Mv.moveAgent(a, tx - a.pos.x, tz - a.pos.z, 4, 1 / 30); return a.pos; };   // state 'player': raw collision, no v0.37 steering round the wall
     const thru = walk(-60, 0, -100, 0, 400), wall = walk(-60, 12, -100, 12, 400), out = walk(-100, 0, -160, 0, 400);
     if (thru.x > -95) vfail('could not walk through the gate: ' + JSON.stringify(thru));
     if (wall.x < W.WALL_X) vfail('walked through the west wall: ' + JSON.stringify(wall));
@@ -614,7 +614,7 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   { const W = await import('../src/config/world.js'), Mv = await import('../src/entities/movement.js'), I2 = await import('../src/world/interiors.js'), Ag = await import('../src/entities/agents.js');
     const sub = I2.rooms.filter(r => W.areaAt(r.b.cx, r.b.cz) === W.SUBURB), spots = lootSpots.filter(sp => W.areaAt(sp.x, sp.z) === W.SUBURB);
     if (sub.length !== 5 || spots.length < 10) vfail('suburb: rooms ' + sub.length + ', loot spots ' + spots.length);
-    const walk = (x, z, tx, tz, n) => { const a = { pos: { x, z }, rad: .34, face: 0 }; for (let i = 0; i < n; i++) Mv.moveAgent(a, tx - a.pos.x, tz - a.pos.z, 4, 1 / 30); return a.pos; };
+    const walk = (x, z, tx, tz, n) => { const a = { pos: { x, z }, rad: .34, face: 0, state: 'player' }; for (let i = 0; i < n; i++) Mv.moveAgent(a, tx - a.pos.x, tz - a.pos.z, 4, 1 / 30); return a.pos; };   // state 'player': raw collision, no v0.37 steering
     const thru = walk(0, 60, 0, 110, 500), wall = walk(15, 60, 15, 100, 400), back = walk(0, 110, 0, 40, 600);
     if (thru.z < 105) vfail('could not walk through the south gate: ' + JSON.stringify(thru));
     if (wall.z > W.WALL_Z) vfail('walked through the south wall: ' + JSON.stringify(wall));
@@ -626,7 +626,7 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   }
   // v0.25: the river east of town: only the bridge crosses it, walkers are sent over it, some hordes come that way
   { const W = await import('../src/config/world.js'), Mv = await import('../src/entities/movement.js'), I2 = await import('../src/world/interiors.js'), Ev2 = await import('../src/systems/events.js'), EvC2 = await import('../src/config/events.js');
-    const walk = (x, z, tx, tz, n) => { const a = { pos: { x, z }, rad: .34, face: 0 }; for (let i = 0; i < n; i++) Mv.moveAgent(a, tx - a.pos.x, tz - a.pos.z, 4, 1 / 30); return a.pos; };
+    const walk = (x, z, tx, tz, n) => { const a = { pos: { x, z }, rad: .34, face: 0, state: 'player' }; for (let i = 0; i < n; i++) Mv.moveAgent(a, tx - a.pos.x, tz - a.pos.z, 4, 1 / 30); return a.pos; };   // state 'player': raw collision, no v0.37 steering
     const over = walk(60, 0, 130, 0, 700), swim = walk(85, 15, 120, 15, 500);
     if (over.x < 125) vfail('could not cross the bridge: ' + JSON.stringify(over));
     if (swim.x > W.RIVER.x0) vfail('walked through the river: ' + JSON.stringify(swim));
@@ -664,6 +664,30 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     for (const a of [z, z2, z3]) a.gone = true; T.G.traps = []; Cs.applyTraps();
     console.log('v0.26: camp ' + tents + ' tents, ' + Cw.camp.traps.length + ' traps (caught a zombie and the player, saved), fire burns, ' + Math.round(good / 6) + '% police / military loot, ' + guards + ' guards, flare calls zombies');
   }
+  // v0.37: people and zombies walk round what is in the way; a backpack near the start and more often while someone has
+  // none; ammo for the guns players carry
+  { const Mv2 = await import('../src/entities/movement.js'), Pr = await import('../src/world/props.js'), Col4 = await import('../src/world/collision.js'), Dr = await import('../src/systems/drops.js'), Ob2 = await import('../src/ui/objective.js');
+    let tried = 0, round = 0;
+    for (const b of Pr.breakables) { if (!b.car || b.broken || tried >= 6) continue; const ax = b.car.alongX, ox = ax ? 0 : 3.2, oz = ax ? 3.2 : 0;
+      if (Math.max(Math.abs(b.x) + ox, Math.abs(b.z) + oz) > 65 || !Col4.freeAt(b.x - ox, b.z - oz, .6) || !Col4.freeAt(b.x + ox, b.z + oz, .6)) continue; tried++;
+      const a = { pos: { x: b.x - ox, z: b.z - oz }, rad: .34, face: 0, state: 'zombie', kind: 'walker' };
+      for (let i = 0; i < 600 && Math.hypot(b.x + ox - a.pos.x, b.z + oz - a.pos.z) > .8; i++) Mv2.moveAgent(a, b.x + ox - a.pos.x, b.z + oz - a.pos.z, 2, 1 / 30);
+      if (Math.hypot(b.x + ox - a.pos.x, b.z + oz - a.pos.z) <= .8) round++; }
+    if (!tried || round < tried) vfail('steering: went round ' + round + ' of ' + tried + ' cars');
+    els.bAgain.fire('click'); T.G.running = true; const pl = T.player;
+    const startBag = T.drops.find(d => d.item.id === 'backpack' && Math.hypot(d.x - pl.pos.x, d.z - pl.pos.z) < 36);
+    if (!startBag) vfail('no backpack near the start');
+    const goal = Ob2.currentGoal(pl); pl.gear.eq.melee = T.makeItem('bat_c'); const goal2 = Ob2.currentGoal(pl);
+    if (!/เป้/.test(goal2 && goal2.text)) vfail('no backpack goal: ' + JSON.stringify([goal, goal2]));
+    for (const d of T.drops.filter(d => d.item.id === 'backpack')) Dr.removeDrop(d);
+    const need = Dr.needBag(); Dr.fillNight(0); let bags = 0; for (let i = 0; i < 600; i++) if (Dr.rollLoot('night', 'city').id === 'backpack') bags++;
+    pl.gear.cap = 14; Dr.fillNight(0); let bags2 = 0; for (let i = 0; i < 600; i++) if (Dr.rollLoot('night', 'city').id === 'backpack') bags2++;
+    if (!need || !bags || bags2) vfail('backpack help: need ' + need + ', night bags without one ' + bags + ', with one ' + bags2);
+    pl.gear.eq.primary = T.makeItem('shotgun_c'); let a12 = 0; for (let i = 0; i < 600; i++) if (Dr.pickAmmo(['a9', 'a9', 'a12']) === 'a12') a12++;
+    pl.gear.eq.primary = null;
+    if (a12 < 600 * .6) vfail('ammo for the carried shotgun only ' + a12 + ' of 600');
+    console.log('v0.37: went round ' + round + ' of ' + tried + ' cars; backpack ' + Math.round(Math.hypot(startBag.x - pl.pos.x, startBag.z - pl.pos.z)) + ' m from the start, night bags ' + bags + '/600 without one, ' + bags2 + ' with; shotgun shells ' + a12 + '/600');
+  }
   // v0.34: the old town: shop boards, balconies, posters, columns, body bags, barriers built; none of their collision
   // boxes on a loot spot or a doorway; a church bell at dawn
   { const Ot = await import('../src/world/oldtown.js'), Cl3 = await import('../src/world/collision.js'), I4 = await import('../src/world/interiors.js'), Ct = await import('../src/world/city.js');
@@ -677,7 +701,7 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   }
   // v0.32: the slow first morning, the outbreak seen happening, the goal line
   { const Ob = await import('../src/ui/objective.js'), Tm = await import('../src/config/time.js'), Ph = await import('../src/systems/phases.js');
-    els.bAgain.fire('click'); T.G.running = true; const pl = T.player; pl.inv = 1e9;
+    els.bAgain.fire('click'); T.G.running = true; const pl = T.player; pl.inv = 1e9; pl.gear.cap = 14;   // v0.37 with a backpack (its own goal is tested below)
     const m0 = T.G.min; step(600); const paced = (T.G.min - m0) / (10 * Tm.RATE);   // 10 real seconds at ×1
     const g0 = Ob.currentGoal(pl);
     for (let k = 0; k < 6; k++) T.agents.push(T.makeAgent(pl.pos.x + Math.sin(k) * 14, pl.pos.z + Math.cos(k) * 14));   // people around, so one is near whoever turns

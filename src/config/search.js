@@ -7,8 +7,8 @@ export const SEARCH_SECONDS=2, SEARCH_RANGE=.9, SEARCH_NOISE=7, RESTOCK=.35;
 // Only civilian things: homes hold no police or military gear.
 export const BOX={
   kitchen:{name:'ตู้ครัว',items:[1,3],empty:.1,w:{food:70,bottle:15,mat:5,med:10}},
-  shelf:{name:'ชั้นวางของ',items:[1,2],empty:.25,w:{food:20,ammo:20,med:20,mat:20,bottle:20}},
-  drawer:{name:'ตู้ลิ้นชัก',items:[1,2],empty:.2,w:{med:35,ammo:30,food:15,weapon:6,melee:6,mat:8}},   // v0.18 melee
+  shelf:{name:'ชั้นวางของ',items:[1,2],empty:.25,w:{food:20,ammo:28,med:20,mat:20,bottle:20}},
+  drawer:{name:'ตู้ลิ้นชัก',items:[1,2],empty:.2,w:{med:35,ammo:36,food:15,weapon:6,melee:6,mat:8}},   // v0.18 melee; v0.37 more ammo here and on shelves
   sofa:{name:'โซฟา',items:[1,1],empty:.55,w:{ammo:45,food:30,med:25}},
   // v0.17 shops and the hospital (config/places.js)
   farm:{name:'ชั้นของในโรงนา',items:[1,3],empty:.15,w:{food:45,melee:15,mat:20,ammo:10,bottle:10}},   // v0.22 the farm's barn and sheds
