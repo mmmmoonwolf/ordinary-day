@@ -18,7 +18,7 @@ import {settings} from './settings.js';
 // camera; inside a building the cut-away walls are raised to full height under a ceiling.
 // v0.29: aiming down the sights zooms in (the sniper rifle through a scope), the aim drifts and every shot kicks the
 // view up, the eyes drop when crouched or prone (config/handling.js)
-const SENS=.0022,TOUCH_SENS=.0055,PITCH=[-.8,.6],FOV=72;   // mouse / finger look speed (rad per pixel), how far down and up, field of view
+const SENS=.0022,TOUCH_SENS=.0055,PITCH=[-.8,.6],FOV=72,EDGE_TURN=1.6;   // mouse / finger look speed (rad per pixel), how far down and up, field of view, turning with the cursor at the edge (rad/s, PLACEHOLDER)
 const EYE_DOWN=.5,CEIL=3.1,DOOR_TOP=2.2;   // eye height when down (m), room ceiling, top of the door
 let touchHint=0;   // v0.35 on a phone, how to look around is shown for a few seconds
 export function setFps(on){
@@ -35,7 +35,13 @@ export function look(dx,dy,touch){const k=(touch?TOUCH_SENS:SENS)*settings.sens/
 // looking through a scope right now (Shift then holds the breath instead of running)
 export function isScoped(p){if(!view.fps||!p.input.ads)return false;const d=DEF[curWeapon(p).id];return !!d.gun&&ADS.scope.includes(d.model);}
 export const mouseLocked=()=>document.pointerLockElement===cv;
-export function lockMouse(){if(!isTouch&&cv.requestPointerLock)try{cv.requestPointerLock();}catch(_){}}
+export function lockMouse(){if(isTouch||!cv.requestPointerLock)return;try{const r=cv.requestPointerLock();if(r&&r.catch)r.catch(()=>{lockFailT=performance.now();});}catch(_){lockFailT=performance.now();}}
+// v0.36 without the lock (not clicked yet, the browser refused it, or Esc just let it go) the mouse still turns the view:
+// moving it over the game turns by how far it moved, and resting it near the left or right edge keeps turning
+let lockFailT=0,edge=0;
+if(globalThis.document&&document.addEventListener)document.addEventListener('pointerlockerror',()=>{lockFailT=performance.now();});
+export function freeLook(e){look(e.movementX||0,e.movementY||0,false);const x=e.clientX/innerWidth;edge=x<.05?1:x>.95?-1:0;}
+export function clearEdge(){edge=0;}
 // stick / keys (right, forward) -> a ground direction, relative to where the view looks
 export function fpsMove(ix,iy){const fx=Math.sin(view.yaw),fz=Math.cos(view.yaw);return [-fz*ix+fx*iy,fx*ix+fz*iy];}
 
@@ -97,6 +103,9 @@ export function updateFps(v,dt){
   const k=shownRoom();if(k>=0){const r=rooms[k],s=shell(r);s.visible=true;r.shellDoor.visible=r.cutDoor.visible;}
   // the cursor comes back for the bag and the pause menu; a click on the game takes the mouse again
   if(mouseLocked()&&(!$('bag').hidden||!$('pause').hidden||!$('overlay').hidden))document.exitPointerLock();
-  const hint=(isTouch?performance.now()<touchHint:!mouseLocked())&&G.running&&$('bag').hidden&&$('pause').hidden&&$('overlay').hidden;
+  const menus=$('bag').hidden&&$('pause').hidden&&$('overlay').hidden;
+  if(mine&&!isTouch&&edge&&!mouseLocked()&&G.running&&menus)view.yaw+=edge*EDGE_TURN*settings.sens*dt;
+  const hint=(isTouch?performance.now()<touchHint:!mouseLocked())&&G.running&&menus;
+  if(hint&&!isTouch){const t=performance.now()-lockFailT<5000?'เบราว์เซอร์ไม่ให้ล็อกเมาส์ · เลื่อนเมาส์หรือพาไปขอบจอเพื่อหัน':'คลิกเพื่อล็อกเมาส์ (หรือเลื่อนเมาส์เพื่อหัน) · V กลับมุมเดิม';if($('fpsHint').textContent!==t)$('fpsHint').textContent=t;}
   if($('fpsHint').hidden===hint)$('fpsHint').hidden=!hint;
 }
