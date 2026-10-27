@@ -7,6 +7,8 @@ import {concreteTex} from './textures.js';
 import {solids,freeAt,rayWall} from './collision.js';
 import {buildings,lootSpots,LAYOUT,pois} from './city.js';
 import {PLACES} from '../config/places.js';
+import {MORE_FURN,MORE_GAP} from '../config/search.js';
+import {breakables} from './props.js';
 
 // ---------- enterable buildings (v0.6) ----------
 // One building per city block gets a door. Its solid footprint becomes four walls with a doorway, and while the
@@ -16,8 +18,9 @@ import {PLACES} from '../config/places.js';
 export const rooms=[];
 const floorMats=['#6e5c48','#5f5b52','#6d5a46','#565b5c'].map(c=>S({map:concreteTex(),color:c,roughness:.95}));   // v0.17: worn, stained floors
 const furnMats=['#6b5a46','#4c5560','#7d4b3c','#8b8577','#3f4a3a'].map(c=>S({color:c,roughness:.8}));
-const doorMat=S({color:'#5a3d26',roughness:.7}),holeMat=S({color:'#141210',roughness:1}),brokenMat=S({color:'#3a2a1c',roughness:.9});
+export const doorMat=S({color:'#5a3d26',roughness:.7,emissive:'#ffffff',emissiveIntensity:0}),holeMat=S({color:'#141210',roughness:1}),brokenMat=S({color:'#3a2a1c',roughness:.9});
 const plankMat=S({color:'#a9834f',roughness:.85});
+export const frameMat=new THREE.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:0,depthWrite:false});   // v0.40
 const signMat=S({color:'#3a2f22',emissive:'#ffb35a',emissiveIntensity:.9});
 const FURN=[{d:.5,h:1.9,kind:'shelf'},{d:.8,h:.85,kind:'kitchen'},{d:.9,h:.75,kind:'sofa'},{d:.6,h:1.1,kind:'drawer'}];   // shelf, counter, sofa, cabinet
 // every piece of furniture can be searched once (v0.15, systems/search.js); its index here names it in G.searched and online
@@ -80,6 +83,9 @@ function makeRoom(b,[nx,nz],rng){
   r.extDoor=slab(doorMat,...fw(.04,.04),y0,y0+2.3);r.extHole=slab(holeMat,...fw(.02,.02),y0,y0+2.3);
   const sg=nx?[dx+nx*.08-.06,dx+nx*.08+.06,dz-.7,dz+.7]:[dx-.7,dx+.7,dz+nz*.08-.06,dz+nz*.08+.06];
   r.sign=slab(signMat,...sg,y0+2.55,y0+2.9);r.ext.add(r.extDoor,r.extHole,r.sign);r.sg=[nx,nz,dx,dz,y0];
+  // v0.40 a white frame round the doorway that lights up after dark (world/glow.js), open or shut
+  const fr=(a0,a1,h0,h1)=>slab(frameMat,...(nx?[dx+nx*.06-.05,dx+nx*.06+.05,dz+a0,dz+a1]:[dx+a0,dx+a1,dz+nz*.06-.05,dz+nz*.06+.05]),y0+h0,y0+h1);
+  r.frame=[fr(-DOOR_W/2-.12,-DOOR_W/2,0,2.42),fr(DOOR_W/2,DOOR_W/2+.12,0,2.42),fr(-DOOR_W/2-.12,DOOR_W/2+.12,2.3,2.42)];for(const m of r.frame)m.castShadow=m.receiveShadow=false;r.ext.add(...r.frame);
   for(const m of r.cut.children)m.castShadow=m.receiveShadow=true;
   r.cut.visible=false;scene.add(r.cut,r.ext);b.meshes.push(r.ext);
   // two loot spots inside, appended after every existing spot so saved spot indices stay valid
@@ -114,6 +120,33 @@ export function buildInteriors(){
   });
 }
 
+// v0.40 more to search: cupboards along every wall of every room wherever they fit (clear of the doorway, the floor loot
+// spots, the clutter and each other; nothing stands in the middle, so the way from the door stays open), and every car in
+// the street. Run once after every builder (main.js) with its own rng, so the furniture before it keeps its index in
+// `boxes` (and in saves). PLACEHOLDER sizes and gaps in config/search.js
+export function moreBoxes(){
+  const rng=mulberry32(4040),y0=.18,M=.03;
+  const clear=(x0,x1,z0,z1)=>!solids.some(b=>x0<b.x1-M&&x1>b.x0+M&&z0<b.z1-M&&z1>b.z0+M)&&!lootSpots.some(p=>p.x>x0-.6&&p.x<x1+.6&&p.z>z0-.6&&p.z<z1+.6);
+  rooms.forEach((r,k)=>{
+    for(const [sx,sz] of SIDES){
+      const lo=sx?r.z0:r.x0,hi=sx?r.z1:r.x1,door=sx===r.n[0]&&sz===r.n[1],dc=sx?r.dz:r.dx;
+      for(let at=lo+.15;at<hi-1;){
+        const [kind,d,h]=MORE_FURN[Math.floor(rng()*MORE_FURN.length)],L=1+rng()*.8,a0=at,a1=at+L;
+        if(a1>hi-.15)break;
+        if(door&&a1>dc-DOOR_W/2-1.3&&a0<dc+DOOR_W/2+1.3){at=dc+DOOR_W/2+1.3;continue;}   // the doorway and the step in
+        const w=sx?(sx>0?[r.x1-d,r.x1]:[r.x0,r.x0+d]):null,v=sz?(sz>0?[r.z1-d,r.z1]:[r.z0,r.z0+d]):null;
+        const q=sx?{x0:w[0],x1:w[1],z0:a0,z1:a1}:{x0:a0,x1:a1,z0:v[0],z1:v[1]};
+        if(!clear(q.x0,q.x1,q.z0,q.z1)){at+=.3;continue;}
+        const box=pushBox(q.x0,q.x1,q.z0,q.z1);box.low=h<=1.2;
+        const mesh=slab(furnMats[Math.floor(rng()*furnMats.length)],q.x0,q.x1,q.z0,q.z1,r.y0,r.y0+h);mesh.castShadow=mesh.receiveShadow=true;
+        r.furniture.push(box);r.cut.add(mesh);
+        boxes.push({room:k,kind:r.place?r.place.box:kind,box,mesh,x:(q.x0+q.x1)/2,z:(q.z0+q.z1)/2,n:[sx,sz],L,d,h,y0:r.y0,cut:r.cut,model:null});
+        at=a1+MORE_GAP;
+      }
+    }
+  });
+  for(const c of breakables)if(c.car)boxes.push({room:-1,kind:c.car.police?'cop':c.car.burned?'wreck':'car',box:c.box,mesh:null,x:c.x,z:c.z,car:c,cut:null,model:null});
+}
 // shops are mostly shelves: two more along the door wall, one each side of the doorway, clear of it (v0.17). Appended to
 // `boxes` after every room's own furniture, so G.searched indices from v0.15 saves stay the same
 function shopShelves(r,k){

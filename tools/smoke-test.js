@@ -545,6 +545,27 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   if (!(left < boxes.length && left > 0)) vfail('restock: ' + left + ' of ' + boxes.length + ' still empty');
   T.G.searched = [];
   console.log('v0.14 / v0.15: food in indoor rolls ' + (fi / 40).toFixed(0) + '% vs outdoor ' + (fo / 40).toFixed(0) + '% · ' + boxes.length + ' furniture in ' + rooms.length + ' rooms (' + ['kitchen', 'shelf', 'drawer', 'sofa'].map(k => k + ' ' + boxes.filter(x => x.kind === k).length).join(', ') + '), kitchen food ' + Math.round(kf / kn * 100) + '%, searched one (' + (found ? 'found something' : 'empty') + '), ' + (boxes.length - left) + ' restocked at 06:00');
+  // v0.40: cupboards along the walls of every room (in front of each one there is room to stand, the doorway stays clear)
+  // and the cars in the street can be searched: guns and ammo, Police Grade in a police car
+  { const Col = await import('../src/world/collision.js'), cars = boxes.filter(x => x.room < 0), inRoom = k => boxes.filter(x => x.room === k).length;
+    if (cars.length < 10 || !cars.some(c => c.kind === 'cop')) vfail('v0.40 cars to search: ' + cars.length);
+    if (rooms.some((r, k) => inRoom(k) < 3)) vfail('v0.40 a room with fewer than 3 cupboards: ' + rooms.map((r, k) => inRoom(k)));
+    let stand = 0, n = 0; for (const x of boxes) { if (x.room < 0) continue; n++; const q = x.box, fx = (q.x0 + q.x1) / 2 - x.n[0] * (x.d / 2 + .4), fz = (q.z0 + q.z1) / 2 - x.n[1] * (x.d / 2 + .4); if (Col.freeAt(fx, fz, .25)) stand++; }
+    if (stand < n * .8) vfail('v0.40 only ' + stand + ' of ' + n + ' cupboards have room in front');
+    const blocked = rooms.filter(r => !Col.freeAt(r.dx - r.n[0] * 1.2, r.dz - r.n[1] * 1.2, .3)).length; if (blocked) vfail('v0.40 ' + blocked + ' doorways blocked inside');
+    const roll = k => Array.from({ length: 300 }, () => Se.rollBox(k)).flat(), cr = roll('car'), cp = roll('cop');
+    if (cr.some(it => D5[it.id].kind === 'weapon' && !D5[it.id].gun) || !cr.some(it => D5[it.id].gun) || cr.some(it => D5[it.id].grade && D5[it.id].grade !== 'civ')) vfail('v0.40 car loot: ' + [...new Set(cr.map(it => it.id))]);
+    if (!cp.some(it => D5[it.id].gun && D5[it.id].grade === 'pol')) vfail('v0.40 police car loot: ' + [...new Set(cp.map(it => it.id))]);
+    const ci = boxes.indexOf(cars.find(c => c.kind === 'car' && !c.car.broken)), c = boxes[ci], q = c.box;
+    const spots = [[(q.x0 + q.x1) / 2, q.z0 - .6], [(q.x0 + q.x1) / 2, q.z1 + .6], [q.x0 - .6, (q.z0 + q.z1) / 2], [q.x1 + .6, (q.z0 + q.z1) / 2]], sp = spots.find(([x, z]) => Col.freeAt(x, z, .3));
+    const pl = T.player; T.G.running = true;   // the save was loaded above
+    if (!sp) vfail('v0.40 nowhere to stand by a car'); else {
+      pl.pos.x = sp[0]; pl.pos.z = sp[1]; step(2); if (pl.nearBox !== ci) vfail('v0.40 car not offered: nearBox ' + pl.nearBox + ' want ' + ci);
+      Ac.ACTIONS.use(pl); step(Math.round(SEARCH_SECONDS * 60) + 5); if (!T.G.searched.includes(ci)) vfail('v0.40 searching a car did not finish');
+    }
+    T.G.searched = [];
+    console.log('v0.40: ' + boxes.filter(x => x.room >= 0).length + ' cupboards in ' + rooms.length + ' rooms (' + Math.min(...rooms.map((r, k) => inRoom(k))) + '–' + Math.max(...rooms.map((r, k) => inRoom(k))) + ' each, ' + stand + '/' + n + ' with room in front), ' + cars.length + ' cars to search (' + cars.filter(c => c.kind === 'cop').length + ' police); car loot guns ' + cr.filter(it => D5[it.id].gun).length + '/' + cr.length + ', searched one');
+  }
   // v0.14.1: one stack per item, no limit, sorted by category; old saves with split stacks are merged
   const Inv = await import('../src/systems/inventory.js'); const g = T.player.gear; g.bag = []; g.cap = 6;
   Inv.addStack(T.player, 'water', 3); Inv.addStack(T.player, 'a9', 150); Inv.addStack(T.player, 'a9', 150); Inv.addStack(T.player, 'bandage', 9); g.bag.unshift({ id: 'a9', n: 5 }, { id: 'bat_c', mag: 0, dur: 40 }); Inv.tidyBag(g);
