@@ -85,7 +85,7 @@ export function updateHUD(dt){
 const ENDINGS={
   hurt:{eyebrow:'GAME OVER',title:'คุณไม่รอด',text:'บาดเจ็บหนักจนไปต่อไม่ไหว'},
   infected:{eyebrow:'GAME OVER',title:'คุณกลายเป็นซอมบี้',text:'เชื้อลามถึง 100% ก่อนได้ใช้ Antibiotic'},
-  won:{eyebrow:'RESCUED',title:'คุณรอดแล้ว',text:'เฮลิคอปเตอร์กู้ภัยพาคุณออกจากเมืองได้สำเร็จ'},
+  won:{eyebrow:'ESCAPED',title:'คุณรอดแล้ว',text:'ทหารเปิดทางหลวงให้ผู้รอดชีวิตออกจากเมือง เดินทางต่อไปเมืองอื่น'},   // v0.46 (was the rescue helicopter)
 };
 export function gameOver(){
   if(G.over)return;

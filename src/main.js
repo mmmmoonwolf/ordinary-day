@@ -50,6 +50,7 @@ import {loadSkins,beginSkins} from './entities/skins.js';
 import {loadProps,props} from './world/prop-models.js';
 import {buildHighway} from './world/highway.js';
 import {updateCars} from './systems/vehicles.js';
+import {updateArmy,armyFrame} from './systems/army.js';
 import './ui/report.js';   // keeps the last script errors for bug reports
 
 buildCity();
@@ -89,7 +90,7 @@ function simStep(dt,now){
     else updateDead(a,dt);
     if(a.gone||(a.state==='dead'&&a.deadT>25)){removeAgent(a);agents.splice(i,1);}
   }
-  separate();updateThrows(dt);updateLures(dt);updateFires(dt);if(G.running){updateCamp(dt);updateCars(dt);}
+  separate();updateThrows(dt);updateLures(dt);updateFires(dt);if(G.running){updateCamp(dt);updateCars(dt);updateArmy(dt);}
 }
 reset();
 // character models load in the background; until then everyone is blocky (v0.13)
@@ -112,7 +113,7 @@ function loop(now){
     for(const d of drops)d.m.rotation.y+=dt*.6;
     const pulse=.62+.25*Math.sin(now/280);for(const k in ringMats)ringMats[k].opacity=pulse;for(const k in glowMats)glowMats[k].opacity=.14+.1*Math.sin(now/280);
     updateSky(dt,now);updateFireFx(dt,now);updateGlow(now);   // v0.40 doors and what is left to search glow after dark
-    updateGoal(dt,now);
+    updateGoal(dt,now);armyFrame(dt);
   }
   if(bus.role==='host')hostFrame(real);   // friends in this room: messages and the world, also while paused (v0.12)
   updatePrompts();

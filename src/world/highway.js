@@ -12,13 +12,14 @@ import {solidAt,furnish,heavy} from './clutter.js';
 import {shed,windows,ground,merge,M} from './farm.js';
 import {addTank,tanks} from './extras.js';
 import {addRide} from './vehicles.js';
+import {buildArmyCamp} from './army.js';
 
 // ---------- the highway out of town (v0.45) ----------
 // Past the camp's woods the east road goes on as a two-lane highway, 400 m of it, waiting to reach another town: empty
 // but for the cars people left when they ran, burned out, crashed, nose to tail or across the lanes, with the woods
 // close on both sides. On the way: a gas station with its shop (enterable, a place like the shops in town) where two cars
 // still start (world/vehicles.js, systems/vehicles.js), and a side road south to a cemetery behind an iron fence. For now
-// it ends at an army roadblock. Built last with its own rng; everything appended (loot spots, rooms, solids, decor).
+// it ends at an army camp (v0.46). Built last with its own rng; everything appended (loot spots, rooms, solids, decor).
 export const highway={wrecks:0,trees:0,graves:0};
 const lin=c=>new THREE.Color(c).convertSRGBToLinear();
 // a plane with its own copy of a texture, repeated per `tile` m so it does not stretch over the long road
@@ -29,7 +30,7 @@ export function buildHighway(){
   const X0=HIGHWAY.wall.v-2,X1=ROAD.end+8,H=ROAD.half,side=ROAD.side;
   // ---- ground: grass both sides out to the woods, the road, gravel shoulders, lines ----
   tiled(grassTex,HIGHWAY.wall.v,X1+20,-52,104,.007,22);
-  {const t=asphaltTex();t.center.set(.5,.5);t.rotation=Math.PI/2;t.repeat.set((ROAD.end+2-X0)/8.4,1);ground(S({map:t,roughness:.92}),X0,ROAD.end+2,-H,H,.015);}   // the town's road texture (its centre dash and edge lines) turned along the road
+  {const t=asphaltTex();t.center.set(.5,.5);t.rotation=Math.PI/2;t.repeat.set(1,(ROAD.end-X0)/8.4);ground(S({map:t,roughness:.92}),X0,ROAD.end,-H,H,.015);}   // the town's road texture (its centre dash and edge lines) turned along the road
   for(const s of [-1,1])tiled(dirtTex,X0,ROAD.end+2,s<0?-H-1.6:H,s<0?-H:H+1.6,.012,3);
   mapPaint.push({color:'#3d4431',rects:[[HIGHWAY.wall.v,HIGHWAY.z0,X1,HIGHWAY.z1],[GAS.x0,GAS.z0,GAS.x1,GAS.z1],[CEMETERY.x0,CEMETERY.z0,CEMETERY.x1,CEMETERY.z1]]},{color:'#3a3d40',rects:[[X0,-H,ROAD.end,H],[side.x-side.half,H,side.x+side.half,side.z1]]});
   // telephone poles along the north side, leaning here and there
@@ -57,10 +58,9 @@ export function buildHighway(){
     if(rng()<.35&&freeAt(x,z+(z>0?-2:2)*(cross?1.6:1),.5))lootSpots.push({x,z:z+(z>0?-2:2)*(cross?1.6:1),zone:id==='car_police'?'police':'city',drop:null});
     for(let k=0;k<3;k++)decor.push({id:pickR(['c_papers','c_papers','c_roadbits','c_bag']),x:x+R(-4,4),z:z+R(-3,3),ry:R(0,6.28),size:R(.7,1.2),by:'w',shadow:false});
   }
-  // the end of the road for now: the army closed it
-  for(let z=-H-1;z<=H+1;z+=2.2)decor.push({id:'k_roadblock',x:ROAD.end,z,ry:Math.PI/2,size:1.4,by:'w',shadow:true});
-  solids.push({x0:ROAD.end-.4,x1:ROAD.end+.4,z0:HIGHWAY.z0,z1:HIGHWAY.z1});
-  solidAt('k_truck',ROAD.end-6,-2.4,1.25,3.2,Math.PI/2,2.6,-1);solidAt('k_truck',ROAD.end-7,5.6,1.25,3.2,Math.PI/2+.1,2.6,-1);
+  // the end of the road: the army camp, its gate shut until the morning after the third night (v0.46, world/army.js)
+  buildArmyCamp();
+  solidAt('k_truck',ROAD.end-7,-11.2,1.25,3.2,Math.PI/2,2.6,-1);solidAt('k_truck',ROAD.end-8,11.4,1.25,3.2,Math.PI/2+.1,2.6,-1);
   lootSpots.push({x:ROAD.end-5,z:1.4,zone:'military',drop:null});
   // ---- the woods: inside the walkable strip beside the road (no collision, like the camp's woods) and beyond it ----
   const keepOff=(x,z)=>(z>0&&z<12)||(x>GAS.x0-3&&x<GAS.x1+3&&z<-H-2&&z>GAS.z0-6)||(x>CEMETERY.x0-3&&x<CEMETERY.x1+3&&z>H+2)||Math.abs(z)<H+2.2||x>ROAD.end-4;
