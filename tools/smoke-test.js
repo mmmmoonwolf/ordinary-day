@@ -713,6 +713,26 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     if (!rang) vfail('no church bell at dawn');
     console.log('v0.34: ' + o.signs + ' shop boards, ' + o.hang + ' hanging signs, ' + o.balconies + ' balconies, ' + o.posters + ' posters, ' + o.sheets + ' HELP sheets, ' + o.columns.length + ' columns, ' + o.bags + ' body bags, ' + o.cases + ' suitcases, ' + o.barriers.length + ' barriers, ' + o.sandbags + ' sandbags, ' + o.memorials + ' memorials; ' + n0 + ' solids; bell at dawn');
   }
+  // v0.43: every weapon has a box model to fall back on, Police / Military guns, ammo boxes and the five new melee weapons
+  // are in the props build, the new ones are found in the town's melee finds, and a blow sounds like what made it
+  { const fs = await import('fs'), Im = await import('../src/world/item-models.js'), Lt = await import('../src/config/loot.js'), Au = await import('../src/systems/audio.js'), Cb = await import('../src/systems/combat.js');
+    const noBox = Object.keys(D5).filter(id => D5[id].kind === 'weapon' && id !== 'fist' && !Im.weaponModel(D5[id].model, D5[id].look).children.length);
+    if (noBox.length) vfail('v0.43 weapons with no model: ' + noBox);
+    const bp = fs.readFileSync(new URL('./build-props.mjs', import.meta.url), 'utf8'), looks = Object.values(D5).filter(d => d.look).map(d => d.look);
+    const missing = [...looks, 'w_am9', 'w_am12', 'w_amrifle', 'w_cleaver', 'w_dagger', 'w_hockey', 'w_poker', 'w_nunchucks'].filter(k => !bp.includes(' ' + k + ':'));
+    if (looks.length !== 8 || missing.length) vfail('v0.43 props not built: ' + missing + ' (' + looks.length + ' looks)');
+    const nw = ['cleaver_c', 'dagger_c', 'hockey_c', 'poker_c', 'nunchucks_c'];
+    if (nw.some(id => !D5[id] || !Lt.POOLS.civ.melee.includes(id))) vfail('v0.43 new melee weapons not found in the town');
+    const heard = [], keep = Au.sfx.hit; Au.sfx.hit = (x, z, k) => heard.push(k);
+    const pl = T.player, eq0 = T.inv.eq.melee, act0 = T.inv.active; pl.face = 0; T.inv.active = 'melee';
+    for (const [id, kind] of [['fist', 'zombie'], ['knife_c', 'zombie'], ['bat_c', 'zombie'], ['bat_c', 'armor']]) {
+      const z = T.makeAgent(pl.pos.x, pl.pos.z + 1); T.becomeZombie(z, kind); z.face = Math.PI; T.agents.push(z);
+      T.inv.eq.melee = id === 'fist' ? null : T.makeItem(id); Cb.meleeHit(pl, D5[id]); T.agents.splice(T.agents.indexOf(z), 1);
+    }
+    Au.sfx.hit = keep; T.inv.eq.melee = eq0; T.inv.active = act0;
+    if (heard.join() !== 'fist,blade,blunt,metal') vfail('v0.43 blows sound ' + heard);
+    console.log('v0.43: ' + looks.length + ' Police / Military gun models, 4 ammo boxes, ' + nw.length + ' new melee weapons; blows ' + heard.join(' / '));
+  }
   // v0.32: the slow first morning, the outbreak seen happening (v0.42 no goal line: nothing is explained on screen)
   { const Tm = await import('../src/config/time.js');
     els.bAgain.fire('click'); T.G.running = true; const pl = T.player; pl.inv = 1e9; pl.gear.cap = 14;

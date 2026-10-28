@@ -51,14 +51,14 @@ export function fixDoor(p,k){
   const st=G.doors[k];if(!st||!p.alive||p.bleed>0||fixAction(k)!=='rebuild')return false;const r=rooms[k],U=uiFor(p);
   if(blocked(p,k))return false;
   st.broken=false;st.open=false;st.hp=REBUILT_HP;U.feed('ซ่อมประตูแล้ว · ประตู '+Math.round(st.hp/DOOR_HP*100)+'%');
-  sync(k);markMapDirty();sfx.thud(r.dx,r.dz);setTimeout(()=>sfx.thud(r.dx,r.dz),180);setTimeout(()=>sfx.thud(r.dx,r.dz),420);
+  sync(k);markMapDirty();sfx.hammer(r.dx,r.dz);setTimeout(()=>sfx.hammer(r.dx,r.dz),180);setTimeout(()=>sfx.hammer(r.dx,r.dz),420);
   makeNoise(r.dx,r.dz,HAMMER_NOISE);   // loud: zombies nearby come to look
   if(p.local&&!$('bag').hidden)renderBag();
   return true;
 }
 export function damageDoor(k,dmg){
   const st=G.doors[k];if(!st||st.open)return;
-  const r=rooms[k];st.hp-=dmg;sfx.thud(r.dx,r.dz);
+  const r=rooms[k];st.hp-=dmg;sfx.bash(r.dx,r.dz);
   r.cutDoor.position.x+=(Math.random()-.5)*.06;r.cutDoor.position.z+=(Math.random()-.5)*.06;   // rattles
   const now=performance.now()/1000;
   for(const p of players)if(p.room===k&&now-(p.doorWarn||0)>8){p.doorWarn=now;}

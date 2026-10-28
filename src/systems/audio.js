@@ -5,6 +5,7 @@ import {agents} from '../entities/agents.js';
 import {G} from '../core/state.js';
 import {breakables} from '../world/props.js';
 import {fireSpots} from './effects.js';
+import {areaAt} from '../config/world.js';
 
 // ---------- audio ----------
 // Sounds are synthesized with WebAudio, except screams, rain and thunder (v0.19, recordings in assets/sounds/). Browsers
@@ -71,7 +72,10 @@ export const FILES={scream:['scream_m1','scream_m2','scream_m3','scream_m4','scr
   groan:['groan1','groan2','groan3','groan4','groan5'],zscream:['zscream1','zscream2','zscream3','zscream4','zscream5'],heart:['heart'],hurt:['hurt'],   // v0.20 zombies, heartbeat, the player hurt
   // v0.21 guns, reloads, a punch, the door, steps on wooden floors, loops (helicopter, wind, fire, police siren), sirens
   shot_pistol:['shot_pistol'],shot_rifle:['shot_rifle'],shot_shotgun:['shot_shotgun'],shot_smg:['shot_smg'],reload_pistol:['reload_pistol'],reload_rifle:['reload_rifle'],reload_shotgun:['reload_shotgun'],
-  punch:['punch'],door:['door'],step:['step1','step2','step3','step4'],heli:['heli'],wind:['wind'],fire:['fire'],siren_police:['siren_police'],siren_dusk:['siren_dusk'],siren_outbreak:['siren_outbreak']};
+  punch:['punch'],door:['door'],step:['step1','step2','step3','step4'],heli:['heli'],wind:['wind'],fire:['fire'],siren_police:['siren_police'],siren_dusk:['siren_dusk'],siren_outbreak:['siren_outbreak'],
+  // v0.43 Kenney Impact Sounds (CC0): steps on the street and on grass, blows by a blunt or a bladed weapon, metal, wood, a plank
+  stepc:['stepc1','stepc2','stepc3','stepc4','stepc5'],stepg:['stepg1','stepg2','stepg3','stepg4','stepg5'],blunt:['blunt1','blunt2','blunt3','blunt4','blunt5'],
+  blade:['blade1','blade2','blade3','blade4','blade5'],metal:['metal1','metal2','metal3','metal4','metal5'],wood:['wood1','wood2','wood3'],plank:['plank']};
 const bufs={};let loading=false,lastScream=-9,lastHurt=-9,lastGrowl=-9;
 function loadSounds(){
   if(loading||typeof fetch!=='function')return;loading=true;
@@ -106,7 +110,15 @@ const S={
   reload(model){const k=RELOAD_REC[model];if(k&&bufs[k]){play(2.9,undefined,0,1,(t,d)=>sample(k,t,d,.7));return;}   // v0.21; rummaging (no model) stays synthesized
     play(.4,undefined,0,1,(t,d)=>{noise(t,.03,{type:'highpass',f0:2500,peak:.25,dest:d});noise(t+.25,.04,{type:'highpass',f0:1800,peak:.3,dest:d});});},
   swing(){play(.15,undefined,0,1,(t,d)=>noise(t,.12,{type:'bandpass',f0:600,f1:2400,q:2,peak:.18,attack:.03,dest:d}));},
-  hit(x,z){if(bufs.punch)play(.7,x,z,20,(t,d,g)=>sample('punch',t,d,.6*g,{rate:.85+Math.random()*.3}));else S.thud(x,z);},   // v0.21 a melee blow lands
+  // v0.21 a melee blow lands; v0.43 by what hit: 'fist', 'blunt', 'blade', or 'metal' (on an Armor Walker's front, over the blow)
+  hit(x,z,kind){
+    const k=kind==='blade'||kind==='blunt'?kind:kind==='metal'?'blunt':'punch';
+    if(kind==='metal'&&bufs.metal)play(.4,x,z,25,(t,d,g)=>sample('metal',t,d,.55*g,{rate:.9+Math.random()*.2}));
+    if(bufs[k])play(.7,x,z,20,(t,d,g)=>sample(k,t,d,(k==='punch'?.6:.7)*g,{rate:.85+Math.random()*.3}));else if(bufs.punch)play(.7,x,z,20,(t,d,g)=>sample('punch',t,d,.6*g,{rate:.85+Math.random()*.3}));else S.thud(x,z);},
+  // v0.43 a zombie beating on a door, a door mended, a bear trap snapping shut (recordings; the thud until they load)
+  bash(x,z){if(bufs.wood){play(.5,x,z,30,(t,d,g)=>sample('wood',t,d,.75*g,{rate:.85+Math.random()*.25}));return;}S.thud(x,z);},
+  hammer(x,z){if(bufs.plank){play(.5,x,z,25,(t,d,g)=>sample('plank',t,d,.6*g,{rate:.95+Math.random()*.15}));return;}S.thud(x,z);},
+  clamp(x,z){if(bufs.metal){play(.5,x,z,25,(t,d,g)=>sample('metal',t,d,.9*g,{rate:.75}));return;}S.door(x,z);},
   // v0.31 a bullet or a blow landing in a zombie (played on every device from the impact effect, so not sent again)
   splat(x,z,k){if(k===2){play(.15,x,z,25,(t,d,g)=>{noise(t,.08,{type:'highpass',f0:3000,peak:.3*g,dest:d});tone(t,.06,{wave:'square',f0:1600,f1:900,peak:.06*g,dest:d});});return;}
     play(.25,x,z,25,(t,d,g)=>{noise(t,k?.16:.07,{f0:k?500:900,f1:150,peak:(k?.55:.28)*g,dest:d});tone(t,k?.14:.07,{f0:k?110:150,f1:45,peak:(k?.5:.22)*g,dest:d});});},
@@ -241,9 +253,11 @@ export function updateAmbience(m){
     for(const f of fireSpots){const d=Math.hypot(f.x-v.pos.x,f.z-v.pos.z);if(d<fd){fd=d;fire=f;}}   // v0.23 Molotovs and burning fuel
     if(G.site&&G.site.kind==='crash'){const d=Math.hypot(G.site.x-v.pos.x,G.site.z-v.pos.z);if(d<fd){fd=d;fire=G.site;}}
     near('siren_police',m.on&&m.night>.5&&pol,pol,55,.3,t);near('fire',m.on&&fire,fire,20,.5,t);
-    // steps on the wooden floors indoors, one every 0.75 m walked (louder running, quiet sneaking)
+    // steps on the wooden floors indoors, one every 0.75 m walked (louder running, quiet sneaking); v0.43 outdoors too, on
+    // the town's paving or on the grass and dirt outside the walls (quieter, PLACEHOLDER levels)
     const moved=lastPos?Math.hypot(v.pos.x-lastPos.x,v.pos.z-lastPos.z):0;lastPos={x:v.pos.x,z:v.pos.z};
-    if(m.inside&&v.alive&&moved<1){stride+=moved;if(stride>.75&&bufs.step){stride=0;play(.45,v.pos.x,v.pos.z,20,(tt,d,g)=>sample('step',tt,d,(v.sneak?.12:.32)*g,{rate:.9+Math.random()*.2}));}}else stride=0;
+    if(v.alive&&!(v.down>0)&&moved<1){stride+=moved;const k=m.inside?'step':areaAt(v.pos.x,v.pos.z)?'stepg':'stepc',lv=m.inside?.32:k==='stepg'?.3:.22;
+      if(stride>(m.inside?.75:.85)&&bufs[k]){stride=0;play(.45,v.pos.x,v.pos.z,20,(tt,d,g)=>sample(k,tt,d,(v.sneak?.35:1)*lv*g,{rate:.9+Math.random()*.2}));}}else stride=0;
   }
   // v0.34 crows by day outdoors, off somewhere over the roofs (this device only)
   if(m.on&&!m.inside&&m.night<.5&&t>=nextCrow){const v=viewed();if(v){const a=Math.random()*6.28;S.crow(v.pos.x+Math.cos(a)*25,v.pos.z+Math.sin(a)*25);}nextCrow=t+14+Math.random()*30;}   // PLACEHOLDER how often

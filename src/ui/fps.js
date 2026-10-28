@@ -55,7 +55,7 @@ export function fpsMove(ix,iy){const fx=Math.sin(view.yaw),fz=Math.cos(view.yaw)
 // Aiming down the sights only zooms (moving the hands under the crosshair put the left hand across the view).
 const ARMS={eye:[.03,-.12,0],kick:.07};
 let arms=null;const hv=new THREE.Vector3();
-const heldModel=def=>{const m=weaponModel(def.model);HOLD(m,def);return m;};
+const heldModel=def=>{const m=weaponModel(def.model,def.look);HOLD(m,def);return m;};
 function viewArms(v,dt,scoped){
   if(arms&&(arms.p!==v||!skins.on||arms.id!==skinId(v))){dropArms(arms);arms=null;}   // v0.41 or new clothes
   if(!arms&&skins.ready&&skins.on){arms=makeArms(v);if(arms){arms.o.rotation.y=Math.PI;fpsCam.add(arms.o);}}
@@ -75,7 +75,7 @@ function viewModel(v,ads,scoped,dt){
   if(viewArms(v,dt,scoped)){vm.visible=false;return;}
   const id=curWeapon(v).id;
   if(id!==vmId){vmId=id;if(vmModel){vm.remove(vmModel);vmModel=null;}
-    if(id!=='fist'){const def=DEF[id];vmModel=weaponModel(def.model);vmModel.scale.setScalar(.42);vmModel.rotation.order='YXZ';vm.add(vmModel);
+    if(id!=='fist'){const def=DEF[id];vmModel=weaponModel(def.model,def.look);vmModel.scale.setScalar(.42);vmModel.rotation.order='YXZ';vm.add(vmModel);
       vmModel.traverse(o=>{if(o.isMesh){o.castShadow=false;o.renderOrder=10;}});}}
   vm.visible=!!vmModel&&v.alive&&!(v.down>0)&&!(v.bleed>0)&&!scoped;if(!vm.visible)return;
   const def=DEF[id],gun=def.gun,t=performance.now()/1000,mv=Math.min(1,(v.moving||0)/4),sway=Math.sin(t*8)*.012*mv;

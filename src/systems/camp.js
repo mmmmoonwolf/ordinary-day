@@ -16,9 +16,9 @@ import {uiFor} from '../ui/hud.js';
 export function updateCamp(dt){
   for(let i=0;i<camp.traps.length;i++){
     if(G.traps.includes(i))continue;const t=camp.traps[i];
-    for(const a of agents)if(a.state==='zombie'&&Math.hypot(a.pos.x-t.x,a.pos.z-t.z)<.45){G.traps.push(i);applyTraps();a.trapT=CAMP_CFG.trapHold;hurtZombie(a,CAMP_CFG.trapZ,0,0,0,false,true,null);sfx.door(t.x,t.z);break;}
+    for(const a of agents)if(a.state==='zombie'&&Math.hypot(a.pos.x-t.x,a.pos.z-t.z)<.45){G.traps.push(i);applyTraps();a.trapT=CAMP_CFG.trapHold;hurtZombie(a,CAMP_CFG.trapZ,0,0,0,false,true,null);sfx.clamp(t.x,t.z);break;}
     if(G.traps.includes(i))continue;
-    for(const p of players)if(p.alive&&p.down<=0&&Math.hypot(p.pos.x-t.x,p.pos.z-t.z)<.4){G.traps.push(i);applyTraps();p.trapT=CAMP_CFG.trapHoldP;hurtPlayer(p,CAMP_CFG.trapP);sfx.door(t.x,t.z);uiFor(p).feed('เหยียบกับดักหมี! ขยับไม่ได้ชั่วครู่','warn');break;}
+    for(const p of players)if(p.alive&&p.down<=0&&Math.hypot(p.pos.x-t.x,p.pos.z-t.z)<.4){G.traps.push(i);applyTraps();p.trapT=CAMP_CFG.trapHoldP;hurtPlayer(p,CAMP_CFG.trapP);sfx.clamp(t.x,t.z);uiFor(p).feed('เหยียบกับดักหมี! ขยับไม่ได้ชั่วครู่','warn');break;}
   }
   // the fire still burns: whatever stands in it gets hurt, like burning ground (systems/blast.js)
   const f=camp.fire;for(const a of agents)if(a.state==='zombie'&&Math.hypot(a.pos.x-f.x,a.pos.z-f.z)<f.r){a.burn=(a.burn||0)+FIRE.zdps*dt;if(a.burn>=7){hurtZombie(a,a.burn,0,0,0,false,true,null);a.burn=0;}}

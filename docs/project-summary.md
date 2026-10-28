@@ -44,6 +44,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.24 | ย่านบ้านชานเมือง (`world/suburb.js` `buildSuburb()`), พื้นที่นอกเมืองเป็นรายการ `AREAS` (`areaAt()`, `beyond()`, `inWorld()` / `clampWorld()` รวมทุกพื้นที่, ประตูใน `navStep`, `areaWander`, จุดเกิดซอมบี้ในพื้นที่), `mapPaint` สำหรับแผนที่เล็ก, `cityWall.south` |
 | v0.25 | แม่น้ำและสะพานฝั่งตะวันออก (`world/river.js` `buildRiver()`, พื้นที่ `EAST`, `RIVER` / `riverSide()` และทางข้ามสะพานใน `navStep`), ฝูงซอมบี้ข้ามสะพาน (`HORDE.bridge`), กระท่อมตกปลา, ด่านตรวจ (จุดของ police), ป่าฝั่งตรงข้าม |
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
+| v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.41 | ตั้งชื่อและแต่งตัวละคร `ui/creator.js` (`initCreator()`), `core/profile.js` (`profile` `OUTFITS` `PALETTE` `cleanLook()` `cleanName()` `applyProfile()`), ประกอบชุดจากชิ้นส่วน `assemble()` `paint()` `build()` `skinId()` `previewModel()` ใน `entities/skins.js` (`p.wear`), ชื่อและชุดผ่านออนไลน์ (`hi.name` `hi.look`, snapshot `who`) และเซฟ (`name` `wear`) |
 | v0.40 | ชื่อเหนือหัวและแสงที่เท้า `ui/tags.js` (`updateTags()` `TAG_COLORS`), ของเรืองแสง `world/glow.js` (`updateGlow()` `GLOW`, `doorMat` `frameMat` `r.frame` ใน `interiors.js`), ตู้เพิ่มและรถที่ค้นได้ `moreBoxes()` ใน `world/interiors.js` (`MORE_FURN` `MORE_GAP`, `BOX.car` `cop` `wreck` ใน `config/search.js`), `nearBoxOf()` ค้นนอกตึกได้ |
 | v0.39 | ท่าผู้เล่นจาก Mixamo (`PCLIPS` ใน `tools/mixamo-clips.mjs`, `P_*` ใน `anims.glb`), `playerClip()` `upperClip()` `layer()` ท่าส่วนบนทับขา, `makeArms()` `armsFrame()` `dropArms()` ใน `entities/skins.js`, แขนในมุมบุคคลที่หนึ่ง `viewArms()` `ARMS` ใน `ui/fps.js`, ท่านอนราบและลอยตัวของโมเดล 3D (`tip()` ใน `entities/animation.js`) |
@@ -823,6 +824,27 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
   - ร้าน (`PLACE_W`): โรงพยาบาลยา 90 เป้ 10 · ร้านขายของชำ ยา กระสุน ของขว้าง เป้ · ร้านอาหาร ของขว้าง ยา กระสุน · ร้านขายยา ยา 100 · ร้านเครื่องมือ อาวุธประชิด ของขว้าง เป้
   - เสบียงจากฟ้า รถส่งของคว่ำ ที่ซ่อนเสบียง: ยา กระสุน ของขว้างแทนอาหาร
 - **ยังไม่ได้ทำ:** เสียงพูดแทนข้อความวิทยุ (มี Kenney Voiceover Pack ที่ส่งมาแล้ว) · ปรับการเกิดซอมบี้กลางคืนตามความยากใหม่ (ยังเท่าเดิม) · เทสต์เล่นจริงหลายคืนเพื่อดูว่าของพอไหม
+
+## ปืนตามระดับ กล่องกระสุน อาวุธประชิดใหม่ และเสียงกระทบ (v0.43)
+
+- **ปืนตามระดับ (ภาพอย่างเดียว):** Pistol, Pump / Semi-Auto Shotgun, SMG และ Assault Rifle ระดับ Police / Military ใช้โมเดลจาก Quaternius Guns (`q_pistol_p` Pistol_1, `q_pistol_m` Pistol_5, `q_shotgun_p` Shotgun_ShortStock, `q_shotgun_m` Shotgun_1, `q_smg_p` SubmachineGun_3, `q_smg_m` SubmachineGun_5, `q_rifle_p` AssaultRifle2_2, `q_rifle_m` AssaultRifle2_4) ระดับพลเรือนใช้โมเดล Weapons Pack เดิม ชื่อโมเดลอยู่ใน `DEF[id].look` ส่วน `DEF[id].model` ยังเป็นชนิดปืน (เสียง แรงถีบ ซูม ท่าถือ ไม่เปลี่ยน) ทั้งของบนพื้น ในมือ และมุมบุคคลที่หนึ่ง กราฟิก "ต่ำ" กลับเป็นปืนกล่องตามชนิด
+- **กล่องกระสุน:** 9mm = Pistol Ammo, 12 Gauge = Ammo Shotgun, 7.62mm = Ammo Sniper, 5.56mm = Ammo Sniper ย้อมเขียว (Weapons Pack) กราฟิก "ต่ำ" เป็นกล่องสีเดิม
+- **อาวุธประชิดใหม่ 5 ชิ้น (Weapons Pack, ตัวเลขทั้งหมด PLACEHOLDER รวมคะแนน DMG):** อยู่ใน `POOLS.civ.melee` เจอจากการค้นตู้และร้านเครื่องมือเหมือนอาวุธประชิด v0.18
+
+| id | ชื่อ | DMG | ทน | ระยะ | หน่วง (วิ) | แรงผลัก | มุม | หมายเหตุ |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `cleaver_c` | Butcher Knife | 4 (20) | 60 | 1.6 | 0.38 | 0.5 | 0.45 | โดนหลายตัว สับ |
+| `dagger_c` | Dagger | 3 (15) | 80 | 1.6 | 0.28 | 0.3 | 0.5 | แทง |
+| `hockey_c` | Hockey Stick | 3 (15) | 55 | 2.1 | 0.55 | 1.4 | 0.3 | โดนหลายตัว |
+| `poker_c` | Fire Poker | 4 (20) | 110 | 1.9 | 0.5 | 0.8 | 0.35 | แทง |
+| `nunchucks_c` | Nunchucks | 3 (15) | 100 | 1.7 | 0.32 | 0.7 | 0.45 | |
+
+- **เสียง (Kenney Impact Sounds, CC0, `assets/sounds/`):**
+  - เสียงเท้านอกตึก: ทางเท้าในเมือง (`stepc`) และหญ้า / ดินนอกกำแพง (`stepg`, ตาม `areaAt()`) ทุก 0.85 ม. เบากว่าในตึก ย่องแล้วเบาลง (PLACEHOLDER) ในตึกยังเป็นพื้นไม้ (`step`) เดิม
+  - ตีโดน `sfx.hit(x,z,kind)`: หมัด (`punch` เดิม) ของทื่อ (`blunt`) ของมีคม (`blade`: มีด มีดพร้า คาตานะ เคียว ขวาน คราด อีเต้อ มีดสับ มีดสั้น) ตีด้านหน้าของ Armor Walker มีเสียงโลหะทับ (`metal`, เสียงอย่างเดียว ดาเมจเท่าเดิม)
+  - ซอมบี้ทุบประตู `sfx.bash` (`wood`) ซ่อมประตู `sfx.hammer` (`plank`) กับดักหมีงับ `sfx.clamp` (`metal`) แทนเสียงสังเคราะห์ / เสียงประตู
+- **ขนาด:** `props.glb` 3.0 → 3.5 MB, เสียงเพิ่ม 29 ไฟล์ (~0.2 MB)
+- **ยังไม่ได้ทำ:** ชุดตัวละคร King / Spacesuit / Medieval / SciFi / Witch (ผู้สร้างให้เว้นไว้ก่อน) · โล่ ปืนพิเศษ (Crossbow Revolver Sawed-Off) สุสาน Graveyard Kit · ท่า Mixamo หมุนตัว
 
 ## ระบบ loot
 

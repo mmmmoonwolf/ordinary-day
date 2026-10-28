@@ -93,13 +93,16 @@ export function fireGun(p,w,def){
   makeNoise(p.pos.x,p.pos.z,def.noise);
   U.updateLoadout();
 }
+const BLADE=new Set(['knife','machete','katana','sickle','axe','pitchfork','pickaxe','cleaver','dagger']);   // v0.43 what a blow sounds like
 export function meleeHit(p,def){
   const fx=Math.sin(p.face),fz=Math.cos(p.face);let best=null,bd=1e9;
   for(const z of agents){if(z.state!=='zombie')continue;const dx=z.pos.x-p.pos.x,dz=z.pos.z-p.pos.z,d=Math.hypot(dx,dz);
     if(d-(z.rad-.34)>def.range||d<1e-3)continue;if((dx*fx+dz*fz)/d<def.arc)continue;if(walledOff(p.pos.x,p.pos.z,z.pos.x,z.pos.z))continue;   // no hitting through a wall
     if(def.cleave){hurtZombie(z,def.dmg,dx/d,dz/d,def.kb,false,false,p);best=best||z;}else if(d<bd){bd=d;best=z;}}
   if(best&&!def.cleave){const dx=best.pos.x-p.pos.x,dz=best.pos.z-p.pos.z,d=Math.hypot(dx,dz);hurtZombie(best,def.dmg,dx/d,dz/d,def.kb,false,false,p);}
-  if(best){sfx.hit(best.pos.x,best.pos.z);wearMelee(p,def);}
+  if(best){
+    const front=best.kind==='armor'&&(p.pos.x-best.pos.x)*Math.sin(best.face)+(p.pos.z-best.pos.z)*Math.cos(best.face)>0;   // v0.43 sound only: the blow rings on its armour
+    sfx.hit(best.pos.x,best.pos.z,front?'metal':def===DEF.fist?'fist':BLADE.has(def.model)?'blade':'blunt');wearMelee(p,def);}
 }
 // melee weapons lose 1 durability per swing that connects and break at 0 (fists never break)
 function wearMelee(p,def){
