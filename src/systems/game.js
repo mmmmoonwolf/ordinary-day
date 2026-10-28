@@ -17,6 +17,7 @@ import {applyTraps} from './camp.js';
 import {clearFireFx} from './effects.js';
 import {resetEvents} from './events.js';
 import {applyProfile} from '../core/profile.js';
+import {freshCars,applyCars} from './vehicles.js';
 
 // ---------- new game ----------
 // a second (third, fourth) player in the same game; driven by its p.input (a bot in the tests, the network later)
@@ -27,7 +28,7 @@ export function clearWorld(){
   for(const m of blood){scene.remove(m);m.geometry.dispose();}blood.length=0;
   while(drops.length)removeDrop(drops[0]);clearThrows();
   restoreObstacles();
-  Object.assign(G,freshG());applyTanks();clearFires();clearFireFx();restoreDoors();resetEvents();applyTraps();   // v0.23 every gas cylinder back, v0.26 every trap
+  Object.assign(G,freshG());G.cars=freshCars();applyCars();applyTanks();clearFires();clearFireFx();restoreDoors();resetEvents();applyTraps();   // v0.23 every gas cylinder back, v0.26 every trap
   for(const e of EVENTS)e.done=false;
 }
 export function reset(){

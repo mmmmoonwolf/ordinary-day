@@ -48,6 +48,8 @@ import {updateGlow} from './world/glow.js';
 import {feel,updateFeel,initFeel} from './ui/feel.js';
 import {loadSkins,beginSkins} from './entities/skins.js';
 import {loadProps,props} from './world/prop-models.js';
+import {buildHighway} from './world/highway.js';
+import {updateCars} from './systems/vehicles.js';
 import './ui/report.js';   // keeps the last script errors for bug reports
 
 buildCity();
@@ -60,6 +62,7 @@ buildSuburb();   // v0.24: the suburb south of town, through the gate; own rng, 
 buildRiver();   // v0.25: the river and the bridge east of town; own rng, appended
 buildCamp();   // v0.26: the survivors' camp in the woods across the river; own rng, appended
 buildOldTown();   // v0.34: an old European town, abandoned: shop boards, balconies, posters, body bags, barriers; own rng
+buildHighway();   // v0.45: the highway east out of town, its gas station and cemetery, the cars that drive; own rng, appended
 moreBoxes();   // v0.40: more cupboards in every room and the cars to search; own rng, appended to `boxes`, last
 initInput();
 initSettings();
@@ -86,7 +89,7 @@ function simStep(dt,now){
     else updateDead(a,dt);
     if(a.gone||(a.state==='dead'&&a.deadT>25)){removeAgent(a);agents.splice(i,1);}
   }
-  separate();updateThrows(dt);updateLures(dt);updateFires(dt);if(G.running)updateCamp(dt);
+  separate();updateThrows(dt);updateLures(dt);updateFires(dt);if(G.running){updateCamp(dt);updateCars(dt);}
 }
 reset();
 // character models load in the background; until then everyone is blocky (v0.13)

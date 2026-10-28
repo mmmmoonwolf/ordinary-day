@@ -29,6 +29,8 @@ export function updatePrompts(){
   else if(p.near)pick(String(drops.indexOf(p.near)),'เก็บ ',DEF[p.near.item.id].name+gradeTag(p.near.item.id),itemColor(p.near.item.id));
   else if(p.nearDoor>=0){const st=G.doors[p.nearDoor],label=(st.open?'ปิดประตู':'เปิดประตู')+(st.hp!==DOOR_HP?' · '+Math.round(st.hp/DOOR_HP*100)+'%':'');pick('door'+p.nearDoor+label,'',label,'#e2a64a');}
   else if(p.nearBox>=0)pick('box'+p.nearBox,'ค้น ',boxName(p.nearBox),'#c9b27a');
+  else if(p.car>=0)pick('out'+p.car,'','ลงจากรถ','#9fd3a0');   // v0.45
+  else if(p.nearCar>=0)pick('car'+p.nearCar,'','ขึ้นรถ','#9fd3a0');
   else if(!bp.hidden)bp.hidden=true;
   const k=p.fixDoor;
   if(!(k>=0&&fixAction(k)==='rebuild')){if(!bf.hidden)bf.hidden=true;return;}

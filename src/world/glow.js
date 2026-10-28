@@ -1,5 +1,6 @@
 import {G} from '../core/state.js';
 import {rooms,boxes,doorMat,frameMat} from './interiors.js';
+import {rides} from './vehicles.js';
 
 // ---------- what glows in the dark (v0.40) ----------
 // The doors of enterable buildings and a frame round their doorways glow white after dark, so a way in can be found at
@@ -27,6 +28,7 @@ function own(objs){
 export function updateGlow(now){
   const k=G.night||0,pulse=1+GLOW.pulse*Math.sin(now/420),done=new Set(G.searched);
   doorMat.emissiveIntensity=lerp(GLOW.door,k);frameMat.opacity=lerp(GLOW.frame,k);
+  for(let i=0;i<rides.length;i++){const c=G.cars&&G.cars[i];rides[i].lampMat.emissiveIntensity=c&&c.hp>0&&Math.abs(c.v)>.05?.4+1.6*k:0;}   // v0.45 headlights on a car on the move
   for(let i=0;i<boxes.length;i++){
     const b=boxes[i];
     if(b.room>=0&&rooms[b.room]&&!rooms[b.room].cut.visible&&!b.glow)continue;   // furniture shows only inside; set up when first seen

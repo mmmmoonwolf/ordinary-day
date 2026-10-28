@@ -11,6 +11,7 @@ import {applyTanks} from '../systems/blast.js';
 import {applyTraps} from '../systems/camp.js';
 import {cleanName,cleanLook} from '../core/profile.js';
 import {applyEvents} from '../systems/events.js';
+import {applyCars} from '../systems/vehicles.js';
 
 // ---------- world snapshot (v0.12) ----------
 // The host sends each client what it needs to draw the world about 15 times a second; the client keeps no game
@@ -22,15 +23,16 @@ export function freshSent(){return {seen:new Set(),doors:'',broken:-1,drops:'',g
 export function encodeWorld(c,me){
   const s={t:'s',g:{min:r2(G.min),ph:G.phase,rt:G.rainTarget,ob:G.outbreak,bo:G.blackout,ov:G.over,k:G.kills,kb:G.killsBy,df:G.diff,ec:G.endCause,fg:G.fog,st:G.site,bl:G.blown,tr:G.traps}};   // v0.23 blown gas cylinders   // fog / heat / event site (v0.18)
   const dj=JSON.stringify(G.doors);if(dj!==c.doors){c.doors=dj;s.doors=G.doors;}
+  if(G.cars)s.cars=G.cars.map(k=>[r2(k.x),r2(k.z),r2(k.a),Math.ceil(k.hp),r2(k.v)]);   // v0.45 the cars that drive
   const sj=G.searched.join();if(sj!==c.searched){c.searched=sj;s.sr=G.searched;}   // v0.15
   if(G.broken.length!==c.broken){c.broken=G.broken.length;s.broken=G.broken;}
   const dr=JSON.stringify(G.drop);if(dr!==c.drop){c.drop=dr;s.crate=G.drop||0;}
   s.pl=players.map(p=>[p.id,r2(p.pos.x),r2(p.pos.z),r2(p.face),Math.ceil(p.hp),p.alive?1:0,r2(p.bleed),r2(p.down),r2(p.moving),curWeapon(p).id,
-    p.sneak?1:0,r2(p.reloadT),r2(p.swing),r2(p.swingDur),r2(p.recoil),p.inv>0?1:0,p.away?1:0,r2(p.reviveT),r2(p.airH||0)]);   // v0.30 airH: off the ground, vaulting or hopping
+    p.sneak?1:0,r2(p.reloadT),r2(p.swing),r2(p.swingDur),r2(p.recoil),p.inv>0?1:0,p.away?1:0,r2(p.reviveT),r2(p.airH||0),p.car>=0?p.car:-1]);   // v0.45 car: the one they drive   // v0.30 airH: off the ground, vaulting or hopping
   const who=players.map(p=>[p.id,p.name,p.wear||null]),wj=JSON.stringify(who);if(wj!==c.who){c.who=wj;s.who=who;}   // v0.41 names and clothes, when they change
   const gj=JSON.stringify(me.gear);
   s.me={id:me.id,inf:r2(me.infect),ec:me.endCause,near:me.near?me.near.nid:0,full:me.full?me.full.nid:0,
-    nd:me.nearDoor,fd:me.fixDoor,dn:me.nearDown?me.nearDown.id:-1,hp:me.helping?me.helping.id:-1,ht:r2(me.helpT),nb:me.nearBox,sb:me.searching,st:r2(me.searchT)};
+    nd:me.nearDoor,fd:me.fixDoor,dn:me.nearDown?me.nearDown.id:-1,hp:me.helping?me.helping.id:-1,ht:r2(me.helpT),nb:me.nearBox,sb:me.searching,st:r2(me.searchT),nc:me.nearCar};
   if(gj!==c.gear){c.gear=gj;s.me.gear=me.gear;}
   s.ag=[];s.nw=[];
   for(const a of agents){
@@ -55,14 +57,15 @@ export function applyWorld(s,myId){
   if(s.sr)G.searched=s.sr.slice();
   if(s.broken){if(s.broken.length<G.broken.length){restoreObstacles();G.broken=[];}applyBroken(s.broken);G.broken=s.broken.slice();}
   if(s.crate!==undefined){G.drop=s.crate||null;applyEvents();}
+  if(s.cars){G.cars=s.cars.map(([x,z,a,hp,v])=>({x,z,a,hp,v}));applyCars();}
   // players: the same ids as on the host; this device's one is `myId`
   const ids=new Set();
   for(const r of s.pl){
-    const [id,x,z,face,hp,alive,bleed,down,moving,w,sneak,reloadT,swing,swingDur,recoil,inv,away,reviveT,airH]=r;ids.add(id);
+    const [id,x,z,face,hp,alive,bleed,down,moving,w,sneak,reloadT,swing,swingDur,recoil,inv,away,reviveT,airH,car]=r;ids.add(id);
     let p=players.find(q=>q.id===id);
     if(!p){p=makePlayer(id);players.push(p);players.sort((a,b)=>a.id-b.id);}
     if(id===myId&&player!==p){p.local=true;setPlayer(p);}
-    want(p,x,z);p.nface=face;Object.assign(p,{hp,bleed,down,moving,sneak:!!sneak,reloadT,swing,swingDur,recoil,inv:inv?.5:0,away:!!away,reviveT,airH:airH||0});
+    want(p,x,z);p.nface=face;Object.assign(p,{hp,bleed,down,moving,sneak:!!sneak,reloadT,swing,swingDur,recoil,inv:inv?.5:0,away:!!away,reviveT,airH:airH||0,car:car??-1});
     if(!alive&&p.alive){p.alive=false;p.state='dead';p.deadT=0;}else if(alive&&!p.alive){p.alive=true;p.state='player';p.deadT=0;}
     if(p!==player||!s.me||!s.me.gear){if(p!==player){const d=DEF[w];p.gear=freshGear();if(d&&d.slot){p.gear.eq[d.slot]={id:w,mag:0};p.gear.active=d.slot;}}}
   }
@@ -78,7 +81,7 @@ export function applyWorld(s,myId){
   const me=s.me;
   if(me&&player){
     if(me.gear)player.gear=me.gear;
-    Object.assign(player,{infect:me.inf,endCause:me.ec,nearDoor:me.nd,fixDoor:me.fd,helpT:me.ht,nearBox:me.nb??-1,searching:me.sb??-1,searchT:me.st||0,
+    Object.assign(player,{infect:me.inf,endCause:me.ec,nearDoor:me.nd,fixDoor:me.fd,helpT:me.ht,nearBox:me.nb??-1,searching:me.sb??-1,searchT:me.st||0,nearCar:me.nc??-1,
       near:dropOf(me.near),full:dropOf(me.full),nearDown:players.find(q=>q.id===me.dn)||null,helping:players.find(q=>q.id===me.hp)||null});
   }
   // people and zombies

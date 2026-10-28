@@ -73,6 +73,13 @@ const PROPS = {
   w_am9: 'glb:Weapons Pack/Pistol Ammo', w_am12: 'glb:Weapons Pack/Ammo Shotgun', w_amrifle: 'glb:Weapons Pack/Ammo Sniper',
   w_cleaver: 'glb:Weapons Pack/Butcher Knife', w_dagger: 'glb:Weapons Pack/Dagger', w_hockey: 'glb:Weapons Pack/Hockey Stick',
   w_poker: 'glb:Weapons Pack/Poker', w_nunchucks: 'glb:Weapons Pack/Nunchucks',
+  // v0.45 the cemetery off the highway: Kenney Graveyard Kit (CC0, glTF with one colour-map texture, toned down below)
+  g_cross: 'glb:Kenney Graveyard/gravestone-cross', g_round: 'glb:Kenney Graveyard/gravestone-round', g_bevel: 'glb:Kenney Graveyard/gravestone-bevel',
+  g_broken: 'glb:Kenney Graveyard/gravestone-broken', g_deco: 'glb:Kenney Graveyard/gravestone-decorative', g_wide: 'glb:Kenney Graveyard/gravestone-wide',
+  g_crypt: 'glb:Kenney Graveyard/crypt', g_crypt_l: 'glb:Kenney Graveyard/crypt-large', g_fence: 'glb:Kenney Graveyard/iron-fence', g_fence_d: 'glb:Kenney Graveyard/iron-fence-damaged',
+  g_gate: 'glb:Kenney Graveyard/iron-fence-border-gate', g_lantern: 'glb:Kenney Graveyard/lantern-candle', g_lamp: 'glb:Kenney Graveyard/lightpost-single',
+  g_pine: 'glb:Kenney Graveyard/pine-crooked', g_coffin: 'glb:Kenney Graveyard/coffin', g_grave: 'glb:Kenney Graveyard/grave', g_xwood: 'glb:Kenney Graveyard/cross-wood',
+  g_urn: 'glb:Kenney Graveyard/urn-round', g_wall: 'glb:Kenney Graveyard/stone-wall',
   car_police: 'Cars/Cop', car_1: 'Cars/NormalCar1', car_2: 'Cars/NormalCar2', car_suv: 'Cars/SUV', car_taxi: 'Cars/Taxi', car_sport: 'Cars/SportsCar',
 };
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
@@ -82,7 +89,7 @@ const doc = await io.read(convert(ids[0]));
 const scene = doc.getRoot().listScenes()[0];
 name(scene, ids[0]);
 for (const id of ids.slice(1)) {
-  mergeDocuments(doc, await io.read(convert(id)));
+  mergeDocuments(doc, await tone(id, await io.read(convert(id))));
   const s = doc.getRoot().listScenes().find(x => x !== scene);   // the one just merged in
   name(s, id);
   for (const n of s.listChildren()) { s.removeChild(n); scene.addChild(n); }
@@ -101,6 +108,14 @@ await io.write(path.join(out, 'props.glb'), doc);
 fs.rmSync(tmp, { recursive: true, force: true });
 console.log(scene.listChildren().map(n => n.getName()).join(' ') + '\nprops.glb ' + Math.round(fs.statSync(path.join(out, 'props.glb')).size / 1024) + ' KB');
 
+// v0.45 the Graveyard Kit is bright and cartoonish (lavender stone, mint railings, orange earth): its colour map is greyed
+// and darkened to sit in the tired town (sharp, which @gltf-transform already brings along)
+async function tone(id, d) {
+  if (!id.startsWith('g_')) return d;
+  const sharp = createRequire(import.meta.url)('sharp');
+  for (const t of d.getRoot().listTextures()) t.setImage(await sharp(Buffer.from(t.getImage())).modulate({ saturation: .12, brightness: .7 }).png().toBuffer());
+  return d;
+}
 function convert(id) {
   if (PROPS[id].startsWith('glb:')) return path.join(src2, PROPS[id].slice(4) + '.glb');
   const f = path.join(tmp, id);

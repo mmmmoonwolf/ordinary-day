@@ -14,7 +14,7 @@ export function animate(a,dt){
   if(!a.sk&&skins.ready&&skins.on)dress(a);
   if(a.sk){
     a.y+=(groundY(a.pos.x,a.pos.z)-a.y)*Math.min(1,dt*12);p.root.position.set(a.pos.x,a.y,a.pos.z);p.root.rotation.y=a.face;
-    if(a.state==='player'){p.root.visible=!(a.inv>0&&a.alive&&Math.floor(a.inv*10)%2===0);tip(a,p);}
+    if(a.state==='player'){p.root.visible=!(a.inv>0&&a.alive&&Math.floor(a.inv*10)%2===0)&&!(a.car>=0);tip(a,p);}   // v0.45 hidden inside a car
     skinFrame(a,dt);return;
   }
   if(a.state==='dead'){p.root.position.set(a.pos.x,a.y,a.pos.z);p.root.rotation.y=a.face;return;}
@@ -41,7 +41,7 @@ export function animate(a,dt){
       else p.armR.rotation.x=k<.4?-.35-(k/.4)*2.3:-2.65+((k-.4)/.6)*3.5;
       p.armL.rotation.x=-s*.5;
     } else {p.armL.rotation.x=-s*.7;p.armR.rotation.x=(curWeapon(a).id==='fist'?s*.7:-.35+s*.3);}
-    p.root.visible=!(a.inv>0&&Math.floor(a.inv*10)%2===0);
+    p.root.visible=!(a.inv>0&&Math.floor(a.inv*10)%2===0)&&!(a.car>=0);   // v0.45 not while driving
   }
   else{const f=a.panic>0?1.5:.8;p.armL.rotation.x=-s*f;p.armR.rotation.x=s*f;p.head.rotation.z=0;}
   a.y+=(groundY(a.pos.x,a.pos.z)-a.y)*Math.min(1,dt*12);
