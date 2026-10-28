@@ -33,8 +33,6 @@ import {updateGoal} from './systems/goal.js';
 import {updateHUD} from './ui/hud.js';
 import {initInput,pollInput} from './ui/input.js';
 import {initPause} from './ui/pause.js';
-import {updateTips} from './ui/tips.js';
-import {updateObjective} from './ui/objective.js';
 import {updatePrompts} from './ui/prompts.js';
 import {updateMinimap} from './ui/minimap.js';
 import {VERSION} from './config/version.js';
@@ -112,7 +110,6 @@ function loop(now){
     const pulse=.62+.25*Math.sin(now/280);for(const k in ringMats)ringMats[k].opacity=pulse;for(const k in glowMats)glowMats[k].opacity=.14+.1*Math.sin(now/280);
     updateSky(dt,now);updateFireFx(dt,now);updateGlow(now);   // v0.40 doors and what is left to search glow after dark
     updateGoal(dt,now);
-    updateTips(dt);updateObjective(dt);   // v0.32 the goal line under the clock
   }
   if(bus.role==='host')hostFrame(real);   // friends in this room: messages and the world, also while paused (v0.12)
   updatePrompts();

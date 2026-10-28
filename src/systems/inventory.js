@@ -18,8 +18,8 @@ export function countAmmo(p,t){let s=0;for(const e of p.gear.bag)if(e.id===t)s+=
 export function takeAmmo(p,t,n){const bag=p.gear.bag;let got=0;for(let i=bag.length-1;i>=0&&got<n;i--){const e=bag[i];if(e.id!==t)continue;const k=Math.min(e.n,n-got);e.n-=k;got+=k;if(e.n<=0)bag.splice(i,1);}return got;}
 // returns how many did not fit: all of them when the item is new to a full bag, otherwise none
 export function addStack(p,id,n){const g=p.gear,e=g.bag.find(x=>x.id===id);if(e){e.n+=n;return 0;}if(g.bag.length>=g.cap)return n;g.bag.push({id,n});tidyBag(g);return 0;}
-// the bag keeps one stack per item and is sorted by category (v0.14.1): weapons, ammo, medicine, food, planks, bottles
-const ORDER=['weapon','ammo','heal','revive','food','mat','throw'],IDS=Object.keys(DEF);
+// the bag keeps one stack per item and is sorted by category (v0.14.1): weapons, ammo, medicine, things to throw
+const ORDER=['weapon','ammo','heal','revive','throw'],IDS=Object.keys(DEF);
 export function tidyBag(g){
   const out=[];
   for(const e of g.bag){const s=STACKS.has(DEF[e.id].kind)&&out.find(x=>x.id===e.id);if(s)s.n+=e.n;else out.push(e);}
@@ -64,21 +64,6 @@ export function useHeal(p){
 export function useItemAt(p,i){if(cant(p)||!p.gear.bag[i])return;const e=p.gear.bag[i],def=DEF[e.id];if(def.kind!=='heal')return;const amt=Math.round(p.maxHp*def.heal);p.hp=Math.min(p.maxHp,p.hp+amt);e.n--;if(e.n<=0)p.gear.bag.splice(i,1);
   const cured=def.cure&&p.infect>0;if(cured)cureInfection(p);
   const U=uiFor(p);U.feed('ใช้ '+def.name+' +'+Math.round(def.heal*100)+'%'+(cured?' · ฆ่าเชื้อแล้ว':''));sfxFor(p).heal();U.updateLoadout(true);}
-// food and water: use whichever fixes the lower bar first
-export function eatBest(p){
-  if(cant(p))return;const U=uiFor(p);
-  const has=k=>p.gear.bag.findIndex(e=>DEF[e.id][k]);
-  const order=100-p.water>=100-p.food?['water','food']:['food','water'];
-  for(const k of order){if(p[k]>=95)continue;const i=has(k);if(i>=0){useFoodAt(p,i);return;}}
-  if(p.food>=95&&p.water>=95){U.feedOnce('full','ยังไม่หิวและไม่กระหาย');return;}
-  U.feedOnce('nofood','ไม่มีอาหารหรือน้ำในกระเป๋า','warn');
-}
-export function useFoodAt(p,i){
-  if(cant(p)||!p.gear.bag[i])return;const e=p.gear.bag[i],def=DEF[e.id];if(def.kind!=='food')return;
-  if(def.food)p.food=Math.min(100,p.food+def.food);if(def.water)p.water=Math.min(100,p.water+def.water);
-  e.n--;if(e.n<=0)p.gear.bag.splice(i,1);
-  const U=uiFor(p);U.feed((def.water?'ดื่ม ':'กิน ')+def.name);sfxFor(p).eat();U.updateLoadout(true);
-}
 // drop in front of the player (or the nearest open side), out of auto-pickup reach; `hold` keeps it from being picked
 // straight back up until the player has walked away from it (v0.6.1: dropped ammo, meds and food used to bounce back)
 export function dropItem(p,it){

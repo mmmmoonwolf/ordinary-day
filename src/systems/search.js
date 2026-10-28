@@ -1,7 +1,7 @@
 import {rnd,pick,wpick} from '../core/util.js';
 import {G} from '../core/state.js';
 import {DEF} from '../config/items.js';
-import {POOLS,MED_W,FOOD_W,FARM_POOL,THROW_W,BAG_HELP} from '../config/loot.js';
+import {POOLS,MED_W,FARM_POOL,THROW_W,BAG_HELP} from '../config/loot.js';
 import {SEARCH_SECONDS,SEARCH_RANGE,SEARCH_NOISE,RESTOCK,BOX} from '../config/search.js';
 import {partyOf} from '../config/party.js';
 import {boxes,boxNear,roomAt,rooms} from '../world/interiors.js';
@@ -48,7 +48,7 @@ export function rollBox(kind){
     const c=wpick(bag?{...t.w,bag:BAG_HELP.search}:t.w);   // v0.37 a backpack for whoever still has none
     if(c==='bag'){out.push(makeItem('backpack'));bag=false;continue;}
     const pool=kind==='cop'?POOLS.pol:POOLS.civ,weapons=CARS.includes(kind)?pool.weapons.filter(id=>DEF[id].gun):pool.weapons;
-    out.push(makeItem(c==='food'?wpick(FOOD_W):c==='med'?wpick(MED_W.day):c==='bottle'?wpick(THROW_W):c==='mat'?'planks':c==='weapon'?pick(weapons):c==='melee'?pick(kind==='farm'?FARM_POOL.melee:POOLS.civ.melee):pickAmmo(pool.ammo)));
+    out.push(makeItem(c==='bag'?'backpack':c==='med'?wpick(MED_W.day):c==='throw'?wpick(THROW_W):c==='weapon'?pick(weapons):c==='melee'?pick(kind==='farm'?FARM_POOL.melee:POOLS.civ.melee):pickAmmo(pool.ammo)));
   }
   return out;
 }

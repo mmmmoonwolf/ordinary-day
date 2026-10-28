@@ -80,7 +80,8 @@ export function buildFarm(){
   // ground: overgrown grass, the dirt track and a lane to the barn, the field
   ground(grassMat,FARM.x0-6,WALL_X-.3,FARM.z0-6,FARM.z1+6,.008);
   const road=trackTex();road.repeat.set((WALL_X+2+126)/5.2,1);ground(S({map:road,roughness:1}),-126,WALL_X+2,-2.6,2.6,.014);
-  const lane=S({color:new THREE.Color('#5a4c3a').convertSRGBToLinear(),roughness:1});   // flat colours are linear in r128: convert, or they come out paleground(lane,-110,-106,-10.5,-2.6,.013);ground(lane,-85,-81,-10.5,-2.6,.013);ground(lane,-86,-82,2.6,12,.013);
+  const lane=S({color:new THREE.Color('#5a4c3a').convertSRGBToLinear(),roughness:1});   // flat colours are linear in r128: convert, or they come out pale
+  ground(lane,-110,-106,-10.5,-2.6,.013);ground(lane,-85,-81,-10.5,-2.6,.013);ground(lane,-86,-82,2.6,12,.013);
   farm.field=ground(S({map:soilTex(),roughness:1}),-127,-104,8,27,.012);
   // dead corn in rows: two crossed quads per stalk, all one mesh; it hides what walks in it (no collision)
   {const q=new THREE.PlaneGeometry(.9,1);q.translate(0,.5,0);const parts=[];

@@ -16,7 +16,6 @@ import {makeItem,spawnDrop,dropGuaranteed} from '../systems/drops.js';
 import {hurtPlayer} from '../systems/combat.js';
 import {infectPlayer} from '../systems/infection.js';
 import {sfx} from '../systems/audio.js';
-import {say,feed} from '../ui/hud.js';
 import {diffOf} from '../config/difficulty.js';
 import {smashNear} from '../systems/obstacles.js';
 import {damageDoor} from '../systems/doors.js';
@@ -127,8 +126,8 @@ export function hurtZombie(z,dmg,dx,dz,kb,isGun,silent,by){
   if(kill&&kb>0){z.pos.x+=dx*.45*kbm;z.pos.z+=dz*.45*kbm;collide(z.pos,z.rad);}   // a killing blow throws it back a little more
   if(z.hp<=0&&z.state==='zombie'){
     z.state='dead';z.deadT=0;z.fuse=0;z.wind=0;z.b.mats[0].emissive.setRGB(0,0,0);G.kills++;G.killsBy[z.kind]=(G.killsBy[z.kind]||0)+1;addBlood(z.pos.x,z.pos.z);
-    if(z.kind==='armor'){dropGuaranteed('pol',z.pos.x,z.pos.z);feed('Armor Walker ดรอปของระดับ Police','pol');}
-    else if(z.kind==='tyrant'){dropGuaranteed('mil',z.pos.x,z.pos.z);say('Tyrant ล้มแล้ว · ดรอปของระดับ Military','',6);warnRing.material.opacity=0;}
+    if(z.kind==='armor'){dropGuaranteed('pol',z.pos.x,z.pos.z);}
+    else if(z.kind==='tyrant'){dropGuaranteed('mil',z.pos.x,z.pos.z);warnRing.material.opacity=0;}
     else if(Math.random()<.25){const ph=G.phase;const it=Math.random()<.6?makeItem(pick(ph==='day'?POOLS.civ.ammo:POOLS.pol.ammo)):makeItem(wpick(MED_W[ph]));spawnDrop(it,z.pos.x+rnd(-.4,.4),z.pos.z+rnd(-.4,.4));}
   }
   return armored;

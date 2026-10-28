@@ -50,7 +50,7 @@ export function weaponModel(model){
   return g;
 }
 // items on the ground with a prop model: [height, or width when `w`]
-const ITEM={canned:[.3],water:[.42],bandage:[.18],firstaid:[.42,'w'],backpack:[.55],bottle:[.36],molotov:[.34,0,'w_molotov'],grenade:[.14,0,'w_grenade'],flare:[.34,1,'s_flare']};   // [size, by width, prop id when not the item id]
+const ITEM={bandage:[.18],firstaid:[.42,'w'],backpack:[.55],molotov:[.34,0,'w_molotov'],grenade:[.14,0,'w_grenade'],flare:[.34,1,'s_flare']};   // [size, by width, prop id when not the item id]
 export function itemModel(id){
   const d=DEF[id];
   if(d.kind==='weapon'){const m=weaponModel(d.model),p=hasProp(d.model)||(WP[d.model]&&hasProp(WP[d.model][0]));if(p){m.rotation.z=Math.PI/2;m.position.y=.06;}else m.position.y=d.gun?.2:.07;return m;}   // a prop weapon lies on its side
@@ -62,10 +62,6 @@ export function itemModel(id){
   else if(id==='painkiller'){g.add(part(cm('#8a64d6'),.28,.16,.18,0,.08,0));g.add(part(whiteMat,.2,.02,.12,0,.17,0));}
   else if(id==='firstaid'){g.add(part(cm('#d8602c'),.44,.26,.32,0,.13,0));g.add(part(whiteMat,.3,.02,.08,0,.27,0));g.add(part(whiteMat,.08,.02,.24,0,.27,0));}
   else if(id==='resurrect'){g.add(part(S({color:'#c9a24a',emissive:'#f0c46b',emissiveIntensity:.6,metalness:.5,roughness:.3}),.4,.28,.3,0,.14,0));g.add(part(whiteMat,.06,.02,.22,0,.29,0));g.add(part(whiteMat,.22,.02,.06,0,.29,0));}
-  else if(id==='canned'){g.add(part(cm('#b8b8b0'),.2,.24,.2,0,.12,0));g.add(part(cm('#c9473a'),.21,.1,.21,0,.12,0));g.add(part(cm('#b8b8b0'),.2,.2,.2,.24,.1,.1));}
-  else if(id==='water'){g.add(part(cm('#9fd0ec'),.14,.42,.14,0,.21,0));g.add(part(cm('#2f6fb5'),.08,.07,.08,0,.45,0));g.add(part(cm('#9fd0ec'),.14,.42,.14,.2,.21,.12));}
-  else if(id==='planks'){g.add(part(cm('#a9834f'),.7,.05,.16,0,.03,0));g.add(part(cm('#8f6d3f'),.7,.05,.16,.04,.08,.12));}
-  else if(id==='bottle'){g.add(part(cm('#7fae8a'),.1,.26,.1,0,.13,0));g.add(part(cm('#7fae8a'),.05,.1,.05,0,.31,0));}
   else if(id==='molotov'){g.add(part(cm('#6e8a52'),.1,.24,.1,0,.12,0));g.add(part(cm('#d8c9a8'),.04,.1,.04,0,.29,0));}   // v0.23
   else if(id==='flare'){g.add(part(cm('#d84a3a'),.08,.08,.3,0,.05,0));g.add(part(cm('#2b2d30'),.06,.14,.06,0,.06,-.1));}   // v0.26
   else if(id==='grenade'){g.add(part(cm('#4f5a36'),.11,.13,.11,0,.07,0));g.add(part(pipeMat,.03,.05,.05,0,.16,0));}

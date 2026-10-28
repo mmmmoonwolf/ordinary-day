@@ -104,8 +104,8 @@ if (isClient) {
   await ask('key', 'KeyE', 'keydown'); await ask('key', 'KeyE', 'keyup'); c = await rounds(6);
   if (!p2.gear.eq.secondary || !c.me.gear.eq.secondary) fail('pickup through the host: host ' + !!p2.gear.eq.secondary + ', friend ' + !!c.me.gear.eq.secondary);
   // a bag action: drop the pistol
-  p2.gear.bag.push({ id: 'water', n: 1 }); await rounds(3); await ask('act', 'dropBag', 0); c = await rounds(4);
-  if (p2.gear.bag.some(e => e.id === 'water') || c.me.gear.bag.some(e => e.id === 'water')) fail('bag drop through the host did not happen');
+  p2.gear.bag.push({ id: 'bandage', n: 1 }); await rounds(3); await ask('act', 'dropBag', 0); c = await rounds(4);
+  if (p2.gear.bag.some(e => e.id === 'bandage') || c.me.gear.bag.some(e => e.id === 'bandage')) fail('bag drop through the host did not happen');
   // messages: one for the friend, one for everyone
   uiFor(p2).feed('ถึงเพื่อนคนเดียว'); say('ถึงทุกคน'); uiFor(P.player).feed('ในเครื่อง host'); c = await rounds(3);
   if (!c.feed.includes('ถึงเพื่อนคนเดียว') || c.feed.includes('ในเครื่อง host') || c.msg !== 'ถึงทุกคน') fail('messages: feed ' + JSON.stringify(c.feed) + ', msg ' + c.msg);

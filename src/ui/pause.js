@@ -3,10 +3,9 @@ import {G} from '../core/state.js';
 import {ctl,joy} from '../core/controls.js';
 import {player,isSolo} from '../entities/player.js';
 import {saveGame} from '../systems/save.js';
-import {hhmm,updateLoadout} from './hud.js';
+import {updateLoadout} from './hud.js';
 import {closeBag} from './bag.js';
 import {showContinue} from './input.js';
-import {tipsOff,setTipsOff} from './tips.js';
 import {diffOf} from '../config/difficulty.js';
 import {initReport,closeReport} from './report.js';
 import {refreshOnline,leaveOnline} from './online.js';
@@ -16,24 +15,22 @@ import {isClient} from '../core/bus.js';
 // Stops the game like the bag does (G.paused). Opens by itself when the page goes to the background,
 // so a phone player comes back to a paused game instead of a fight. With other players in the game it only opens
 // the menu: the world keeps going (v0.11).
-const when=()=>'วันที่ '+(Math.floor(G.min/1440)+1)+' · '+hhmm(G.min)+' · '+diffOf(G).name;
+const when=()=>diffOf(G).name;   // v0.42 no day or time shown
 export function isPauseOpen(){return !$('pause').hidden;}
 export function openPause(){
   if(!G.running||G.over||!player.alive||isPauseOpen())return;
   closeBag();
   $('pause').hidden=false;G.paused=isSolo();ctl.fireHeld=false;joy.id=null;$('joy').hidden=true;
-  $('pauseInfo').textContent=when();$('saveMsg').textContent='เกมบันทึกอัตโนมัติทุก 15 วินาทีอยู่แล้ว';
+  $('pauseInfo').textContent=when();$('saveMsg').textContent='';
   closeReport();refreshOnline();$('bResume').focus();
 }
 export function closePause(){if(!isPauseOpen())return;$('pause').hidden=true;G.paused=false;updateLoadout(true);}
 export function togglePause(){isPauseOpen()?closePause():openPause();}
-const showTips=()=>{$('bTips').textContent='คำแนะนำ: '+(tipsOff()?'ปิด':'เปิด');};
 export function initPause(){
-  showTips();$('bTips').addEventListener('click',()=>{setTipsOff(!tipsOff());showTips();});   // turning tips back on shows them all again
   $('bPause').addEventListener('click',openPause);initReport();
   $('bResume').addEventListener('click',closePause);
   $('bSaveNow').addEventListener('click',()=>{
-    $('saveMsg').textContent=saveGame()?'บันทึกแล้ว · '+when():'บันทึกไม่ได้ เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูล (เช่น โหมดไม่ระบุตัวตน)';
+    $('saveMsg').textContent=saveGame()?'บันทึกแล้ว':'บันทึกไม่ได้ เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูล (เช่น โหมดไม่ระบุตัวตน)';
   });
   $('bToTitle').addEventListener('click',()=>{
     if(isClient()){leaveOnline();return;}   // a client leaves the room (v0.12); the title screen comes from net/client.js

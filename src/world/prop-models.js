@@ -9,9 +9,10 @@ import {attach,farm} from './farm.js';
 import {live} from './live-props.js';
 
 // ---------- prop models (v0.14) ----------
-// Guns, knives, axes, food, water, medicine, backpacks, bottles and cars from Quaternius' packs (CC0; built into
-// assets/props/props.glb by tools/build-props.mjs, one top-level node per prop). Like the character models they are only
-// looks: until the file has loaded, on "low" graphics, or if it fails to load, everything keeps its old box model.
+// Guns, knives, axes, medicine, backpacks and cars from Quaternius' packs (CC0; built into assets/props/props.glb by
+// tools/build-props.mjs, one top-level node per prop; its food, water and bottle models are unused since v0.42). Like the
+// character models they are only looks: until the file has loaded, on "low" graphics, or if it fails to load, everything
+// keeps its old box model.
 export const props={ready:false,failed:false,on:true};
 const tpl={};
 export async function loadProps(){

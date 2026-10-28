@@ -1,10 +1,10 @@
 import {$} from '../core/util.js';
 import {G} from '../core/state.js';
 import {DEF,itemColor} from '../config/items.js';
-import {DOOR_HP,PLANK_HP,REBUILD_PLANKS} from '../config/shelter.js';
+import {DOOR_HP} from '../config/shelter.js';
 import {player} from '../entities/player.js';
 import {drops} from '../systems/drops.js';
-import {gradeTag,countAmmo} from '../systems/inventory.js';
+import {gradeTag} from '../systems/inventory.js';
 import {fixAction} from '../systems/doors.js';
 import {REVIVE_SECONDS} from '../config/party.js';
 import {SEARCH_SECONDS} from '../config/search.js';
@@ -12,7 +12,7 @@ import {boxName} from '../systems/search.js';
 
 // ---------- action prompts (v0.9: moved out of the player and door code) ----------
 // The pick button (E) shows what is in reach for the player on this device: an item, "bag full" over loot that
-// does not fit, or the door; the hammer button (B) shows when they carry planks next to a door they can board.
+// does not fit, or the door; the hammer button (B) shows next to a broken door (v0.42 no planks needed).
 function pick(key,verb,name,color){
   const bp=$('bPick');if(!bp.hidden&&bp.dataset.for===key)return;
   bp.hidden=false;bp.dataset.for=key;$('pickVerb').textContent=verb;$('pickName').textContent=name;bp.style.setProperty('--pg',color);bp.style.borderColor=color;
@@ -30,8 +30,8 @@ export function updatePrompts(){
   else if(p.nearDoor>=0){const st=G.doors[p.nearDoor],label=(st.open?'ปิดประตู':'เปิดประตู')+(st.hp!==DOOR_HP?' · '+Math.round(st.hp/DOOR_HP*100)+'%':'');pick('door'+p.nearDoor+label,'',label,'#e2a64a');}
   else if(p.nearBox>=0)pick('box'+p.nearBox,'ค้น ',boxName(p.nearBox),'#c9b27a');
   else if(!bp.hidden)bp.hidden=true;
-  const k=p.fixDoor,have=countAmmo(p,'planks'),act=k>=0?fixAction(k):null;
-  if(!(k>=0&&have>0&&(act==='rebuild'||act==='board'))){if(!bf.hidden)bf.hidden=true;return;}
-  const label=(act==='rebuild'?'ซ่อมประตู ('+REBUILD_PLANKS+' แผ่น)':'ตอกไม้ +'+Math.round(PLANK_HP/DOOR_HP*100)+'%')+' · มี '+have;
+  const k=p.fixDoor;
+  if(!(k>=0&&fixAction(k)==='rebuild')){if(!bf.hidden)bf.hidden=true;return;}
+  const label='ซ่อมประตู';
   if(bf.hidden||bf.dataset.for!==label){bf.hidden=false;bf.dataset.for=label;$('fixName').textContent=label;}
 }

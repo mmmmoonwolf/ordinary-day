@@ -53,12 +53,7 @@ Object.assign(DEF,{
   firstaid:{name:'First Aid Kit',kind:'heal',heal:.8,color:'#ff9a4a'},
   resurrect:{name:'Resurrection Kit',kind:'revive',color:'#F0C46B'},
   backpack:{name:'กระเป๋าเป้',kind:'bag',slots:14,color:'#e8e3d6'},
-  // v0.5 food and water (PLACEHOLDER amounts, % of the bar)
-  canned:{name:'อาหารกระป๋อง',kind:'food',food:45,color:'#d9a24a'},
-  water:{name:'น้ำดื่ม',kind:'food',water:50,color:'#6fb3e0'},
-  // v0.7: planks board up doors, bottles are thrown to lure zombies with the noise
-  planks:{name:'ไม้กระดาน',kind:'mat',color:'#a9834f'},
-  bottle:{name:'ขวดแก้ว',kind:'throw',color:'#7fae8a'},
+  // v0.42 no food, water, planks or bottles any more (hunger and thirst and the crafting things are gone)
   // v0.23 thrown to kill: a Molotov sets the ground on fire, a grenade blows up after a second (systems/throw.js, PLACEHOLDER numbers)
   molotov:{name:'Molotov',kind:'throw',color:'#d8662f',fire:true},
   grenade:{name:'Hand Grenade',kind:'throw',color:'#6b7a46',blast:true},
@@ -71,9 +66,9 @@ export function itemColor(id){const d=DEF[id];if(d.kind==='weapon'&&d.grade)retu
 export function wname(id){return DEF[id].name;}
 // v0.18: the glowing ring under an item on the ground shows what kind of thing it is; a Police / Military weapon also gets
 // a second, outer ring in its grade colour
-export const RING={weapon:'#ff5a3c',bag:'#c77dff',med:'#3fe07a',food:'#ffa43a',water:'#3fb0ff',ammo:'#ffe23a',other:'#d8d2c0'};
-export function ringColor(id){const d=DEF[id];return RING[d.kind==='weapon'?'weapon':d.kind==='ammo'?'ammo':d.kind==='heal'||d.kind==='revive'?'med':d.kind==='food'?(d.water?'water':'food'):id==='backpack'?'bag':'other'];}
+export const RING={weapon:'#ff5a3c',bag:'#c77dff',med:'#3fe07a',ammo:'#ffe23a',other:'#d8d2c0'};
+export function ringColor(id){const d=DEF[id];return RING[d.kind==='weapon'?'weapon':d.kind==='ammo'?'ammo':d.kind==='heal'||d.kind==='revive'?'med':id==='backpack'?'bag':'other'];}
 // melee wear left, 0..1; items from before v0.5 have no dur and count as new
 // kinds that stack (n) and are picked up by walking over them; since v0.14.1 one stack per item, with no limit
-export const STACKS=new Set(['ammo','heal','revive','food','mat','throw']);
+export const STACKS=new Set(['ammo','heal','revive','throw']);
 export function durPct(it){const m=DEF[it.id].dur;return m?Math.max(0,(it.dur??m)/m):1;}

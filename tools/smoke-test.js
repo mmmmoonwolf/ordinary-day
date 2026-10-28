@@ -19,20 +19,23 @@ const S = await import('../src/systems/save.js');
 const { hurtPlayer } = await import('../src/systems/combat.js');
 const { infectPlayer } = await import('../src/systems/infection.js');
 const { useHeal } = await import('../src/systems/inventory.js');
-const { gameOver } = await import('../src/ui/hud.js');
+const { gameOver, hhmm } = await import('../src/ui/hud.js');
+const clockTxt = () => hhmm(G.min) + ' ' + G.phase;   // v0.42 the clock is no longer on screen
 const { LZ } = await import('../src/config/goal.js');
 const T = { get inv() { return P.player.gear; }, get player() { return P.player; }, makeItem, drops, G, agents, becomeZombie, makeAgent, renderBag, openBag, closeBag };
 
 
 // 1) free play for ~2 in-game days
 els.bStart.fire('click');
+// v0.42 a new game has its people (v0.41 had none: a comment swallowed spawnPopulation())
+{ const n = agents.filter(a => a.state === 'human').length; if (n < 30) errs.push('a new game has ' + n + ' people'); else console.log('new game: ' + n + ' people'); }
 for (let s = 0; s < 640; s++) {
   const c = ['KeyW', 'KeyD', 'KeyS', 'KeyA'][Math.floor(s / 7) % 4];
   key(c, 'keydown'); if (s % 3 === 0) key('Space', 'keydown');
   key('KeyE', 'keydown'); key('KeyH', 'keydown'); if (s % 11 === 0) key('KeyR', 'keydown');
   if (s % 13 === 0) key('Digit' + (1 + s % 3), 'keydown');
   step(60); key(c, 'keyup'); key('Space', 'keyup');
-  if (s % 80 === 0) console.log('t', s + 's', els.clock.textContent, els.phaseName.textContent, 'people', els.cH.textContent, 'zombies', els.cZ.textContent, 'kills', els.cK.textContent, 'hp', els.hpnum.textContent);
+  if (s % 80 === 0) console.log('t', s + 's', clockTxt(), 'people', agents.filter(a => a.state === 'human' || a.state === 'infected').length, 'zombies', agents.filter(a => a.state === 'zombie').length, 'kills', G.kills, 'hp', els.hpnum.textContent);
 }
 
 // 2) combat test: every weapon type vs every zombie class
@@ -49,7 +52,7 @@ const killsBySum = Object.values(T.G.killsBy).reduce((a, b) => a + b, 0);
 if (killsBySum !== T.G.kills) errs.push('kills per class ' + killsBySum + ' != kills ' + T.G.kills);
 console.log('combat: hp', Math.round(p.hp), 'kills', T.G.kills, JSON.stringify(T.G.killsBy), 'resurrect used', !T.inv.bag.some(e => e.id === 'resurrect'));
 for (let i = 0; i < 20; i++) { key('Space', 'keydown'); step(300); key('Space', 'keyup'); }
-console.log('after night:', els.clock.textContent, els.phaseName.textContent, 'zombie kinds', [...new Set(T.agents.filter(a => a.state === 'zombie').map(a => a.kind))].join(','));
+console.log('after night:', clockTxt(), 'zombie kinds', [...new Set(T.agents.filter(a => a.state === 'zombie').map(a => a.kind))].join(','));
 
 // 3) save system: autosave while playing, load restores the same world, death deletes the save
 const fail = m => errs.push('save test: ' + m);
@@ -70,7 +73,7 @@ for (const k in before) if (before[k] !== after[k]) fail(k + ' changed after loa
 T.G.running = true; step(300);
 T.inv.bag = T.inv.bag.filter(e => e.id !== 'resurrect'); T.player.inv = 0; T.player.down = 0; hurtPlayer(T.player, 9999);
 if (store.has('ordinary-day.save')) fail('save still exists after death');
-console.log('save: restored', live().length, 'agents and', T.drops.length, 'drops at', els.clock.textContent, '| deleted on death', !store.has('ordinary-day.save'));
+console.log('save: restored', live().length, 'agents and', T.drops.length, 'drops at', clockTxt(), '| deleted on death', !store.has('ordinary-day.save'));
 
 // 4) infection: progresses with in-game time, blocks regen, Antibiotic cures, a Resurrection Kit clears it, 100% kills
 const bad = m => errs.push('v0.4 test: ' + m);
@@ -93,15 +96,13 @@ console.log('infection: after 5 s', (pc * 100).toFixed(1) + '%', '| summary:', e
 // 5) goal: day 8 morning, helicopter lands at the LZ, reaching it wins
 els.bAgain.fire('click'); T.G.running = true;
 T.G.min = 7 * 1440 + 6 * 60 + 5; step(20);
-if (!els.msg.textContent.includes('เฮลิคอปเตอร์')) bad('no rescue announcement at dawn of day 8: ' + els.msg.textContent);
 if (els.lz.hidden) bad('rescue arrow hidden on day 8 morning');
-if (!els.dayline.innerHTML.includes('รอด 7/7 คืน')) bad('dayline progress: ' + els.dayline.innerHTML);
 T.G.min = 7 * 1440 + 8 * 60 + 30; step(20);
 if (T.G.over) bad('won without reaching the LZ');
 T.player.pos.x = LZ.x + 1; T.player.pos.z = LZ.z; step(20);
 if (!T.G.over || T.G.endCause !== 'won' || els.oTitle.textContent !== 'คุณรอดแล้ว') bad('reaching the helicopter did not win (over ' + T.G.over + ', cause ' + T.G.endCause + ')');
 if (store.has('ordinary-day.save')) bad('save kept after winning');
-console.log('goal:', els.dayline.innerHTML.replace(/<[^>]+>/g, ''), '|', els.oEyebrow.textContent, els.oTitle.textContent, '|', els.sNights.textContent, 'nights | best', store.get('ordinary-day.best'));
+console.log('goal:', els.oEyebrow.textContent, els.oTitle.textContent, '|', els.sNights.textContent, 'nights | best', store.get('ordinary-day.best'));
 
 // 6) pause menu: P / Esc / background tab pause the game, manual save, back to the title, new day resets
 const pfail = m => errs.push('pause test: ' + m);
@@ -111,7 +112,7 @@ const m0 = T.G.min; step(60);
 if (!T.G.paused || els.pause.hidden || T.G.min !== m0) pfail('P did not pause (paused ' + T.G.paused + ')');
 key('Tab', 'keydown'); if (!els.bag.hidden) pfail('bag opened over the pause menu');
 store.clear(); els.bSaveNow.fire('click');
-if (!store.has('ordinary-day.save') || !els.saveMsg.textContent.startsWith('บันทึกแล้ว')) pfail('manual save failed: ' + els.saveMsg.textContent);
+if (!store.has('ordinary-day.save') || els.saveMsg.textContent !== 'บันทึกแล้ว') pfail('manual save failed: ' + els.saveMsg.textContent);
 els.bResume.fire('click'); step(10);
 if (T.G.paused || !els.pause.hidden || T.G.min === m0) pfail('resume did not continue the game');
 key('Escape', 'keydown'); if (!T.G.paused) pfail('Esc did not pause'); key('Escape', 'keydown'); if (T.G.paused) pfail('Esc did not resume');
@@ -123,8 +124,8 @@ T.G.min = 3000; els.bStart.fire('click');
 if (T.G.min !== 450 || store.has('ordinary-day.save') || !T.G.running) pfail('new day after back-to-title did not start fresh (min ' + T.G.min + ')');
 console.log('pause: P/Esc/background pause, manual save, back to title, new day OK =', !errs.some(e => e.startsWith('pause test')));
 
-// 7) ambulance Resurrection Kit and first-time tips
-const afail = m => errs.push('ambulance/tips test: ' + m);
+// 7) ambulance Resurrection Kit
+const afail = m => errs.push('ambulance test: ' + m);
 const { lootSpots } = await import('../src/world/city.js');
 const { fillDay, fillNight } = await import('../src/systems/drops.js');
 const { freeAt } = await import('../src/world/collision.js');
@@ -138,24 +139,13 @@ T.player.pos.x = amb[0].x; T.player.pos.z = amb[0].z; step(5);
 if (!T.inv.bag.some(e => e.id === 'resurrect') || amb[0].drop) afail('walking onto the kit did not pick it up');
 fillDay(1); fillNight();
 if (amb[0].drop) afail('day/night refills put loot back at the ambulance');
-els.bAgain.fire('click'); T.G.running = true; T.player.inv = 1e9;
-const { setTipsOff } = await import('../src/ui/tips.js');
-setTipsOff(true); setTipsOff(false);   // same as turning tips off and on in the pause menu: shows them all again
-T.G.min = 7 * 60 + 40; step(3);
-const tip1 = els.tipText.textContent;
-if (!tip1.includes('วงแหวน')) afail('first tip should explain loot rings, got: ' + tip1);
-step(600);
-const tip2 = els.tipText.textContent;
-if (tip2 === tip1) afail('tip queue did not advance after 9 s');
-const seenTips = JSON.parse(store.get('ordinary-day.tips') || '{}').seen || {};
-console.log('ambulance kit + tips:', amb[0].x, amb[0].z, '| tips seen', Object.keys(seenTips).join(','), '| now:', tip2.slice(0, 40));
+console.log('ambulance kit:', amb[0].x, amb[0].z);   // v0.42 no tips any more
 
-// 8) v0.5: melee durability, hunger/thirst, Armor Walker back, Tyrant smashing, difficulty
+// 8) v0.5: melee durability, Armor Walker back, Tyrant smashing, difficulty
 const vfail = m => errs.push('v0.5 test: ' + m);
 const { DEF: D5, durPct } = await import('../src/config/items.js');
 const { meleeHit } = await import('../src/systems/combat.js');
 const { hurtZombie } = await import('../src/entities/ai.js');
-const { eatBest } = await import('../src/systems/inventory.js');
 const { breakables } = await import('../src/world/props.js');
 const { solids } = await import('../src/world/collision.js');
 const { smashNear } = await import('../src/systems/obstacles.js');
@@ -168,17 +158,11 @@ T.inv.eq.melee = { id: 'knife_c', mag: 0, dur: 1 }; T.inv.active = 'melee'; T.pl
 const victim = T.makeAgent(T.player.pos.x, T.player.pos.z + 1); T.becomeZombie(victim, 'zombie'); T.agents.push(victim);
 meleeHit(T.player, D5.knife_c);
 if (T.inv.eq.melee !== null) vfail('knife at 1 durability did not break after a hit');
-// hunger and thirst
-T.player.food = 50; T.player.water = 50; step(600);
-const f1 = T.player.food, w1 = T.player.water;
-if (!(f1 < 50 && w1 < 50 && 50 - w1 > 50 - f1)) vfail('needs did not drain (water faster): food ' + f1.toFixed(2) + ' water ' + w1.toFixed(2));
-T.inv.bag.push({ id: 'water', n: 1 }, { id: 'canned', n: 1 }); T.player.water = 10; eatBest(T.player);
-if (T.player.water < 59 || T.inv.bag.some(e => e.id === 'water')) vfail('G did not drink the water first when thirstier');
-T.player.hp = 60; T.player.food = 0; T.player.water = 80; const hp0 = T.player.hp; step(120);
-if (!(T.player.hp < hp0)) vfail('empty food bar did not drain HP');
-for (const a of T.agents) a.gone = true; step(2);   // nobody else may hit the player during this check
-T.player.inv = 0; T.inv.bag = T.inv.bag.filter(e => e.id !== 'resurrect'); T.player.food = 0; T.player.water = 0; T.player.hp = 0.5; step(30);
-if (T.player.alive || T.G.endCause !== 'starved') vfail('starving did not end the game as starved (cause ' + T.G.endCause + ')');
+// v0.42 no hunger or thirst: HP comes back by itself after a while without a hit, up to REGEN.cap of the maximum
+{ const R = (await import('../src/config/health.js')).REGEN; for (const a of T.agents) a.gone = true; step(2);
+  T.player.hp = 20; T.player.lastHit = -99; step(600); const h1 = T.player.hp; step(60 * 120); const h2 = T.player.hp;
+  if (!(h1 > 20 && Math.abs(h2 - T.player.maxHp * R.cap) < 1)) vfail('regen: ' + h1.toFixed(1) + ' after 10 s, ' + h2.toFixed(1) + ' after 2 min, cap ' + R.cap);
+  T.player.hp = 90; step(600); if (T.player.hp !== 90) vfail('regen went past the cap: ' + T.player.hp); }
 // Armor Walker: front armored, back full damage
 els.bAgain.fire('click'); T.G.running = true; T.player.inv = 1e9;
 const arm = T.makeAgent(T.player.pos.x + 6, T.player.pos.z); T.becomeZombie(arm, 'armor'); arm.face = 0; T.agents.push(arm);
@@ -199,7 +183,7 @@ T.G.diff = 'hard'; T.G.endCause = 'hurt'; T.G.over = false; gameOver();
 const bestAll = JSON.parse(store.get('ordinary-day.best') || '{}');
 if (!bestAll.hard || !els.oEyebrow.textContent.includes('ยาก')) vfail('records not kept per difficulty: ' + store.get('ordinary-day.best'));
 T.G.diff = 'normal';
-console.log('v0.5: durability, needs (food', (50 - f1).toFixed(2), 'water', (50 - w1).toFixed(2), 'in 10 s), armor back, tyrant smash + save, difficulty', [dE, dN, dH].join('/'));
+console.log('v0.5: durability, regen up to a cap (v0.42), armor back, tyrant smash + save, difficulty', [dE, dN, dH].join('/'));
 
 // 9) v0.6: enterable buildings, doors, walls block sight and blows, zombies break doors
 const ifail = m => errs.push('v0.6 test: ' + m);
@@ -291,7 +275,7 @@ els.bReportBack.fire('click'); if (!els.reportBox.hidden) errs.push('v0.6.2 test
 key('KeyP', 'keydown');
 console.log('v0.6.2: bug report', info.split('\n').length, 'lines |', info.split('\n')[0]);
 
-// 12) v0.7: scarcer loot, scent, planks, sneak, bottles
+// 12) v0.7: scarcer loot, scent, doors put back, sneak, a thrown lure
 const sfail = m => errs.push('v0.7 test: ' + m);
 const L7 = await import('../src/config/loot.js');
 const D7 = await import('../src/systems/drops.js');
@@ -310,24 +294,23 @@ const zs = zAt(r7.dx + r7.n[0] * 18, r7.dz + r7.n[1] * 18); zs.feed = 1e9; step(
 if (zs.heard && zs.heard.t > 0) sfail('zombie smelled the player straight away');
 T.G.min += Sh.SCENT_AFTER + 1; step(2);
 if (!zs.heard || Math.hypot(zs.heard.x - T.player.pos.x, zs.heard.z - T.player.pos.z) > 1) sfail('scent did not send the zombie after ' + Sh.SCENT_AFTER + ' min in one building');
-// planks: board a closed door, rebuild a broken one
-T.inv.bag = [{ id: 'planks', n: 3 }]; T.player.pos.x = r7.dx - r7.n[0] * 1.2; T.player.pos.z = r7.dz - r7.n[1] * 1.2; step(1);
-if (T.player.fixDoor !== k7 || els.bFix.hidden) sfail('hammer button did not show by a closed door with planks');
-key('KeyB', 'keydown');
-if (T.G.doors[k7].hp !== Sh.DOOR_HP + Sh.PLANK_HP) sfail('B did not board the door (hp ' + T.G.doors[k7].hp + ')');
+// v0.42 no planks: no hammer by a whole door; a broken one is put back with nothing (B)
+T.inv.bag = []; T.player.pos.x = r7.dx - r7.n[0] * 1.2; T.player.pos.z = r7.dz - r7.n[1] * 1.2; step(1);
+if (T.player.fixDoor >= 0 || !els.bFix.hidden) sfail('hammer button by a whole door');
 Object.assign(T.G.doors[k7], { open: true, broken: true, hp: 0 }); Dr.applyDoors(T.G.doors); step(1);
+if (T.player.fixDoor !== k7 || els.bFix.hidden) sfail('hammer button did not show by a broken door');
 key('KeyB', 'keydown');
-if (T.G.doors[k7].broken || T.G.doors[k7].open || T.G.doors[k7].hp !== Sh.REBUILT_HP || T.inv.bag.some(e => e.id === 'planks')) sfail('rebuilding the broken door went wrong: ' + JSON.stringify(T.G.doors[k7]) + ' bag ' + JSON.stringify(T.inv.bag));
+if (T.G.doors[k7].broken || T.G.doors[k7].open || T.G.doors[k7].hp !== Sh.REBUILT_HP) sfail('rebuilding the broken door went wrong: ' + JSON.stringify(T.G.doors[k7]));
 // sneak: a zombie 10 m away notices a walking player but not a sneaking one
 const sense = (sneak) => { clear(); T.G.phase = 'night'; T.G.min = 22 * 60; const z = zAt(T.player.pos.x + 10, T.player.pos.z); if (sneak) key('KeyC', 'keydown'); step(3); key('KeyC', 'keyup'); return !!z.seenP; };
 const seenWalking = sense(false), seenSneaking = sense(true);
 if (!seenWalking || seenSneaking) sfail('sneak: seen walking ' + seenWalking + ', seen sneaking ' + seenSneaking);
-// bottle: thrown, breaks, the noise pulls a zombie
-clear(); T.G.phase = 'night'; T.G.min = 22 * 60; T.player.face = 0; T.inv.bag = [{ id: 'bottle', n: 1 }];
+// v0.42 no bottles: a flare thrown with Q draws a zombie instead
+clear(); T.G.phase = 'night'; T.G.min = 22 * 60; T.player.face = 0; T.inv.bag = [{ id: 'flare', n: 1 }];
 const zb7 = zAt(T.player.pos.x + 20, T.player.pos.z + 8); zb7.feed = 1e9;
 key('KeyQ', 'keydown'); key('KeyQ', 'keyup'); step(60);
-if (T.inv.bag.length || !zb7.heard || zb7.heard.t <= 0) sfail('bottle did not draw the zombie (heard ' + JSON.stringify(zb7.heard) + ')');
-console.log('v0.7: scarcer loot, scent after', Sh.SCENT_AFTER, 'min, planks board + rebuild, sneak, bottle noise');
+if (T.inv.bag.length || !zb7.heard || zb7.heard.t <= 0) sfail('a flare did not draw the zombie (heard ' + JSON.stringify(zb7.heard) + ')');
+console.log('v0.7: scarcer loot, scent after', Sh.SCENT_AFTER, 'min, broken door put back, sneak, flare noise');
 
 // 13) v0.8: daily events, settings, music
 const efail = m => errs.push('v0.8 test: ' + m);
@@ -394,10 +377,10 @@ if (T.G.over || !T.player.alive || !(T.player.bleed > 0)) mfail('with p2 standin
 p2.inv = 0; p2.gear.bag = []; Cb.hurtPlayer(p2, 9999);
 await new Promise(r => setTimeout(r, 1900)); if (!T.G.over) mfail('game did not end with every player dead');
 // save / load keeps both players with their own gear
-clear(); const q2 = Game.addPlayer(); q2.gear.bag.push({ id: 'planks', n: 4 }); q2.pos.x += 3; T.inv.bag.push({ id: 'water', n: 2 });
+clear(); const q2 = Game.addPlayer(); q2.gear.bag.push({ id: 'molotov', n: 4 }); q2.pos.x += 3; T.inv.bag.push({ id: 'bandage', n: 2 });
 S.saveGame(); els.bAgain.fire('click'); S.loadGame();
 const s2 = P.players[1];
-if (P.players.length !== 2 || !s2.gear.bag.some(e => e.id === 'planks') || !T.inv.bag.some(e => e.id === 'water') || s2.gear.bag.some(e => e.id === 'water')) mfail('save/load lost a player or mixed their bags');
+if (P.players.length !== 2 || !s2.gear.bag.some(e => e.id === 'molotov') || !T.inv.bag.some(e => e.id === 'bandage') || s2.gear.bag.some(e => e.id === 'bandage')) mfail('save/load lost a player or mixed their bags');
 // an old (v1) save still loads as one player
 store.set('ordinary-day.save', JSON.stringify({ v: 1, savedAt: 0, G: Object.assign({}, T.G, { stay: null }), player: { x: 10, z: 10, face: 0, hp: 77, down: 0, inv: 0, infect: 0, infWarn: 0, food: 50, water: 60, sinceHit: 9 }, inv: { bag: [{ id: 'a9', n: 7 }], cap: 6, eq: { primary: null, secondary: null, melee: null }, active: 'melee' }, agents: [], drops: [] }));
 if (!S.loadGame() || P.players.length !== 1 || Math.round(T.player.hp) !== 77 || !T.inv.bag.some(e => e.id === 'a9' && e.n === 7)) mfail('a v1 save did not load into one player');
@@ -519,11 +502,12 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   const vfail = m => errs.push('v0.14 / v0.15 test: ' + m);
   const Dr = await import('../src/systems/drops.js'); const { roomAt, rooms, boxes } = await import('../src/world/interiors.js');
   const Se = await import('../src/systems/search.js'); const { SEARCH_SECONDS } = await import('../src/config/search.js'); const Ac = await import('../src/systems/actions.js');
-  let fi = 0, fo = 0; for (let i = 0; i < 4000; i++) { if (/^(canned|water)$/.test(Dr.rollLoot('day', 'indoor').id)) fi++; if (/^(canned|water)$/.test(Dr.rollLoot('day', 'city').id)) fo++; }
-  if (!(fi > fo * 1.6)) vfail('indoor spots are not richer in food: ' + fi + ' vs ' + fo);
+  // v0.42 no food (or planks, or bottles) anywhere
+  const gone = id => ['canned', 'water', 'planks', 'bottle'].includes(id) || !D5[id];
+  let bad = 0; for (let i = 0; i < 4000; i++) for (const z of ['indoor', 'city', 'grocery', 'diner', 'hardware', 'farm', 'camp']) if (gone(Dr.rollLoot(i % 2 ? 'day' : 'night', z).id)) bad++;
+  for (const k of Object.keys((await import('../src/config/search.js')).BOX)) for (let i = 0; i < 300; i++) for (const it of Se.rollBox(k)) if (gone(it.id)) bad++;
+  if (bad) vfail(bad + ' rolls gave food, planks, bottles or an unknown item');
   if (boxes.length < rooms.length || boxes.some(b => roomAt((b.box.x0 + b.box.x1) / 2, (b.box.z0 + b.box.z1) / 2) !== b.room)) vfail(boxes.length + ' furniture for ' + rooms.length + ' rooms, or one outside its room');
-  let kf = 0, kn = 0; for (let i = 0; i < 2000; i++) for (const it of Se.rollBox('kitchen')) { kn++; if (/^(canned|water)$/.test(it.id)) kf++; }
-  if (!(kf / kn > .55)) vfail('kitchens hold too little food: ' + kf + '/' + kn);
   if (Se.rollBox('drawer').concat(Se.rollBox('drawer'), Se.rollBox('drawer')).some(it => D5[it.id].grade && D5[it.id].grade !== 'civ')) vfail('police / military gear in a home');
   // search one: stand in front of it, press E, hold still
   const pl = T.player; pl.alive = true; pl.state = 'player'; pl.hp = 100; pl.inv = 1e9; pl.bleed = 0; pl.down = 0; T.G.searched = []; T.G.running = true;
@@ -544,7 +528,7 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   T.G.searched = boxes.map((_, i) => i); Se.restockBoxes(); const left = T.G.searched.length;
   if (!(left < boxes.length && left > 0)) vfail('restock: ' + left + ' of ' + boxes.length + ' still empty');
   T.G.searched = [];
-  console.log('v0.14 / v0.15: food in indoor rolls ' + (fi / 40).toFixed(0) + '% vs outdoor ' + (fo / 40).toFixed(0) + '% · ' + boxes.length + ' furniture in ' + rooms.length + ' rooms (' + ['kitchen', 'shelf', 'drawer', 'sofa'].map(k => k + ' ' + boxes.filter(x => x.kind === k).length).join(', ') + '), kitchen food ' + Math.round(kf / kn * 100) + '%, searched one (' + (found ? 'found something' : 'empty') + '), ' + (boxes.length - left) + ' restocked at 06:00');
+  console.log('v0.14 / v0.15 (v0.42 no food): ' + boxes.length + ' furniture in ' + rooms.length + ' rooms (' + ['kitchen', 'shelf', 'drawer', 'sofa'].map(k => k + ' ' + boxes.filter(x => x.kind === k).length).join(', ') + '), searched one (' + (found ? 'found something' : 'empty') + '), ' + (boxes.length - left) + ' restocked at 06:00');
   // v0.40: cupboards along the walls of every room (in front of each one there is room to stand, the doorway stays clear)
   // and the cars in the street can be searched: guns and ammo, Police Grade in a police car
   { const Col = await import('../src/world/collision.js'), cars = boxes.filter(x => x.room < 0), inRoom = k => boxes.filter(x => x.room === k).length;
@@ -568,8 +552,8 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   }
   // v0.14.1: one stack per item, no limit, sorted by category; old saves with split stacks are merged
   const Inv = await import('../src/systems/inventory.js'); const g = T.player.gear; g.bag = []; g.cap = 6;
-  Inv.addStack(T.player, 'water', 3); Inv.addStack(T.player, 'a9', 150); Inv.addStack(T.player, 'a9', 150); Inv.addStack(T.player, 'bandage', 9); g.bag.unshift({ id: 'a9', n: 5 }, { id: 'bat_c', mag: 0, dur: 40 }); Inv.tidyBag(g);
-  if (JSON.stringify(g.bag.map(e => e.id + ':' + (e.n ?? '-'))) !== JSON.stringify(['bat_c:-', 'a9:305', 'bandage:9', 'water:3'])) vfail('bag not merged / sorted: ' + JSON.stringify(g.bag));
+  Inv.addStack(T.player, 'molotov', 3); Inv.addStack(T.player, 'a9', 150); Inv.addStack(T.player, 'a9', 150); Inv.addStack(T.player, 'bandage', 9); g.bag.unshift({ id: 'a9', n: 5 }, { id: 'bat_c', mag: 0, dur: 40 }); Inv.tidyBag(g);
+  if (JSON.stringify(g.bag.map(e => e.id + ':' + (e.n ?? '-'))) !== JSON.stringify(['bat_c:-', 'a9:305', 'bandage:9', 'molotov:3'])) vfail('bag not merged / sorted: ' + JSON.stringify(g.bag));
   // v0.16: the town after the outbreak (looks only: no collision boxes, no rand(), clear of loot and rooms)
   const Dc = await import('../src/world/decor.js'); const Pr = await import('../src/world/props.js');
   if (Dc.decor.length < 150 || Dc.decor.some(d => lootSpots.some(s => Math.hypot(s.x - d.x, s.z - d.z) < .85) || roomAt(d.x, d.z) >= 0)) vfail('decor: ' + Dc.decor.length + ' pieces, or one on loot / in a room');
@@ -590,20 +574,20 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   ZCF.INFECTION.on = false; LOOT.setMedTables();
   if (LOOT.MED_W.day.antibiotic || LOOT.MED_W.night.antibiotic) vfail('Antibiotic still in the loot tables');
   { const pl = T.player; pl.infect = 0; infectPlayer(pl); if (pl.infect > 0) vfail('a bite infected the player with infection off'); }
-  const It = await import('../src/config/items.js'); const rc = ['pistol_c', 'backpack', 'bandage', 'canned', 'water', 'a9'].map(It.ringColor);
-  if (new Set(rc).size !== 6) vfail('ring colours not one per kind: ' + rc);
+  const It = await import('../src/config/items.js'); const rc = ['pistol_c', 'backpack', 'bandage', 'a9', 'molotov'].map(It.ringColor);
+  if (new Set(rc).size !== 5) vfail('ring colours not one per kind: ' + rc);
   const Ev = await import('../src/systems/events.js'); const EvC = await import('../src/config/events.js');
   const day = Math.floor(T.G.min / 1440) + 1; T.G.plan = []; Ev.planDaily(day + 1); Ev.planDaily(day + 5);
   const planned = T.G.plan.filter(e => e.daily); if (planned.length !== 3) vfail('daily plan: ' + JSON.stringify(planned));
   const ran = [];
   for (const kind of Object.keys(EvC.DAILY.weights)) {
-    T.G.site = null; T.G.alarm = null; T.G.fog = 0; T.G.heat = 0; const d0 = T.drops.length, s0 = T.G.searched.length, a0 = T.agents.length;
+    T.G.site = null; T.G.alarm = null; T.G.fog = 0; const d0 = T.drops.length, s0 = T.G.searched.length, a0 = T.agents.length;
     T.player.pos.x = 0; T.player.pos.z = 0; T.G.plan = [{ kind, at: T.G.min - 1, done: false, warned: false, daily: true }]; Ev.updateEvents(0);
-    const ok = { alarm: () => T.G.alarm, stash: () => T.G.site && T.drops.length > d0, truck: () => T.G.site && T.drops.length > d0, crash: () => T.G.site && T.drops.length > d0, fog: () => T.G.fog > T.G.min, heat: () => T.G.heat > T.G.min, raid: () => T.G.searched.length > s0 }[kind]();
+    const ok = { alarm: () => T.G.alarm, stash: () => T.G.site && T.drops.length > d0, truck: () => T.G.site && T.drops.length > d0, crash: () => T.G.site && T.drops.length > d0, fog: () => T.G.fog > T.G.min, raid: () => T.G.searched.length > s0 }[kind]();
     if (!ok) vfail('daily event ' + kind + ' did nothing'); else ran.push(kind + (T.agents.length > a0 ? '+' + (T.agents.length - a0) + 'z' : ''));
   }
   T.G.alarm = { x: 5, z: 5, until: T.G.min + 10, next: T.G.min }; Ev.updateEvents(0); if (!(T.G.alarm.next > T.G.min)) vfail('car alarm did not call');
-  T.G.alarm = null; T.G.site = null; T.G.fog = 0; T.G.heat = 0; T.G.plan = [];
+  T.G.alarm = null; T.G.site = null; T.G.fog = 0; T.G.plan = [];
   // v0.18: a dirtier town and crowded rooms; the new solids stay off the loot, the doorways, the landing zone and each other
   const Cl = await import('../src/world/clutter.js'), Col = await import('../src/world/collision.js'), Gl = await import('../src/config/goal.js');
   const inBox = (q, x, z, m) => x > q.x0 - m && x < q.x1 + m && z > q.z0 - m && z < q.z1 + m;
@@ -687,7 +671,7 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   }
   // v0.37: people and zombies walk round what is in the way; a backpack near the start and more often while someone has
   // none; ammo for the guns players carry
-  { const Mv2 = await import('../src/entities/movement.js'), Pr = await import('../src/world/props.js'), Col4 = await import('../src/world/collision.js'), Dr = await import('../src/systems/drops.js'), Ob2 = await import('../src/ui/objective.js');
+  { const Mv2 = await import('../src/entities/movement.js'), Pr = await import('../src/world/props.js'), Col4 = await import('../src/world/collision.js'), Dr = await import('../src/systems/drops.js');
     let tried = 0, round = 0;
     for (const b of Pr.breakables) { if (!b.car || b.broken || tried >= 6) continue; const ax = b.car.alongX, ox = ax ? 0 : 3.2, oz = ax ? 3.2 : 0;
       if (Math.max(Math.abs(b.x) + ox, Math.abs(b.z) + oz) > 65 || !Col4.freeAt(b.x - ox, b.z - oz, .6) || !Col4.freeAt(b.x + ox, b.z + oz, .6)) continue; tried++;
@@ -698,8 +682,6 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     els.bAgain.fire('click'); T.G.running = true; const pl = T.player;
     const startBag = T.drops.find(d => d.item.id === 'backpack' && Math.hypot(d.x - pl.pos.x, d.z - pl.pos.z) < 36);
     if (!startBag) vfail('no backpack near the start');
-    const goal = Ob2.currentGoal(pl); pl.gear.eq.melee = T.makeItem('bat_c'); const goal2 = Ob2.currentGoal(pl);
-    if (!/เป้/.test(goal2 && goal2.text)) vfail('no backpack goal: ' + JSON.stringify([goal, goal2]));
     for (const d of T.drops.filter(d => d.item.id === 'backpack')) Dr.removeDrop(d);
     const need = Dr.needBag(); Dr.fillNight(0); let bags = 0; for (let i = 0; i < 600; i++) if (Dr.rollLoot('night', 'city').id === 'backpack') bags++;
     pl.gear.cap = 14; Dr.fillNight(0); let bags2 = 0; for (let i = 0; i < 600; i++) if (Dr.rollLoot('night', 'city').id === 'backpack') bags2++;
@@ -711,6 +693,13 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     const fs = await import('fs'), fpsSrc = fs.readFileSync(new URL('../src/ui/fps.js', import.meta.url), 'utf8'), citySrc = fs.readFileSync(new URL('../src/world/city.js', import.meta.url), 'utf8');
     if (!/^\s*fpsCam\.rotation\.set\(/m.test(fpsSrc)) vfail('the first-person camera is not turned (fpsCam.rotation.set commented out?)');
     if (!/^\s*mats\.push\(det\)/m.test(citySrc)) vfail('rooftop units are not in their building\'s materials');
+    // v0.42 and again in v0.22 (the farm's dirt lanes) and v0.41 (spawnPopulation: a new game had no people): no comment in
+    // src/ may hold what looks like a call followed by another statement
+    const path = await import('path'), walk = d => fs.readdirSync(d, { withFileTypes: true }).flatMap(e => e.isDirectory() ? walk(path.join(d, e.name)) : e.name.endsWith('.js') ? [path.join(d, e.name)] : []);
+    const swallowed = [];
+    for (const f of walk(new URL('../src', import.meta.url).pathname)) fs.readFileSync(f, 'utf8').split('\n').forEach((l, i) => {
+      const m = /(?<![:'"\/\\])\/\/(.*)$/.exec(l); if (m && (/[A-Za-z_$][\w$.]*\([^)]*\);\s*[A-Za-z_$]/.test(m[1]) || /\)\s*;\s*(const|let|if|for)\b/.test(m[1]))) swallowed.push(path.basename(f) + ':' + (i + 1)); });
+    if (swallowed.length) vfail('code inside a comment at ' + swallowed.join(', '));
     console.log('v0.37: went round ' + round + ' of ' + tried + ' cars; backpack ' + Math.round(Math.hypot(startBag.x - pl.pos.x, startBag.z - pl.pos.z)) + ' m from the start, night bags ' + bags + '/600 without one, ' + bags2 + ' with; shotgun shells ' + a12 + '/600');
   }
   // v0.34: the old town: shop boards, balconies, posters, columns, body bags, barriers built; none of their collision
@@ -724,24 +713,17 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     if (!rang) vfail('no church bell at dawn');
     console.log('v0.34: ' + o.signs + ' shop boards, ' + o.hang + ' hanging signs, ' + o.balconies + ' balconies, ' + o.posters + ' posters, ' + o.sheets + ' HELP sheets, ' + o.columns.length + ' columns, ' + o.bags + ' body bags, ' + o.cases + ' suitcases, ' + o.barriers.length + ' barriers, ' + o.sandbags + ' sandbags, ' + o.memorials + ' memorials; ' + n0 + ' solids; bell at dawn');
   }
-  // v0.32: the slow first morning, the outbreak seen happening, the goal line
-  { const Ob = await import('../src/ui/objective.js'), Tm = await import('../src/config/time.js'), Ph = await import('../src/systems/phases.js');
-    els.bAgain.fire('click'); T.G.running = true; const pl = T.player; pl.inv = 1e9; pl.gear.cap = 14;   // v0.37 with a backpack (its own goal is tested below)
+  // v0.32: the slow first morning, the outbreak seen happening (v0.42 no goal line: nothing is explained on screen)
+  { const Tm = await import('../src/config/time.js');
+    els.bAgain.fire('click'); T.G.running = true; const pl = T.player; pl.inv = 1e9; pl.gear.cap = 14;
     const m0 = T.G.min; step(600); const paced = (T.G.min - m0) / (10 * Tm.RATE);   // 10 real seconds at ×1
-    const g0 = Ob.currentGoal(pl);
     for (let k = 0; k < 6; k++) T.agents.push(T.makeAgent(pl.pos.x + Math.sin(k) * 14, pl.pos.z + Math.cos(k) * 14));   // people around, so one is near whoever turns
     T.G.min = 9 * 60 + 29.95; step(30);
     const first = T.agents.find(a => a === T.G.alertA), wasInfected = first && first.state === 'infected', panicked = T.agents.filter(a => a.state === 'human' && a.panic > 0).length;
     step(300); const turned = first && first.state === 'zombie';
-    pl.gear.eq.melee = T.makeItem('bat_c'); pl.gear.bag = []; const gFood = Ob.currentGoal(pl);
-    pl.gear.bag = [{ id: 'canned', n: 1 }, { id: 'water', n: 1 }, { id: 'bandage', n: 1 }]; const gMore = Ob.currentGoal(pl);
-    T.G.min = 16 * 60; const out = Ob.currentGoal(pl);
-    const k = 0, r = (await import('../src/world/interiors.js')).rooms[k]; pl.pos.x = (r.x0 + r.x1) / 2; pl.pos.z = (r.z0 + r.z1) / 2; T.G.doors[k].open = false; const inside = Ob.currentGoal(pl);
-    T.G.min = 20 * 60; const night = Ob.currentGoal(pl); T.G.min = 1440 + 16 * 60; const gone = Ob.currentGoal(pl);
     pl.pos.x = 5; pl.pos.z = 5;
-    const ok = paced > .3 && paced < .4 && /อาวุธ/.test(g0.text) && wasInfected && turned && panicked > 0 && /อาหาร/.test(gFood.text) && /ก่อนมืด/.test(gMore.text) && out.x !== undefined && /ก่อนมืด/.test(out.text) && /พร้อม|ตอก/.test(inside.text) && /06:00/.test(night.text) && gone === null;
-    if (!ok) vfail('first day: pace ' + paced.toFixed(2) + ', goals ' + JSON.stringify([g0, gFood, gMore, out, inside, night, gone].map(g => g && g.text)) + ', outbreak infected ' + wasInfected + ' turned ' + turned + ' panicked ' + panicked);
-    console.log('v0.32: first morning at ' + paced.toFixed(2) + '× pace; outbreak: one person staggers, falls and turns, ' + panicked + ' run; goals: ' + [g0, gFood, gMore, out, inside, night].map(g => g.text.split(' ')[0]).join(' → '));
+    if (!(paced > .3 && paced < .4 && wasInfected && turned && panicked > 0)) vfail('first day: pace ' + paced.toFixed(2) + ', outbreak infected ' + wasInfected + ' turned ' + turned + ' panicked ' + panicked);
+    console.log('v0.32: first morning at ' + paced.toFixed(2) + '× pace; outbreak: one person staggers, falls and turns, ' + panicked + ' run');
   }
   // v0.31: a hit on a zombie sends an impact (blood spray, hit marker for the player who landed it), a kill a bigger one
   { const Ef = await import('../src/systems/effects.js'), Ai4 = await import('../src/entities/ai.js');
@@ -842,15 +824,15 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     }
     const blownN = T.G.blown.length; S.saveGame(); T.G.blown = []; Bl.applyTanks(); S.loadGame(); if (T.G.blown.length !== blownN || !Ex.tanks[tk].entry.gone) vfail('blown cylinders not restored from the save');
     // a Molotov burns a zombie standing in it, a grenade blows one up
-    pl.pos.x = 0; pl.pos.z = -4; pl.face = 0; pl.input.aim = false; pl.gear.bag = [{ id: 'molotov', n: 1 }, { id: 'grenade', n: 1 }, { id: 'bottle', n: 2 }];
-    if (Th.throwPick(pl.gear) !== 'bottle') vfail('default throwable should be the bottle'); Th.pickThrow(pl, 'molotov'); if (Th.throwPick(pl.gear) !== 'molotov') vfail('picked throwable');
+    pl.pos.x = 0; pl.pos.z = -4; pl.face = 0; pl.input.aim = false; pl.gear.bag = [{ id: 'molotov', n: 1 }, { id: 'grenade', n: 1 }, { id: 'flare', n: 2 }];
+    if (Th.throwPick(pl.gear) !== 'flare') vfail('default throwable should be the flare (v0.42 no bottles)'); Th.pickThrow(pl, 'molotov'); if (Th.throwPick(pl.gear) !== 'molotov') vfail('picked throwable');
     const z2 = T.makeAgent(0, -4 + 9.6); T.becomeZombie(z2, 'zombie'); T.agents.push(z2); z2.feed = 99;
     Th.throwBottle(pl); for (let i = 0; i < 300; i++) { Th.updateThrows(1 / 30); Bl.updateFires(1 / 30); z2.pos.x = 0; z2.pos.z = -4 + 9.6; }
     const burnt = z2.state !== 'zombie' || z2.hp < z2.maxHp * .5;
     Th.pickThrow(pl, 'grenade'); const z3 = T.makeAgent(0, -4 + 9.6); T.becomeZombie(z3, 'zombie'); T.agents.push(z3); z3.feed = 99;
     Th.throwBottle(pl); for (let i = 0; i < 90; i++) { Th.updateThrows(1 / 30); Bl.updateFires(1 / 30); }
     if (!burnt || z3.state === 'zombie') vfail('Molotov burnt ' + burnt + ', grenade killed ' + (z3.state !== 'zombie') + ' (' + z3.hp + ')');
-    if (Th.throwPick(pl.gear) !== 'bottle') vfail('after the grenade the bottles are next'); Bl.clearFires();
+    if (Th.throwPick(pl.gear) !== 'flare') vfail('after the grenade the flares are next'); Bl.clearFires();
     // the farm rolls its own tools; town extras are there
     const fr = Array.from({ length: 400 }, () => Dr.rollLoot('day', 'farm')).map(it => it.id), tools = fr.filter(id => ['pitchfork_c', 'sickle_c', 'spade_c', 'pickaxe_c', 'dbshotgun_c'].includes(id));
     if (!tools.length || fr.some(id => It2.DEF[id].kind === 'weapon' && !tools.includes(id))) vfail('farm weapons: ' + [...new Set(fr.filter(id => It2.DEF[id].kind === 'weapon'))]);

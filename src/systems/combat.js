@@ -30,7 +30,7 @@ export function hurtPlayer(p,n){
   U.hurt();
   if(p.hp<=0){
     const bag=p.gear.bag,ri=bag.findIndex(e=>e.id==='resurrect');
-    if(ri>=0){bag.splice(ri,1);p.hp=0;p.down=1.8;if(p.local)ctl.fireHeld=false;cureInfection(p);p.food=Math.max(p.food,30);p.water=Math.max(p.water,30);p.endCause=null;if(p.local)G.endCause=null;U.say('Resurrection Kit ทำงาน · คุณฟื้นคืนชีพ','',5);U.updateLoadout(true);return true;}
+    if(ri>=0){bag.splice(ri,1);p.hp=0;p.down=1.8;if(p.local)ctl.fireHeld=false;cureInfection(p);p.endCause=null;if(p.local)G.endCause=null;U.updateLoadout(true);return true;}
     // a teammate still standing can help them up (v0.10); alone, or when nobody is left standing, it is death
     if(p.endCause!=='infected'&&players.some(q=>q!==p&&standing(q))){goDown(p);return true;}
     die(p);
@@ -39,17 +39,14 @@ export function hurtPlayer(p,n){
 }
 export const standing=q=>q.alive&&!(q.bleed>0)&&!q.away;
 function goDown(p){
-  p.hp=0;p.bleed=BLEED_SECONDS;p.reviveT=0;p.helping=null;p.swing=0;p.reloadT=0;p.sneak=false;p.endCause=null;if(p.local)ctl.fireHeld=false;
-  uiFor(p).say('คุณล้มลง! รอเพื่อนมาช่วยพยุงภายใน '+BLEED_SECONDS+' วินาที คลานหนีได้ช้า ๆ','alarm',6);
-  for(const q of players)if(q!==p)uiFor(q).say('เพื่อนล้มลง! ไปยืนข้าง ๆ แล้วกด ช่วย ก่อนหมดเวลา','alarm',6);
+  p.hp=0;p.bleed=BLEED_SECONDS;p.reviveT=0;p.helping=null;p.swing=0;p.reloadT=0;p.sneak=false;p.endCause=null;if(p.local)ctl.fireHeld=false;   // v0.42 no words: the countdown on the pick button and the red name over the head say it
 }
 export function die(p){
   p.hp=0;p.bleed=0;p.helping=null;p.alive=false;p.state='dead';p.deadT=0;p.endCause=p.endCause||'hurt';
   sfx.scream(p.pos.x,p.pos.z);   // v0.19
   if(p.local){ctl.fireHeld=false;G.endCause=p.endCause;}
   if(players.some(q=>q.alive)){   // the others play on (v0.11): the dead watch a teammate and can be brought back with a Kit
-    uiFor(p).say('คุณตายแล้ว · กำลังดูเพื่อนเล่นต่อ ถ้าเพื่อนมี Resurrection Kit ชุบคุณกลับมาได้','alarm',8);
-    for(const q of players)if(q.alive)uiFor(q).feed(p.name+' ตาย · ชุบได้ด้วย Kit','warn');
+    for(const q of players)if(q.alive)uiFor(q).feed(p.name+' ตาย','warn');
   }
   // nobody left standing: those still down cannot be helped any more
   if(!players.some(standing))for(const q of players)if(q.alive){q.endCause=q.endCause||'hurt';die(q);return;}
@@ -76,7 +73,7 @@ export function finishReload(p){const w=p.reloadFor,def=DEF[w.id];if(w!==curWeap
 export function spreadOf(p,def){return def.spread*(p.ads?ADS.spread:1)*STANCE[p.stance|0].spread*(1+(p.bloom||0));}
 export function fireGun(p,w,def){
   const U=uiFor(p);
-  if(w.mag<=0){p.cool=.3;sfxFor(p).empty();if(countAmmo(p,def.ammo)>0)startReload(p);else U.feedOnce('noammo','กระสุนหมด · หา '+DEF[def.ammo].name,'warn');return;}
+  if(w.mag<=0){p.cool=.3;sfxFor(p).empty();if(countAmmo(p,def.ammo)>0)startReload(p);else U.feedOnce('noammo','กระสุนหมด','warn');return;}
   w.mag--;p.cool=def.rate;p.recoil=1;p.aimT=.5;sfx.shot(def.model,p.pos.x,p.pos.z);
   const fx=Math.sin(p.face),fz=Math.cos(p.face),ox=p.pos.x+fx*.7,oz=p.pos.z+fz*.7;
   const pel=def.pellets||1,pd=def.pellets?def.dmg*1.4/def.pellets:def.dmg;
@@ -94,7 +91,6 @@ export function fireGun(p,w,def){
   p.bloom=Math.min(BLOOM.max,(p.bloom||0)+BLOOM.add);   // v0.29 each shot scatters the next a little more
   muzzle.position.set(ox,1.4,oz);muzzle.intensity=4;
   makeNoise(p.pos.x,p.pos.z,def.noise);
-  if(p.local&&!G.gunTip){G.gunTip=true;U.feed('เสียงปืนดึงดูดซอมบี้ กลางคืนได้ยินไกลขึ้น 1.5 เท่า','warn');}
   U.updateLoadout();
 }
 export function meleeHit(p,def){
@@ -109,6 +105,6 @@ export function meleeHit(p,def){
 function wearMelee(p,def){
   const g=p.gear,w=g.eq.melee,U=uiFor(p);if(!w||g.active!=='melee'||DEF[w.id]!==def||!def.dur)return;
   w.dur=Math.max(0,(w.dur??def.dur)-1);
-  if(w.dur<=0){g.eq.melee=null;sfx.crack();U.feed(def.name+' พังแล้ว · หาอาวุธใหม่','warn');U.updateLoadout(true);}
+  if(w.dur<=0){g.eq.melee=null;sfx.crack();U.feed(def.name+' พังแล้ว','warn');U.updateLoadout(true);}
   else if(durPct(w)<=.2)U.updateLoadout();
 }
