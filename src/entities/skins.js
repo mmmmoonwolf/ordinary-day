@@ -249,7 +249,7 @@ function playerClip(a,s,step){
     return v>2.2?['pRun',clamp(v/PV.pRun,.6,1.4)]:['pWalk',clamp(v/PV.pWalk,.5,2)];
   }
   if(a.moving>.3)return a.moving>4?['run',clamp(a.moving/5.5,.6,1.6)]:['walk',clamp(a.moving/1.5,.5,2)];
-  if(def.gun)return [a.stance===1?'pKneel':'pAim',1];
+  if(def.gun)return ['pAim',1];   // v0.44 no kneeling (no crouch)
   return ['idle',1];
 }
 // the upper body on top of the legs: a melee swing, a reload, a pistol held out in both hands, the kick of a rifle shot

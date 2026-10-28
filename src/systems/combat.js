@@ -3,7 +3,7 @@ import {muzzle} from '../core/renderer.js';
 import {G} from '../core/state.js';
 import {ctl} from '../core/controls.js';
 import {DEF,durPct} from '../config/items.js';
-import {ADS,BLOOM,STANCE} from '../config/handling.js';
+import {ADS,BLOOM,SNEAK} from '../config/handling.js';
 import {diffOf} from '../config/difficulty.js';
 import {BLEED_SECONDS,BLEED_PER_DMG} from '../config/party.js';
 import {rayWall} from '../world/collision.js';
@@ -70,7 +70,7 @@ export function startReload(p){
 export function finishReload(p){const w=p.reloadFor,def=DEF[w.id];if(w!==curWeapon(p))return;w.mag+=takeAmmo(p,def.ammo,def.mag-w.mag);uiFor(p).updateLoadout(true);}
 // how far a shot may stray (rad, either side): the gun's spread, tighter aiming down the sights and crouched or prone,
 // wider after a burst (v0.29)
-export function spreadOf(p,def){return def.spread*(p.ads?ADS.spread:1)*STANCE[p.stance|0].spread*(1+(p.bloom||0));}
+export function spreadOf(p,def){return def.spread*(p.ads?ADS.spread:1)*(p.sneak?SNEAK.spread:1)*(1+(p.bloom||0));}
 export function fireGun(p,w,def){
   const U=uiFor(p);
   if(w.mag<=0){p.cool=.3;sfxFor(p).empty();if(countAmmo(p,def.ammo)>0)startReload(p);else U.feedOnce('noammo','กระสุนหมด','warn');return;}

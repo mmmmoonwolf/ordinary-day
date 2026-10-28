@@ -14,7 +14,7 @@ export function animate(a,dt){
   if(!a.sk&&skins.ready&&skins.on)dress(a);
   if(a.sk){
     a.y+=(groundY(a.pos.x,a.pos.z)-a.y)*Math.min(1,dt*12);p.root.position.set(a.pos.x,a.y,a.pos.z);p.root.rotation.y=a.face;
-    if(a.state==='player'){p.root.visible=!(a.inv>0&&a.alive&&Math.floor(a.inv*10)%2===0);tip(a,p,a.alive&&!(a.bleed>0)&&!(a.down>0));}
+    if(a.state==='player'){p.root.visible=!(a.inv>0&&a.alive&&Math.floor(a.inv*10)%2===0);tip(a,p);}
     skinFrame(a,dt);return;
   }
   if(a.state==='dead'){p.root.position.set(a.pos.x,a.y,a.pos.z);p.root.rotation.y=a.face;return;}
@@ -26,7 +26,7 @@ export function animate(a,dt){
     p.head.rotation.z=a.kind==='walker'?.35:.2;p.body.rotation.z=Math.sin(a.phase*.5)*(a.kind==='walker'?.09:.05);p.body.rotation.x=a.kind==='sprinter'?.35:.12;
   }
   else if(a.state==='player'){
-    const def=DEF[curWeapon(a).id];p.armL.rotation.z=0;p.body.rotation.x=a.sneak?.4:0;p.body.position.y=0;   // crouch while sneaking
+    const def=DEF[curWeapon(a).id];p.armL.rotation.z=0;p.body.rotation.x=a.sneak?.12:0;p.body.position.y=0;   // leaning a little while sneaking (v0.44 no crouch)
     // on the ground: the Resurrection Kit knock-down (falls and gets up in 1.8 s) or downed (v0.10), arms reaching out
     const lie=a.bleed>0?1:a.down>0?-Math.sin(Math.min(1,1-a.down/1.8)*Math.PI):0;   // face down to crawl forward; the Kit throws them on their back
     if(lie){p.body.rotation.x=lie*Math.PI/2;p.body.position.y=Math.abs(lie)*.16;p.armL.rotation.x=-2.9+s*.5;p.armR.rotation.x=-2.9-s*.5;p.legL.rotation.x=s*.3;p.legR.rotation.x=-s*.3;p.root.visible=true;
@@ -46,14 +46,13 @@ export function animate(a,dt){
   else{const f=a.panic>0?1.5:.8;p.armL.rotation.x=-s*f;p.armR.rotation.x=s*f;p.head.rotation.z=0;}
   a.y+=(groundY(a.pos.x,a.pos.z)-a.y)*Math.min(1,dt*12);
   p.root.position.set(a.pos.x,a.y+Math.abs(Math.sin(a.phase))*.06*amt,a.pos.z);p.root.rotation.y=a.face;
-  tip(a,p,a.state==='player');
+  tip(a,p);
 }
-// v0.29 prone: the whole body tipped forward onto the ground, centred on the player; v0.30 vaulting or hopping, leaning into
-// it (v0.39 the character models too: the hop clip does the leaning)
-function tip(a,p,player){
-  const prone=player&&a.stance===2;p.root.rotation.order='YXZ';p.root.rotation.x=prone?Math.PI/2:0;
-  if(prone){p.root.position.x-=Math.sin(a.face)*.85;p.root.position.z-=Math.cos(a.face)*.85;p.root.position.y+=.18;}
-  if(a.airH>0){p.root.position.y+=a.airH;if(!prone&&!a.sk)p.root.rotation.x=a.airH*.35;}
+// v0.30 vaulting or hopping, leaning into it (v0.39 the character models too: the hop clip does the leaning); v0.44 nobody
+// lies prone any more (v0.29)
+function tip(a,p){
+  p.root.rotation.order='YXZ';p.root.rotation.x=0;
+  if(a.airH>0){p.root.position.y+=a.airH;if(!a.sk)p.root.rotation.x=a.airH*.35;}
 }
 export function separate(){
   const L=agents.filter(a=>a.state!=='dead');for(const p of players)if(p.alive&&!p.vault)L.push(p);   // v0.30 not mid-vault

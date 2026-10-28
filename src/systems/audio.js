@@ -71,7 +71,7 @@ function play(len,x,z,range,build){
 export const FILES={scream:['scream_m1','scream_m2','scream_m3','scream_m4','scream_m5','scream_m6','scream_w1','scream_w2','scream_x1','scream_x2'],thunder:['thunder1','thunder2','thunder3'],rain:['rain'],
   groan:['groan1','groan2','groan3','groan4','groan5'],zscream:['zscream1','zscream2','zscream3','zscream4','zscream5'],heart:['heart'],hurt:['hurt'],   // v0.20 zombies, heartbeat, the player hurt
   // v0.21 guns, reloads, a punch, the door, steps on wooden floors, loops (helicopter, wind, fire, police siren), sirens
-  shot_pistol:['shot_pistol'],shot_rifle:['shot_rifle'],shot_shotgun:['shot_shotgun'],shot_smg:['shot_smg'],reload_pistol:['reload_pistol'],reload_rifle:['reload_rifle'],reload_shotgun:['reload_shotgun'],
+  shot_pistol:['shot_pistol'],shot_rifle:['shot_rifle','shot_rifle2','shot_rifle3'],shot_sniper:['shot_sniper'],shot_lmg:['shot_lmg'],shot_shotgun:['shot_shotgun'],shot_smg:['shot_smg'],reload_pistol:['reload_pistol'],reload_rifle:['reload_rifle'],reload_shotgun:['reload_shotgun'],
   punch:['punch'],door:['door'],step:['step1','step2','step3','step4'],heli:['heli'],wind:['wind'],fire:['fire'],siren_police:['siren_police'],siren_dusk:['siren_dusk'],siren_outbreak:['siren_outbreak'],
   // v0.43 Kenney Impact Sounds (CC0): steps on the street and on grass, blows by a blunt or a bladed weapon, metal, wood, a plank
   stepc:['stepc1','stepc2','stepc3','stepc4','stepc5'],stepg:['stepg1','stepg2','stepg3','stepg4','stepg5'],blunt:['blunt1','blunt2','blunt3','blunt4','blunt5'],
@@ -79,7 +79,7 @@ export const FILES={scream:['scream_m1','scream_m2','scream_m3','scream_m4','scr
 const bufs={};let loading=false,lastScream=-9,lastHurt=-9,lastGrowl=-9;
 function loadSounds(){
   if(loading||typeof fetch!=='function')return;loading=true;
-  for(const k in FILES)for(const n of FILES[k])fetch('assets/sounds/'+n+'.mp3').then(r=>r.ok?r.arrayBuffer():Promise.reject(r.status))
+  for(const k of Object.keys(FILES).sort((a,b)=>b.startsWith('shot')-a.startsWith('shot')))for(const n of FILES[k])fetch('assets/sounds/'+n+'.mp3').then(r=>r.ok?r.arrayBuffer():Promise.reject(r.status))
     .then(b=>new Promise((ok,no)=>ctx.decodeAudioData(b,ok,no))).then(buf=>(bufs[k]||(bufs[k]=[])).push(buf)).catch(()=>{});
 }
 export const soundsLoaded=()=>Object.fromEntries(Object.keys(FILES).map(k=>[k,(bufs[k]||[]).length]));
@@ -95,18 +95,16 @@ function sample(kind,t,dest,gain,o={}){
   const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=o.cut||16000;const g=ctx.createGain();g.gain.value=gain;
   src.connect(f).connect(g).connect(dest);src.start(t);return src;
 }
-// v0.21 which recording each gun model plays: [kind, playback rate, level]; the sniper is the rifle shot slowed down
-const GUN_REC={pistol:['shot_pistol',1,.8],smg:['shot_smg',1.05,.65],lmg:['shot_smg',.85,.8],rifle:['shot_rifle',1,.8],sniper:['shot_rifle',.78,1],shotgun:['shot_shotgun',1,.95],dbshotgun:['shot_shotgun',.9,1]};
+// v0.21 which recording each gun model plays: [kind, playback rate, level]. v0.44 the rifle has three takes of the same
+// recording, the sniper and the machine gun their own cuts (a heavier take with its echo, the burst's last round); no gun
+// has a synthesized shot any more, so until the recordings have loaded (they load first) a shot is silent
+export const GUN_REC={pistol:['shot_pistol',1,.8],smg:['shot_smg',1.05,.65],lmg:['shot_lmg',1,.85],rifle:['shot_rifle',1,.8],sniper:['shot_sniper',1,.95],shotgun:['shot_shotgun',1,.95],dbshotgun:['shot_shotgun',.9,1]};
 const RELOAD_REC={pistol:'reload_pistol',shotgun:'reload_shotgun',dbshotgun:'reload_shotgun',smg:'reload_rifle',rifle:'reload_rifle',lmg:'reload_rifle',sniper:'reload_rifle'};
-const GUN={dbshotgun:{f:850,dur:.34,peak:.8,thump:75},
-  pistol:{f:1900,dur:.12,peak:.5,thump:110},smg:{f:2300,dur:.07,peak:.32,thump:0},rifle:{f:1500,dur:.11,peak:.5,thump:95},
-  shotgun:{f:900,dur:.3,peak:.75,thump:80},sniper:{f:1300,dur:.38,peak:.7,thump:70},lmg:{f:1300,dur:.09,peak:.45,thump:85},
-};
 const S={
   // heard from where the shooter stands (v0.11: other players' guns are quieter far away)
-  shot(model,x,z){const r=GUN_REC[model];if(r&&bufs[r[0]]){play(.9,x,z,70,(t,d,g)=>sample(r[0],t,d,r[2]*g,{rate:r[1]*(.97+Math.random()*.06),cut:1800+g*g*15000}));return;}   // v0.21
-    const s=GUN[model]||GUN.pistol;play(s.dur,x,z,70,(t,d,g)=>{noise(t,s.dur,{type:'bandpass',f0:s.f,f1:s.f*.4,q:.8,peak:s.peak*g,dest:d});if(s.thump)tone(t,.09,{f0:s.thump*1.6,f1:s.thump*.5,peak:s.peak*.8*g,dest:d});});},
-  empty(){play(.03,undefined,0,1,(t,d)=>noise(t,.02,{type:'highpass',f0:3500,peak:.25,dest:d}));},
+  shot(model,x,z){const r=GUN_REC[model]||GUN_REC.pistol;if(bufs[r[0]])play(1.6,x,z,70,(t,d,g)=>sample(r[0],t,d,r[2]*g,{rate:r[1]*(.97+Math.random()*.06),cut:1800+g*g*15000}));},   // v0.21, v0.44 recordings only
+  empty(){if(bufs.metal){play(.2,undefined,0,1,(t,d)=>sample('metal',t,d,.18,{rate:2.4}));return;}   // v0.44 a dry click (a metal tap, sped up)
+    play(.03,undefined,0,1,(t,d)=>noise(t,.02,{type:'highpass',f0:3500,peak:.25,dest:d}));},
   reload(model){const k=RELOAD_REC[model];if(k&&bufs[k]){play(2.9,undefined,0,1,(t,d)=>sample(k,t,d,.7));return;}   // v0.21; rummaging (no model) stays synthesized
     play(.4,undefined,0,1,(t,d)=>{noise(t,.03,{type:'highpass',f0:2500,peak:.25,dest:d});noise(t+.25,.04,{type:'highpass',f0:1800,peak:.3,dest:d});});},
   swing(){play(.15,undefined,0,1,(t,d)=>noise(t,.12,{type:'bandpass',f0:600,f1:2400,q:2,peak:.18,attack:.03,dest:d}));},
@@ -193,6 +191,7 @@ export const playLocal=(k,...a)=>{if(S[k])S[k](...a);};
 const N=f=>440*Math.pow(2,(f-69)/12);   // midi note -> Hz
 const PROG={calm:[[48,52,55],[45,48,52],[41,45,48],[43,47,50]],tense:[[45,48,52],[41,45,48],[38,41,45],[40,44,47]],night:[[33,36,40],[29,33,36],[31,34,38],[28,32,35]]};
 let nextChord=0,chordI=0,drone=null,nextBeat=0;
+export const chordsPlayed=()=>chordI;   // tests, bug reports (v0.44)
 export function updateMusic(m){
   if(!ctx||muted||vol.music<=0||ctx.state!=='running')return;
   const t=ctx.currentTime;
