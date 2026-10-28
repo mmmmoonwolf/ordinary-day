@@ -561,7 +561,7 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   if (!burned || !Pr.flickers.length || Pr.trees.length < 30) vfail('burned cars ' + burned + ', flickering lamps ' + Pr.flickers.length + ', trees ' + Pr.trees.length);
   console.log('v0.16: ' + Dc.decor.length + ' weeds / bushes / signs, ' + Pr.trees.length + ' trees, ' + burned + ' burned cars, ' + Pr.flickers.length + ' flickering lamps');
   // v0.17: shops and the hospital
-  const placed = rooms.filter(r => r.place && r.place.type !== 'farm');   // the farm's barn (v0.22) is a place of its own
+  const placed = rooms.filter(r => r.place && r.place.type !== 'farm' && r.place.type !== 'gas');   // the farm's barn (v0.22) and the gas station (v0.45) are places of their own
   if (placed.length !== PL.PLACES.length || new Set(placed.map(r => r.place.type)).size !== PL.PLACES.length) vfail('places: ' + placed.map(r => r.place.type));
   const hosp = rooms.findIndex(r => r.place && r.place.type === 'hospital'), gun = rooms.findIndex(r => r.place && r.place.type === 'gunshop');
   if (!boxes.some(x => x.room === hosp) || boxes.some(x => x.room === hosp && x.kind !== 'medcab') || boxes.some(x => x.room === gun && x.kind !== 'gunrack')) vfail('shop furniture kinds');
@@ -743,6 +743,29 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     const P8 = { dawn: at(6.2), morning: at(8), noon: at(12), afternoon: at(15), evening: at(17.3), dusk: at(18.5), night: at(22) };
     if (!(P8.noon.sun > P8.afternoon.sun && P8.afternoon.sun > P8.evening.sun && P8.evening.sun > P8.dusk.sun && P8.dusk.sun > P8.night.sun && P8.morning.sun > P8.dawn.sun)) vfail('times of day: ' + JSON.stringify(P8));
     console.log('v0.44: ' + models.length + ' gun models all recorded (rifles ' + rifles.join(' / ') + ', ' + Au.FILES.shot_rifle.length + ' rifle takes); light ' + Object.entries(P8).map(([k, v]) => k + ' ' + v.sun).join(', '));
+  }
+  // v0.45: the highway (wrecks, woods, the gas station and its shop, the cemetery), driving a car: in with E, the stick
+  // drives it, a zombie in front is run down, a hit meant for the driver hits the car, out again, kept in the save
+  { const Hw = await import('../src/world/highway.js'), Vh = await import('../src/systems/vehicles.js'), Wv = await import('../src/world/vehicles.js'), W5 = await import('../src/config/world.js'), Ac = await import('../src/systems/actions.js'), Cb5 = await import('../src/systems/combat.js'), I6 = await import('../src/world/interiors.js'), Sv = await import('../src/systems/save.js');
+    const h = Hw.highway, gas = I6.rooms.findIndex(r => r.place && r.place.type === 'gas');
+    if (h.wrecks < 25 || h.trees < 400 || h.graves < 60 || gas < 0 || Wv.rides.length !== 2 || T.G.cars.length !== 2) vfail('highway: ' + JSON.stringify(h) + ', gas shop room ' + gas + ', rides ' + Wv.rides.length + ', cars ' + (T.G.cars || []).length);
+    if (W5.areaAt(300, 0) !== W5.HIGHWAY || W5.areaAt(287, -30) !== W5.GAS || W5.areaAt(431, 60) !== W5.CEMETERY || !W5.inWorld(500, 10)) vfail('highway areas');
+    const nav = I6.navStep(300, 10, 0, 10);   // from the highway (off the road's line) back to town: through the east gate
+    if (!(nav.x > 60 && nav.x < 75 && Math.abs(nav.z) < 1)) vfail('walking back to town from the highway goes ' + JSON.stringify(nav));
+    const pl = T.player, x0 = pl.pos.x, z0 = pl.pos.z, inv0 = pl.inv, hp0 = pl.hp, c = T.G.cars[0];
+    pl.pos.x = c.x + 1.8; pl.pos.z = c.z; pl.inv = 0; for (const a of T.agents) if (Math.hypot(a.pos.x - pl.pos.x, a.pos.z - pl.pos.z) < 60) a.gone = true;
+    P.updatePlayer(pl, 1 / 60); const saw = pl.nearCar; Ac.ACTIONS.use(pl); const inside = pl.car === 0;
+    const z = T.makeAgent(c.x + Math.sin(c.a) * 5, c.z + Math.cos(c.a) * 5); T.becomeZombie(z, 'zombie'); T.agents.push(z); const zhp = z.hp;
+    const sx = c.x, sz = c.z; Object.assign(pl.input, { mx: Math.sin(c.a), mz: Math.cos(c.a), mag: 1, run: false, fire: false, fireQ: 0 });
+    for (let i = 0; i < 90; i++) { P.updatePlayer(pl, 1 / 60); Vh.updateCars(1 / 60); }
+    const went = Math.hypot(c.x - sx, c.z - sz), withCar = Math.hypot(pl.pos.x - c.x, pl.pos.z - c.z) < .01, ranDown = z.hp < zhp || z.state !== 'zombie';
+    const chp = c.hp; Cb5.hurtPlayer(pl, 10); const shielded = pl.hp === hp0 && c.hp < chp;
+    Object.assign(pl.input, { mx: 0, mz: 0, mag: 0 }); for (let i = 0; i < 120; i++) { P.updatePlayer(pl, 1 / 60); Vh.updateCars(1 / 60); }
+    Ac.ACTIONS.use(pl); const out = pl.car === -1 && Math.hypot(pl.pos.x - c.x, pl.pos.z - c.z) > 1.2;
+    Sv.saveGame(); const kept = Sv.readSave().G.cars[0], keptOk = Math.abs(kept.x - c.x) < .01 && Math.abs(kept.z - c.z) < .01;
+    T.agents.splice(T.agents.indexOf(z), 1); pl.pos.x = x0; pl.pos.z = z0; pl.inv = inv0; pl.hp = hp0;
+    if (saw !== 0 || !inside || went < 5 || !withCar || !ranDown || !shielded || !out || !keptOk) vfail('driving: near ' + saw + ', in ' + inside + ', went ' + went.toFixed(1) + ' m, player with car ' + withCar + ', ran a zombie down ' + ranDown + ', car took the hit ' + shielded + ', out ' + out + ', saved ' + keptOk);
+    console.log('v0.45: highway ' + JSON.stringify(h) + ', gas shop room ' + gas + ', ' + Wv.rides.length + ' cars that drive; drove ' + went.toFixed(1) + ' m in 1.5 s, ran a zombie down, the car took a hit (' + chp + ' -> ' + c.hp.toFixed(0) + ' hp), got out, saved');
   }
   // v0.32: the slow first morning, the outbreak seen happening (v0.42 no goal line: nothing is explained on screen)
   { const Tm = await import('../src/config/time.js');

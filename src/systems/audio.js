@@ -212,7 +212,7 @@ export function updateMusic(m){
 // ---------- ambience (v0.19, wind and moaning v0.20) ----------
 // Rain: one looping recording whose level follows G.rain, quieter and duller indoors. After the outbreak someone screams
 // somewhere in the town now and then (more often at night), from a random direction; this device only, like the music.
-let rainLoop=null,nextCry=0,wind=null,nextGust=0,nextGroan=0,nextCrow=0,lastPos=null,stride=0;
+let engine=null,rainLoop=null,nextCry=0,wind=null,nextGust=0,nextGroan=0,nextCrow=0,lastPos=null,stride=0;
 const loops={};
 // one looping recording that follows its source: level by distance (range), panned; silent when `on` is false
 function near(kind,on,at,range,level,t){
@@ -258,6 +258,12 @@ export function updateAmbience(m){
     if(v.alive&&!(v.down>0)&&moved<1){stride+=moved;const k=m.inside?'step':areaAt(v.pos.x,v.pos.z)?'stepg':'stepc',lv=m.inside?.32:k==='stepg'?.3:.22;
       if(stride>(m.inside?.75:.85)&&bufs[k]){stride=0;play(.45,v.pos.x,v.pos.z,20,(tt,d,g)=>sample(k,tt,d,(v.sneak?.35:1)*lv*g,{rate:.9+Math.random()*.2}));}}else stride=0;
   }
+  // v0.45 the engine of the car the watched player drives (this device only; synthesized: no engine recording yet):
+  // a low growl that climbs with the speed
+  {const c=v&&v.car>=0&&G.cars&&G.cars[v.car];
+    if(c&&!engine){const o=ctx.createOscillator(),o2=ctx.createOscillator(),f=ctx.createBiquadFilter(),g=ctx.createGain();o.type='sawtooth';o2.type='square';o2.detune.value=-1200;f.type='lowpass';f.frequency.value=380;g.gain.value=0;o.connect(f);o2.connect(f);f.connect(g).connect(sfxBus);o.start();o2.start();engine={o,o2,g};}
+    if(engine){const sp=c?Math.abs(c.v):0;engine.o.frequency.setTargetAtTime(34+sp*5.5,t,.12);engine.o2.frequency.setTargetAtTime(34+sp*5.5,t,.12);engine.g.gain.setTargetAtTime(c&&!muted?.05+sp*.006:0,t,.15);
+      if(!c&&engine.g.gain.value<.002){const e=engine;engine=null;e.o.stop();e.o2.stop();}}}
   // v0.34 crows by day outdoors, off somewhere over the roofs (this device only)
   if(m.on&&!m.inside&&m.night<.5&&t>=nextCrow){const v=viewed();if(v){const a=Math.random()*6.28;S.crow(v.pos.x+Math.cos(a)*25,v.pos.z+Math.sin(a)*25);}nextCrow=t+14+Math.random()*30;}   // PLACEHOLDER how often
   // zombies close by moan now and then, from where they are (this device only)

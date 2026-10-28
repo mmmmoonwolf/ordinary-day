@@ -7,6 +7,7 @@ import {boxes,rooms} from './interiors.js';
 import {heavy,roomDecor} from './clutter.js';
 import {attach,farm} from './farm.js';
 import {live} from './live-props.js';
+import {rides} from './vehicles.js';
 
 // ---------- prop models (v0.14) ----------
 // Guns, knives, axes, medicine, backpacks and cars from Quaternius' packs (CC0; built into assets/props/props.glb by
@@ -22,7 +23,7 @@ export async function loadProps(){
     for(const n of [...g.scene.children]){n.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=false;}});n.updateMatrixWorld(true);tpl[n.name]=n;}
     props.ready=true;
   }catch(e){props.failed=true;console.warn('prop models: '+e.message);}
-  setCars();setFurniture();setTown();
+  setCars();setFurniture();setTown();setRides();
 }
 export const hasProp=id=>props.ready&&props.on&&!!tpl[id];
 // a copy of prop `id` in a group, scaled so its size along `axis` (0 x, 1 y, 2 z of the source model) is `len`, and moved so
@@ -57,8 +58,14 @@ function setCars(){
     for(const m of c.boxes)m.visible=!on;
   }
 }
+// v0.45 the cars that can be driven (world/vehicles.js): a model in each one's group over its plain boxes
+function setRides(){
+  for(const r of rides){const on=hasProp(r.id);
+    if(on&&!r.model){r.model=propModel(r.id,2,CAR_LEN,[.5,0,.5],true);r.model.traverse(m=>{if(m.isMesh){if(PAINT[r.id]&&m.material.name===PAINT[r.id])m.material.color.set(r.paint).convertSRGBToLinear();m.material.userData.base=m.material.color.clone();if(r.dead)m.material.color.multiplyScalar(.12);}});r.g.add(r.model);}
+    if(r.model)r.model.visible=on;for(const b of r.boxes)b.visible=!on;}
+}
 // graphics quality "low" goes back to the box models (ui/settings.js); drops and held weapons are rebuilt by refreshItems()
-export function setPropsOn(on){const was=props.on;props.on=on;setCars();setFurniture();setTown();return props.ready&&was!==on;}
+export function setPropsOn(on){const was=props.on;props.on=on;setCars();setFurniture();setTown();setRides();return props.ready&&was!==on;}
 // furniture (v0.15): each box along a wall of an enterable building becomes a row of modules, scaled to the box's height
 // (or depth, whichever is smaller), stretched along the wall to fill it, backs against the wall, fronts into the room.
 // They sit in the room's cutaway group, so they show only when the player is inside, like the boxes did.
@@ -148,7 +155,9 @@ function townMat(m,leaf){
 // v0.23 corn and wheat dried out: one straw colour over the models' greens
 const CROP=new THREE.Color('#a48f58').convertSRGBToLinear();
 function cropMat(m){return own['crop'+m.uuid]||(own['crop'+m.uuid]=Object.assign(m.clone(),{color:CROP.clone().lerp(m.color,.25)}));}
-const heavyCopy=h=>({id:h.id,x:h.x,y:h.y,z:h.z,ry:h.ry,fit:[h.ex*2,h.ez*2],shadow:true,mat:m=>m});
+const BURNT=new THREE.Color(.03,.026,.022);   // a little lighter than the city's burned cars so the shapes still read from above
+const burnt=m=>own['burnt'+m.uuid]||(own['burnt'+m.uuid]=Object.assign(m.clone(),{color:BURNT.clone(),roughness:1,metalness:0}));   // v0.45 burned-out wrecks on the highway
+const heavyCopy=h=>({id:h.id,x:h.x,y:h.y,z:h.z,ry:h.ry,fit:[h.ex*2,h.ez*2],shadow:true,mat:h.burn?burnt:m=>m});
 function setTown(){
   const on=props.ready&&props.on;
   if(on&&!town){

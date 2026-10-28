@@ -12,7 +12,7 @@ import {openBag,closeBag} from './bag.js';
 import {isMuted,toggleMute} from '../systems/audio.js';
 import {isSettingsOpen,closeSettings} from './settings.js';
 import {isPauseOpen,togglePause} from './pause.js';
-import {toggleFps,look,lockMouse,mouseLocked,lockRefused,fpsMove,isScoped,freeLook,clearEdge} from './fps.js';
+import {toggleFps,setFps,look,lockMouse,mouseLocked,lockRefused,fpsMove,isScoped,freeLook,clearEdge} from './fps.js';
 
 // ---------- input ----------
 let rightId=null,lookId=null,lookX=0,lookY=0;   // v0.28 a finger turning the first-person view
@@ -28,6 +28,7 @@ const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),mray=new THREE.Ray
 export function pollInput(p){
   const I=p.input;let ix=0,iy=0;
   if(!$('bag').hidden||!$('pause').hidden){Object.assign(I,{mx:0,mz:0,mag:0,run:false,fire:false,fireQ:0,face:null,ads:false});return;}   // a menu open while the world goes on (v0.11)
+  if(p.car>=0&&view.fps)setFps(false);   // v0.45 driving is seen from above
   if(keys.KeyW||keys.ArrowUp)iy+=1;if(keys.KeyS||keys.ArrowDown)iy-=1;if(keys.KeyD||keys.ArrowRight)ix+=1;if(keys.KeyA||keys.ArrowLeft)ix-=1;
   if(joy.id!==null){ix+=joy.x;iy-=joy.y;}
   let mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1;}

@@ -22,8 +22,11 @@ export const PLACE_W={
   pharmacy:{med:100},
   hardware:{melee:55,throw:30,bag:15},
   farm:{melee:35,weapon:12,ammo:28,throw:15,bag:10},
+  gas:{throw:30,med:25,ammo:25,bag:20},   // v0.45 the gas station's shop (PLACEHOLDER)
   camp:{weapon:28,ammo:30,med:20,throw:10,bag:4},   // v0.26 the camp: grades better than the street (systems/drops.js CAMP_GRADE)   // v0.22 the farm (indoors and out), PLACEHOLDER
 };
 // v0.22 the farm west of town (world/farm.js): its barn is a place like the shops, but not one of the six above
 export const BARN={type:'farm',name:'โรงนา',sign:'FARM',color:'#b5654a',box:'farm'};
+// v0.45 the gas station's shop on the highway (world/highway.js): a place too, with shop shelves
+export const GASPLACE={type:'gas',name:'ปั๊มน้ำมัน',sign:'GAS',color:'#c9473a',box:'grocery'};
 export const PLACE_FILL=1.7, PLACE_RESTOCK=.6;

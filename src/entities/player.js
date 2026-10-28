@@ -19,6 +19,7 @@ import {nearBoxOf,keepSearching} from '../systems/search.js';
 import {CRAWL_SPEED,REVIVE_SECONDS,REVIVE_RANGE,REVIVE_HP} from '../config/party.js';
 import {REGEN} from '../config/health.js';
 import {uiFor} from '../ui/hud.js';
+import {driveStep,nearCar} from '../systems/vehicles.js';
 
 // ---------- players (v0.9) ----------
 // `players` holds everyone in the game; `player` is the one on this device (camera, HUD, keyboard and touch).
@@ -33,7 +34,7 @@ export const freshInput=()=>({mx:0,mz:0,mag:0,run:false,sneak:false,slow:false,a
 export function makePlayer(i=0){
   const p=makeAgent(OFF+i*1.3,OFF,LOOKS[i%LOOKS.length]);
   Object.assign(p,{state:'player',id:i,name:'ผู้เล่น '+(i+1),local:false,away:false,token:null,hp:100,maxHp:100,alive:true,swing:0,swingDur:.4,hitDone:true,lastHit:-99,face:Math.PI*1.25,cool:0,reloadT:0,recoil:0,aimT:0,held:null,heldId:'fist',down:0,inv:0,
-    infect:0,infWarn:0,room:-1,nearDoor:-1,bleed:0,reviveT:0,helping:null,helpT:0,nearDown:null,fixDoor:-1,nearBox:-1,searching:-1,searchT:0,searchHit:0,near:null,full:null,sneak:false,ads:false,bloom:0,vault:null,hop:0,airH:0,runNoise:0,stay:null,endCause:null,gear:freshGear(),input:freshInput()});
+    infect:0,infWarn:0,room:-1,nearDoor:-1,bleed:0,reviveT:0,helping:null,helpT:0,nearDown:null,fixDoor:-1,nearBox:-1,searching:-1,searchT:0,searchHit:0,near:null,full:null,sneak:false,ads:false,car:-1,nearCar:-1,bloom:0,vault:null,hop:0,airH:0,runNoise:0,stay:null,endCause:null,gear:freshGear(),input:freshInput()});
   return p;
 }
 // players that zombies can go after (v0.12: not one whose device has dropped out of the game, p.away)
@@ -59,6 +60,7 @@ export function updatePlayer(p,dt){
     if(p.down<=0){p.hp=p.maxHp;p.inv=3;for(const z of agents){if(z.state!=='zombie')continue;const dx=z.pos.x-p.pos.x,dz=z.pos.z-p.pos.z,d=Math.hypot(dx,dz);if(d<4&&d>1e-3){z.pos.x+=dx/d*3;z.pos.z+=dz/d*3;collide(z.pos,z.rad);z.feed=1;}}}
     return;}
   if(p.bleed>0){updateDowned(p,dt);return;}
+  if(p.car>=0&&!(p.bleed>0)){driveStep(p,dt);p.near=p.full=p.nearDown=null;p.nearDoor=p.fixDoor=p.nearBox=-1;p.nearCar=p.car;p.input.fireQ=0;if(p.cool>0)p.cool-=dt;return;}   // v0.45 driving
   if(p.vault){updateVault(p,dt);if(p.cool>0)p.cool-=dt;return;}   // v0.30 going over a low obstacle
   const I=p.input,mag=I.mag;
   // sneaking (C, or a lightly pushed stick on a phone): a slow, quiet walk standing up (v0.44 no crouch or prone); running ends it
@@ -102,6 +104,7 @@ export function updatePlayer(p,dt){
   const np=nearestPickable(p);p.full=!np&&full?full:null;p.near=p.full?null:np;
   p.nearDoor=p.full||np?-1:nearDoor(p);p.fixDoor=nearFixDoor(p);
   p.nearBox=p.full||np||p.nearDoor>=0?-1:nearBoxOf(p);
+  p.nearCar=p.full||np||p.nearDoor>=0||p.nearBox>=0?-1:nearCar(p);   // v0.45 a car that still starts
   const cap=p.maxHp*REGEN.cap;if(performance.now()/1000-p.lastHit>REGEN.after&&p.hp<cap&&!(p.infect>0))p.hp=Math.min(cap,p.hp+REGEN.rate*dt);   // v0.42 slower, up to a cap (config/health.js)
   updateInfection(p,dt);
 }

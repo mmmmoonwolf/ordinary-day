@@ -18,11 +18,13 @@ import {clearSave} from './save.js';
 import {cureInfection} from './infection.js';
 import {sfx,sfxFor} from './audio.js';
 import {uiFor,gameOver} from '../ui/hud.js';
+import {shieldDriver,leaveCar} from './vehicles.js';
 
 // ---------- combat ----------
 // returns false when the hit did not land (dead, knocked back by a Kit, invulnerable). The game ends when no player is left standing.
 export function hurtPlayer(p,n){
   if(!p.alive||p.inv>0||p.down>0)return false;
+  if(shieldDriver(p,n*diffOf(G).dmg))return true;   // v0.45 in a car: the car takes it
   const U=uiFor(p);
   // already down (v0.10): every hit takes time off what is left before they bleed out
   if(p.bleed>0){p.bleed-=n*diffOf(G).dmg*BLEED_PER_DMG;addBlood(p.pos.x,p.pos.z);U.hurt();if(p.bleed<=0)die(p);return true;}
@@ -39,10 +41,10 @@ export function hurtPlayer(p,n){
 }
 export const standing=q=>q.alive&&!(q.bleed>0)&&!q.away;
 function goDown(p){
-  p.hp=0;p.bleed=BLEED_SECONDS;p.reviveT=0;p.helping=null;p.swing=0;p.reloadT=0;p.sneak=false;p.endCause=null;if(p.local)ctl.fireHeld=false;   // v0.42 no words: the countdown on the pick button and the red name over the head say it
+  leaveCar(p);p.hp=0;p.bleed=BLEED_SECONDS;p.reviveT=0;p.helping=null;p.swing=0;p.reloadT=0;p.sneak=false;p.endCause=null;if(p.local)ctl.fireHeld=false;   // v0.42 no words: the countdown on the pick button and the red name over the head say it
 }
 export function die(p){
-  p.hp=0;p.bleed=0;p.helping=null;p.alive=false;p.state='dead';p.deadT=0;p.endCause=p.endCause||'hurt';
+  leaveCar(p);p.hp=0;p.bleed=0;p.helping=null;p.alive=false;p.state='dead';p.deadT=0;p.endCause=p.endCause||'hurt';
   sfx.scream(p.pos.x,p.pos.z);   // v0.19
   if(p.local){ctl.fireHeld=false;G.endCause=p.endCause;}
   if(players.some(q=>q.alive)){   // the others play on (v0.11): the dead watch a teammate and can be brought back with a Kit

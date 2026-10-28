@@ -31,7 +31,7 @@ export function setFps(on){
   view.sway=0;adsT=0;zoom=1;fpsCam.fov=FOV;fpsCam.updateProjectionMatrix();
   if(!on){$('bAds').hidden=true;if(document.body)document.body.classList.remove('scoped','ads');}
 }
-export const toggleFps=()=>setFps(!view.fps);
+export const toggleFps=()=>{if(!view.fps&&player&&player.car>=0)return;setFps(!view.fps);};   // v0.45 not from behind the wheel
 export function look(dx,dy,touch){const k=(touch?TOUCH_SENS:SENS)*settings.sens/zoom;view.yaw-=dx*k;view.pitch=clamp(view.pitch-dy*k,...PITCH);}
 // looking through a scope right now (Shift then holds the breath instead of running)
 export function isScoped(p){if(!view.fps||!p.input.ads)return false;const d=DEF[curWeapon(p).id];return !!d.gun&&ADS.scope.includes(d.model);}
