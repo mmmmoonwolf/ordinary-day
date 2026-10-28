@@ -66,6 +66,13 @@ const PROPS = {
   f_bed: 'Furnitures/Bed_Single', f_bedk: 'Furnitures/Bed_King', f_table: 'Furnitures/Table_RoundSmall', f_chair: 'Furnitures/Chair_1', f_chair2: 'Furnitures/Chair_2',
   f_toilet: 'Furnitures/Bathroom_Toilet', f_carpet: 'Furnitures/Carpet_2', f_plant: 'Furnitures/Houseplant_3', f_lamp: 'Furnitures/Light_Floor1',
   f_night: 'Furnitures/NightStand_1', f_tcan: 'Furnitures/Trashcan_Small1', f_stool: 'Furnitures/Stool',
+  // v0.43 Police and Military guns look different from the town's (Quaternius Guns, muzzle along +x like the LMG), boxes of
+  // ammo and five more melee weapons (Weapons Pack)
+  q_pistol_p: 'Guns/Pistol_1', q_pistol_m: 'Guns/Pistol_5', q_shotgun_p: 'Guns/Shotgun_ShortStock', q_shotgun_m: 'Guns/Shotgun_1',
+  q_smg_p: 'Guns/SubmachineGun_3', q_smg_m: 'Guns/SubmachineGun_5', q_rifle_p: 'Guns/AssaultRifle2_2', q_rifle_m: 'Guns/AssaultRifle2_4',
+  w_am9: 'glb:Weapons Pack/Pistol Ammo', w_am12: 'glb:Weapons Pack/Ammo Shotgun', w_amrifle: 'glb:Weapons Pack/Ammo Sniper',
+  w_cleaver: 'glb:Weapons Pack/Butcher Knife', w_dagger: 'glb:Weapons Pack/Dagger', w_hockey: 'glb:Weapons Pack/Hockey Stick',
+  w_poker: 'glb:Weapons Pack/Poker', w_nunchucks: 'glb:Weapons Pack/Nunchucks',
   car_police: 'Cars/Cop', car_1: 'Cars/NormalCar1', car_2: 'Cars/NormalCar2', car_suv: 'Cars/SUV', car_taxi: 'Cars/Taxi', car_sport: 'Cars/SportsCar',
 };
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);

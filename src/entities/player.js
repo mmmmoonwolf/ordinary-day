@@ -146,7 +146,7 @@ export function syncHeld(p){
   const id=curWeapon(p).id;if(id===p.heldId)return;p.heldId=id;
   if(p.held){if(p.held.parent)p.held.parent.remove(p.held);p.held=null;}
   if(id==='fist')return;
-  const def=DEF[id],m=weaponModel(def.model),hand=handOf(p);
+  const def=DEF[id],m=weaponModel(def.model,def.look),hand=handOf(p);
   if(hand){HOLD(m,def);hand.add(m);}   // in the character model's right hand (v0.13)
   else{m.position.y=-.66;if(def.gun)m.rotation.x=Math.PI/2;p.b.armR.add(m);}
   p.held=m;
