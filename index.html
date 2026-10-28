@@ -79,16 +79,16 @@ body.fps #cross{display:block}
 body.fps #bZin,body.fps #bZout{display:none}
 body.fps .loadout{pointer-events:none}body.fps .loadout button{pointer-events:auto}   /* v0.35 a finger turning the view can start on the weapon panel */
 body.fps #bView{border-color:rgba(226,166,74,.75);background:rgba(226,166,74,.25)}
-/* v0.29 scope (sniper rifle aimed in first person), stance tag, touch buttons for aiming and stance */
+/* v0.29 scope (sniper rifle aimed in first person), sneak tag (v0.44), touch button for aiming */
 #scope{display:none;position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 50%,transparent 0,transparent 31vmin,rgba(0,0,0,.92) 31.6vmin,#000 34vmin)}
 #scope i{position:absolute;left:50%;top:50%;width:62vmin;height:62vmin;margin:-31vmin 0 0 -31vmin;border-radius:50%;
   background:linear-gradient(rgba(0,0,0,.85),rgba(0,0,0,.85)) center/1.5px 100% no-repeat,linear-gradient(90deg,rgba(0,0,0,.85),rgba(0,0,0,.85)) center/100% 1.5px no-repeat}
 body.scoped #scope{display:block}
 body.scoped #cross,body.fps.ads #cross{display:none}
 #stanceTag{position:absolute;left:50%;top:calc(50% + 44px);transform:translateX(-50%);padding:3px 10px;background:var(--panel);border:1px solid var(--line);font-size:12px;font-weight:700;letter-spacing:.06em;pointer-events:none}
-#bAds,#bStance{position:absolute;right:max(26px,calc(env(safe-area-inset-right,0px) + 26px));width:54px;height:54px;border-radius:50%;border:1.5px solid var(--line);background:var(--panel);font-size:13px;font-weight:700;display:grid;place-items:center;padding:0;touch-action:manipulation}
+#bAds{position:absolute;right:max(26px,calc(env(safe-area-inset-right,0px) + 26px));width:54px;height:54px;border-radius:50%;border:1.5px solid var(--line);background:var(--panel);font-size:13px;font-weight:700;display:grid;place-items:center;padding:0;touch-action:manipulation}
 #bAds{top:36%;font-size:22px}#bAds.on{border-color:rgba(226,166,74,.85);background:rgba(226,166,74,.3)}
-#bStance{top:calc(36% + 62px)}
+
 /* v0.31 hit marker: an X where this player's shot or blow landed (red and bigger for a kill, pale on armour) */
 #hitmark{position:absolute;left:0;top:0;width:18px;height:18px;margin:-9px 0 0 -9px;pointer-events:none;will-change:transform,opacity}
 #hitmark::before,#hitmark::after{content:'';position:absolute;left:8px;top:-1px;width:2px;height:20px;background:#f2ede2;box-shadow:0 0 2px rgba(0,0,0,.8)}
@@ -251,7 +251,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
    Everything smaller and pushed to the edges: vitals + map top-left, clock top-centre, the loadout as one row at the bottom
    between the thumbs, pick / fix prompts above the attack button */
 @media (max-height:500px) and (orientation:landscape){
-  #bAds{top:calc(env(safe-area-inset-top,0px) + 56px);width:48px;height:48px}#bStance{top:calc(env(safe-area-inset-top,0px) + 112px);width:48px;height:48px}   /* v0.29 under the tool bar, clear of the pick / fix buttons */
+  #bAds{top:calc(env(safe-area-inset-top,0px) + 56px);width:48px;height:48px}   /* v0.29 under the tool bar, clear of the pick / fix buttons */
   .vitals{width:150px;gap:4px;top:calc(env(safe-area-inset-top,0px) + 8px)}
   .hp-label{font-size:10px}
   .needs{font-size:9px;line-height:10px;gap:4px}
@@ -329,7 +329,6 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
   <div id="hitmark" hidden aria-hidden="true"></div>
   <div id="stanceTag" hidden></div>
   <button id="bAds" hidden aria-label="เล็งศูนย์">🎯</button>
-  <button id="bStance" hidden aria-label="ท่าทาง ยืน หมอบ นอน">ยืน</button>
   <div id="fpsHint" hidden>คลิกที่เกมเพื่อหันกล้องด้วยเมาส์ · V กลับมุมเดิม</div>
   <button id="bPick" hidden><span id="pickVerb">เก็บ </span><b id="pickName"></b></button>
   <button id="bFix" hidden title="ซ่อมประตู (B)">🔨 <b id="fixName"></b></button>

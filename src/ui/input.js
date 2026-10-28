@@ -36,9 +36,9 @@ export function pollInput(p){
   if(view.fps)[I.mx,I.mz]=fpsMove(ix,iy);   // v0.28 relative to where the view looks
   I.run=!!(keys.ShiftLeft||keys.ShiftRight)||(joy.id!==null&&mag>.9);
   I.slow=false;I.sneak=joy.id!==null&&mag>.08&&mag<.45;
-  // v0.29 C crouches, Z goes prone (toggles; running stands up), right mouse or 🎯 aims down the sights
-  if(I.run&&mag>.08)ctl.stance=0;
-  I.stance=ctl.stance;I.ads=ctl.ads||ctl.adsTouch;if(ctl.jumpQ>0){I.jumpQ=ctl.jumpQ;ctl.jumpQ=0;}   // v0.30
+  // C sneaks (toggles; running ends it; v0.44 no crouch or prone), right mouse or 🎯 aims down the sights
+  if(I.run&&mag>.08)ctl.sneak=false;
+  I.slow=!!ctl.sneak;I.ads=ctl.ads||ctl.adsTouch;if(ctl.jumpQ>0){I.jumpQ=ctl.jumpQ;ctl.jumpQ=0;}   // v0.30
   view.breathKey=false;if(isScoped(p)){view.breathKey=I.run;I.run=false;}   // through the scope Shift holds the breath
   I.aim=mouse.active;I.face=null;
   if(view.fps){I.face=view.yaw+view.sway;I.aim=!isTouch;I.aimDist=40;}   // v0.28 face where the view looks; on a phone aim assist still helps
@@ -66,8 +66,7 @@ export function initInput(){
     if(e.code==='KeyM'){toggleMute();showSound();return;}
     if(G.paused)return;
     if(e.code==='KeyV'&&!e.repeat){toggleFps();return;}   // v0.28
-    if(e.code==='KeyC'&&!e.repeat){ctl.stance=ctl.stance===1?0:1;return;}   // v0.29
-    if(e.code==='KeyZ'&&!e.repeat){ctl.stance=ctl.stance===2?0:2;return;}
+    if(e.code==='KeyC'&&!e.repeat){ctl.sneak=!ctl.sneak;return;}   // v0.29, v0.44 a quiet walk standing up
     keys[e.code]=true;
     if(e.code==='Space'){e.preventDefault();if(!e.repeat){if(view.fps)ctl.jumpQ=.25;else{ctl.fireHeld=true;ctl.fireQ=.2;}}}   // v0.30 first person: Space vaults / hops
     if(e.code==='Digit1')act('slot','primary');if(e.code==='Digit2')act('slot','secondary');if(e.code==='Digit3')act('slot','melee');
@@ -112,7 +111,6 @@ export function initInput(){
   addEventListener('click',e=>{if(slid){slid=false;e.stopPropagation();e.preventDefault();}},true);
   $('bView').addEventListener('click',toggleFps);
   $('bAds').addEventListener('click',()=>{ctl.adsTouch=!ctl.adsTouch;});   // v0.29 touch: aim down the sights on / off
-  $('bStance').addEventListener('click',()=>{ctl.stance=(ctl.stance+1)%3;});
   $('bZin').addEventListener('click',()=>zoom(1/1.2));$('bZout').addEventListener('click',()=>zoom(1.2));
   $('bBag').addEventListener('click',()=>{$('bag').hidden?openBag():closeBag();});
   $('bagClose').addEventListener('click',closeBag);
@@ -134,10 +132,10 @@ export function initInput(){
   $('bFix').addEventListener('click',()=>act('fix'));
   $('bThrow').addEventListener('click',()=>act('throw'));
   for(const c of chipEls)c.addEventListener('click',()=>act('slot',c.dataset.slot));
-  $('bStart').addEventListener('click',()=>{clearSave();reset();ctl.stance=0;ctl.adsTouch=false;$('overlay').hidden=true;G.running=true;});
+  $('bStart').addEventListener('click',()=>{clearSave();reset();ctl.sneak=false;ctl.adsTouch=false;$('overlay').hidden=true;G.running=true;});
   $('bContinue').addEventListener('click',()=>{if(!loadGame()){showContinue();return;}$('overlay').hidden=true;G.running=true;});
   showContinue();
   for(const id of ['bSound','bSound2'])$(id).addEventListener('click',()=>{toggleMute();showSound();});showSound();
-  $('bAgain').addEventListener('click',()=>{reset();ctl.stance=0;ctl.adsTouch=false;$('overlay').hidden=true;G.running=true;});
+  $('bAgain').addEventListener('click',()=>{reset();ctl.sneak=false;ctl.adsTouch=false;$('overlay').hidden=true;G.running=true;});
   if(isTouch){$('atkKey').textContent='กดค้าง';}
 }

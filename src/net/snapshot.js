@@ -26,7 +26,7 @@ export function encodeWorld(c,me){
   if(G.broken.length!==c.broken){c.broken=G.broken.length;s.broken=G.broken;}
   const dr=JSON.stringify(G.drop);if(dr!==c.drop){c.drop=dr;s.crate=G.drop||0;}
   s.pl=players.map(p=>[p.id,r2(p.pos.x),r2(p.pos.z),r2(p.face),Math.ceil(p.hp),p.alive?1:0,r2(p.bleed),r2(p.down),r2(p.moving),curWeapon(p).id,
-    p.stance|0,r2(p.reloadT),r2(p.swing),r2(p.swingDur),r2(p.recoil),p.inv>0?1:0,p.away?1:0,r2(p.reviveT),r2(p.airH||0)]);   // v0.30 airH: off the ground, vaulting or hopping
+    p.sneak?1:0,r2(p.reloadT),r2(p.swing),r2(p.swingDur),r2(p.recoil),p.inv>0?1:0,p.away?1:0,r2(p.reviveT),r2(p.airH||0)]);   // v0.30 airH: off the ground, vaulting or hopping
   const who=players.map(p=>[p.id,p.name,p.wear||null]),wj=JSON.stringify(who);if(wj!==c.who){c.who=wj;s.who=who;}   // v0.41 names and clothes, when they change
   const gj=JSON.stringify(me.gear);
   s.me={id:me.id,inf:r2(me.infect),ec:me.endCause,near:me.near?me.near.nid:0,full:me.full?me.full.nid:0,
@@ -58,11 +58,11 @@ export function applyWorld(s,myId){
   // players: the same ids as on the host; this device's one is `myId`
   const ids=new Set();
   for(const r of s.pl){
-    const [id,x,z,face,hp,alive,bleed,down,moving,w,stance,reloadT,swing,swingDur,recoil,inv,away,reviveT,airH]=r;ids.add(id);
+    const [id,x,z,face,hp,alive,bleed,down,moving,w,sneak,reloadT,swing,swingDur,recoil,inv,away,reviveT,airH]=r;ids.add(id);
     let p=players.find(q=>q.id===id);
     if(!p){p=makePlayer(id);players.push(p);players.sort((a,b)=>a.id-b.id);}
     if(id===myId&&player!==p){p.local=true;setPlayer(p);}
-    want(p,x,z);p.nface=face;Object.assign(p,{hp,bleed,down,moving,sneak:stance>0,stance,reloadT,swing,swingDur,recoil,inv:inv?.5:0,away:!!away,reviveT,airH:airH||0});
+    want(p,x,z);p.nface=face;Object.assign(p,{hp,bleed,down,moving,sneak:!!sneak,reloadT,swing,swingDur,recoil,inv:inv?.5:0,away:!!away,reviveT,airH:airH||0});
     if(!alive&&p.alive){p.alive=false;p.state='dead';p.deadT=0;}else if(alive&&!p.alive){p.alive=true;p.state='player';p.deadT=0;}
     if(p!==player||!s.me||!s.me.gear){if(p!==player){const d=DEF[w];p.gear=freshGear();if(d&&d.slot){p.gear.eq[d.slot]={id:w,mag:0};p.gear.active=d.slot;}}}
   }

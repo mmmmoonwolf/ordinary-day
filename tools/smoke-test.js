@@ -733,6 +733,17 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     if (heard.join() !== 'fist,blade,blunt,metal') vfail('v0.43 blows sound ' + heard);
     console.log('v0.43: ' + looks.length + ' Police / Military gun models, 4 ammo boxes, ' + nw.length + ' new melee weapons; blows ' + heard.join(' / '));
   }
+  // v0.44: every gun plays a recording (none synthesized; the rifles have their own), the light tells the time of day
+  { const Au = await import('../src/systems/audio.js'), We = await import('../src/systems/weather.js'), It5 = await import('../src/config/items.js');
+    const models = [...new Set(Object.values(It5.DEF).filter(d => d.gun).map(d => d.model))], noRec = models.filter(m => !Au.GUN_REC[m] || !Au.FILES[Au.GUN_REC[m][0]]);
+    const rifles = ['rifle', 'sniper', 'lmg'].map(m => Au.GUN_REC[m][0]), fs = await import('fs');
+    const missing = Object.values(Au.FILES).flat().filter(n => !fs.existsSync(new URL('../assets/sounds/' + n + '.mp3', import.meta.url)));
+    if (noRec.length || new Set(rifles).size !== 3 || Au.FILES.shot_rifle.length < 3 || missing.length) vfail('gun recordings: no recording for ' + noRec + ', rifles ' + rifles + ', missing files ' + missing);
+    const at = h => { const l = We.light(h * 60); return { sun: +l.sunI.toFixed(2), hemi: +l.hemiI.toFixed(2) }; };   // colours are stubs here
+    const P8 = { dawn: at(6.2), morning: at(8), noon: at(12), afternoon: at(15), evening: at(17.3), dusk: at(18.5), night: at(22) };
+    if (!(P8.noon.sun > P8.afternoon.sun && P8.afternoon.sun > P8.evening.sun && P8.evening.sun > P8.dusk.sun && P8.dusk.sun > P8.night.sun && P8.morning.sun > P8.dawn.sun)) vfail('times of day: ' + JSON.stringify(P8));
+    console.log('v0.44: ' + models.length + ' gun models all recorded (rifles ' + rifles.join(' / ') + ', ' + Au.FILES.shot_rifle.length + ' rifle takes); light ' + Object.entries(P8).map(([k, v]) => k + ' ' + v.sun).join(', '));
+  }
   // v0.32: the slow first morning, the outbreak seen happening (v0.42 no goal line: nothing is explained on screen)
   { const Tm = await import('../src/config/time.js');
     els.bAgain.fire('click'); T.G.running = true; const pl = T.player; pl.inv = 1e9; pl.gear.cap = 14;
@@ -762,31 +773,38 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     for (const b of lows) {
       const w = b.x1 - b.x0; if (w > 2.2) continue; const cz = (b.z0 + b.z1) / 2, sx = b.x0 - .9;
       if (!Col3.freeAt(sx, cz, .36) || !Col3.freeAt(b.x1 + .9, cz, .36)) continue;
-      pl.pos.x = sx; pl.pos.z = cz; Object.assign(pl.input, { mx: 0, mz: 0, mag: 0, run: false, stance: 0, ads: false, jumpQ: .25, face: Math.PI / 2, fire: false, fireQ: 0 }); pl.face = Math.PI / 2;
+      pl.pos.x = sx; pl.pos.z = cz; Object.assign(pl.input, { mx: 0, mz: 0, mag: 0, run: false, ads: false, jumpQ: .25, face: Math.PI / 2, fire: false, fireQ: 0 }); pl.face = Math.PI / 2;
       P.updatePlayer(pl, 1 / 60); const went = !!pl.vault; let peak = 0;
       for (let i = 0; i < 60; i++) { P.updatePlayer(pl, 1 / 60); peak = Math.max(peak, pl.airH); }
-      if (went) { done = { from: sx, to: pl.pos.x, x1: b.x1, peak }; break; }
+      if (went) {
+        // v0.44 walking (not running) back into it goes over it after a moment of pushing
+        const back = pl.pos.x; let walked = false; Object.assign(pl.input, { mx: -1, mz: 0, mag: 1, run: false, jumpQ: 0, face: -Math.PI / 2 });
+        for (let i = 0; i < 120 && !walked; i++) { P.updatePlayer(pl, 1 / 60); walked = !!pl.vault; }
+        for (let i = 0; i < 60; i++) P.updatePlayer(pl, 1 / 60);
+        Object.assign(pl.input, { mx: 0, mag: 0 });
+        done = { from: sx, to: back, x1: b.x1, peak, walkedBack: walked && pl.pos.x < b.x0 }; break;
+      }
     }
     // a building wall: no vault, only a hop
     const bd = City.buildings[0]; pl.pos.x = bd.cx - bd.w / 2 - .6; pl.pos.z = bd.cz; pl.face = Math.PI / 2; Object.assign(pl.input, { jumpQ: .25, mag: 0 }); P.updatePlayer(pl, 1 / 60);
     const wallVault = !!pl.vault, hopped = pl.hop > 0; for (let i = 0; i < 40; i++) P.updatePlayer(pl, 1 / 60);
     pl.vault = null; pl.airH = 0; pl.hop = 0; pl.pos.x = x0; pl.pos.z = z0; pl.inv = inv0; Object.assign(pl.input, { jumpQ: 0, mag: 0, run: false });
-    if (kinds < 50 || !done || done.to < done.x1 + .2 || done.peak < H2.VAULT.height * .8 || wallVault || !hopped) vfail('vault: ' + kinds + ' low boxes, ' + JSON.stringify(done) + ', vaulted a building ' + wallVault + ', hopped ' + hopped);
-    console.log('v0.30: ' + kinds + ' low obstacles; vaulted one from x ' + done.from.toFixed(1) + ' to ' + done.to.toFixed(1) + ' (far side ' + done.x1.toFixed(1) + ', ' + done.peak.toFixed(2) + ' m up); a building wall only hops');
+    if (kinds < 50 || !done || done.to < done.x1 + .2 || done.peak < H2.VAULT.height * .8 || !done.walkedBack || wallVault || !hopped) vfail('vault: ' + kinds + ' low boxes, ' + JSON.stringify(done) + ', vaulted a building ' + wallVault + ', hopped ' + hopped);
+    console.log('v0.30: ' + kinds + ' low obstacles; vaulted one from x ' + done.from.toFixed(1) + ' to ' + done.to.toFixed(1) + ' (far side ' + done.x1.toFixed(1) + ', ' + done.peak.toFixed(2) + ' m up), walked back over it (v0.44); a building wall only hops');
   }
-  // v0.29: aiming down the sights tightens the spread, bursts widen it, prone is slow and hard to notice
-  { const Cb3 = await import('../src/systems/combat.js'), H = await import('../src/config/handling.js'), It4 = await import('../src/config/items.js'), Ai3 = await import('../src/entities/ai.js');
-    const pl = T.player, def = It4.DEF.rifle_p, hip = Cb3.spreadOf(Object.assign({}, pl, { ads: false, stance: 0, bloom: 0 }), def), aim = Cb3.spreadOf(Object.assign({}, pl, { ads: true, stance: 2, bloom: 0 }), def), burst = Cb3.spreadOf(Object.assign({}, pl, { ads: false, stance: 0, bloom: H.BLOOM.max }), def);
-    if (!(aim < hip * .5 && burst > hip * 2)) vfail('spread: hip ' + hip + ', aimed prone ' + aim + ', after a burst ' + burst);
+  // v0.29: aiming down the sights tightens the spread, bursts widen it; v0.44 no stances: sneaking is a slow walk standing up
+  { const Cb3 = await import('../src/systems/combat.js'), H = await import('../src/config/handling.js'), It4 = await import('../src/config/items.js');
+    const pl = T.player, def = It4.DEF.rifle_p, hip = Cb3.spreadOf(Object.assign({}, pl, { ads: false, sneak: false, bloom: 0 }), def), aim = Cb3.spreadOf(Object.assign({}, pl, { ads: true, sneak: true, bloom: 0 }), def), burst = Cb3.spreadOf(Object.assign({}, pl, { ads: false, sneak: false, bloom: H.BLOOM.max }), def);
+    if (!(aim < hip * .5 && burst > hip * 2)) vfail('spread: hip ' + hip + ', aimed sneaking ' + aim + ', after a burst ' + burst);
     const x0 = pl.pos.x, z0 = pl.pos.z, inv0 = pl.inv; pl.inv = 1e9; const bag0 = pl.gear.eq.primary, act0 = pl.gear.active;
-    const walk = (stance, ads) => { pl.pos.x = x0; pl.pos.z = z0; Object.assign(pl.input, { mx: 1, mz: 0, mag: 1, run: false, stance, ads, face: Math.PI / 2, fire: false }); const x = pl.pos.x; for (let i = 0; i < 30; i++) P.updatePlayer(pl, 1 / 30); return pl.pos.x - x; };
+    const walk = (sneak, ads) => { pl.pos.x = x0; pl.pos.z = z0; Object.assign(pl.input, { mx: 1, mz: 0, mag: 1, run: false, slow: sneak, ads, face: Math.PI / 2, fire: false }); const x = pl.pos.x; for (let i = 0; i < 30; i++) P.updatePlayer(pl, 1 / 30); return pl.pos.x - x; };
     pl.gear.eq.primary = { id: 'rifle_p', mag: 30 }; pl.gear.active = 'primary';
-    const dStand = walk(0, false), dAds = walk(0, true), dProne = walk(2, false), proneNow = pl.stance === 2 && pl.sneak;
-    pl.gear.eq.primary = { id: 'rifle_p', mag: 30 }; pl.bloom = 0; pl.cool = 0; Object.assign(pl.input, { mag: 0, stance: 0, ads: false, fire: true }); for (let i = 0; i < 45; i++) P.updatePlayer(pl, 1 / 30); const bl = pl.bloom;
-    Object.assign(pl.input, { fire: false, stance: 0, ads: false }); P.updatePlayer(pl, 1 / 30);
+    const dStand = walk(false, false), dAds = walk(false, true), dSneak = walk(true, false), sneakNow = pl.sneak && !('stance' in pl) && !H.STANCE;
+    pl.gear.eq.primary = { id: 'rifle_p', mag: 30 }; pl.bloom = 0; pl.cool = 0; Object.assign(pl.input, { mag: 0, slow: false, ads: false, fire: true }); for (let i = 0; i < 45; i++) P.updatePlayer(pl, 1 / 30); const bl = pl.bloom;
+    Object.assign(pl.input, { fire: false, slow: false, ads: false }); P.updatePlayer(pl, 1 / 30);
     pl.gear.eq.primary = bag0; pl.gear.active = act0; pl.pos.x = x0; pl.pos.z = z0; pl.inv = inv0;
-    if (!(dAds < dStand * .7 && dProne < dStand * .3 && proneNow && bl > .25)) vfail('stances: walked ' + dStand.toFixed(2) + ' / aiming ' + dAds.toFixed(2) + ' / prone ' + dProne.toFixed(2) + ' m, prone flag ' + proneNow + ', bloom after a burst ' + bl);
-    console.log('v0.29: spread hip ' + hip.toFixed(3) + ' / aimed prone ' + aim.toFixed(3) + ' / after a burst ' + burst.toFixed(3) + ', walked 1 s ' + dStand.toFixed(1) + ' / aiming ' + dAds.toFixed(1) + ' / prone ' + dProne.toFixed(1) + ' m, bloom ' + bl.toFixed(2));
+    if (!(dAds < dStand * .7 && dSneak < dStand * .7 && sneakNow && bl > .25)) vfail('stances: walked ' + dStand.toFixed(2) + ' / aiming ' + dAds.toFixed(2) + ' / sneaking ' + dSneak.toFixed(2) + ' m, sneaking upright ' + sneakNow + ', bloom after a burst ' + bl);
+    console.log('v0.29 / v0.44: spread hip ' + hip.toFixed(3) + ' / aimed sneaking ' + aim.toFixed(3) + ' / after a burst ' + burst.toFixed(3) + ', walked 1 s ' + dStand.toFixed(1) + ' / aiming ' + dAds.toFixed(1) + ' / sneaking ' + dSneak.toFixed(1) + ' m (no crouch or prone), bloom ' + bl.toFixed(2));
   }
   // v0.28: first-person view: keys move relative to where the view looks, the player faces it, back to the isometric view
   { const Fp = await import('../src/ui/fps.js'), Rd = await import('../src/core/renderer.js'), In = await import('../src/ui/input.js'), Ct = await import('../src/core/controls.js');
@@ -794,6 +812,7 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     const I = pl.input, okW = Math.abs(I.mx - 1) < 1e-6 && Math.abs(I.mz) < 1e-6 && I.face === Math.PI / 2;
     const [rx, rz] = Fp.fpsMove(1, 0), okR = Math.abs(rx) < 1e-6 && Math.abs(rz - 1) < 1e-6;   // facing +x, right is +z
     Fp.look(100, -50, false); const turned = Rd.view.yaw < Math.PI / 2 && Rd.view.pitch > 0;
+    const e0 = errs.length; step(3); if (errs.length > e0) vfail('first-person frames threw: ' + errs[e0].split('\n')[0]);   // v0.44 a frame drawn in first person
     const arrow = Rd.screenAngle(Math.sin(Rd.view.yaw), Math.cos(Rd.view.yaw));
     Fp.setFps(false); In.pollInput(pl);
     if (!okW || !okR || !turned || Math.abs(arrow) > 1e-6 || Rd.view.fps || Rd.activeCam() !== Rd.camera) vfail('first person: W ' + okW + ' (' + I.mx + ',' + I.mz + ', face ' + I.face + '), right ' + okR + ', look ' + turned + ', arrow ' + arrow);

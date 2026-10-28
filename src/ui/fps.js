@@ -3,7 +3,7 @@ import {cv,view,fpsCam} from '../core/renderer.js';
 import {G} from '../core/state.js';
 import {DEF} from '../config/items.js';
 import {STUB_H} from '../config/shelter.js';
-import {ADS,STANCE,SWAY,BREATH,BREATH_REST,KICK} from '../config/handling.js';
+import {ADS,EYE,SNEAK,SWAY,BREATH,BREATH_REST,KICK} from '../config/handling.js';
 import {curWeapon} from '../systems/inventory.js';
 import {weaponModel} from '../world/item-models.js';
 import {rooms,shownRoom,slab} from '../world/interiors.js';
@@ -29,7 +29,7 @@ export function setFps(on){
   for(const r of rooms)if(r.shell)r.shell.visible=on;
   vm.visible=false;vmId=null;if(arms)arms.o.visible=false;
   view.sway=0;adsT=0;zoom=1;fpsCam.fov=FOV;fpsCam.updateProjectionMatrix();
-  if(!on){for(const id of ['bAds','bStance'])$(id).hidden=true;if(document.body)document.body.classList.remove('scoped','ads');}
+  if(!on){$('bAds').hidden=true;if(document.body)document.body.classList.remove('scoped','ads');}
 }
 export const toggleFps=()=>setFps(!view.fps);
 export function look(dx,dy,touch){const k=(touch?TOUCH_SENS:SENS)*settings.sens/zoom;view.yaw-=dx*k;view.pitch=clamp(view.pitch-dy*k,...PITCH);}
@@ -97,13 +97,13 @@ function shell(r){
   r.cut.add(g);return (r.shell=g);
 }
 // once a frame, for the player the camera follows (the local one, or a teammate once dead)
-let bob=0,eyeY=STANCE[0].eye,lastRecoil=0,breathT=0,breathRest=0,swayP=0;
+let bob=0,eyeY=EYE,lastRecoil=0,breathT=0,breathRest=0,swayP=0;
 export function updateFps(v,dt){
   const mine=v===player;
   if(!mine)view.yaw+=Math.atan2(Math.sin(v.face-view.yaw),Math.cos(v.face-view.yaw))*Math.min(1,dt*6);   // watching a teammate
-  const low=!v.alive||v.down>0||v.bleed>0,st=STANCE[v.stance|0]||STANCE[0];bob+=dt*(v.moving||0)*2.2;
-  eyeY+=((low?EYE_DOWN:st.eye)-eyeY)*Math.min(1,dt*8);
-  const eye=eyeY+Math.sin(bob)*.035*Math.min(1,(v.moving||0)/3)*(v.stance===2?.3:1);
+  const low=!v.alive||v.down>0||v.bleed>0;bob+=dt*(v.moving||0)*2.2;
+  eyeY+=((low?EYE_DOWN:EYE)-eyeY)*Math.min(1,dt*8);
+  const eye=eyeY+Math.sin(bob)*.035*Math.min(1,(v.moving||0)/3);
   // aiming down the sights: zoom in by gun, through the scope for a sniper rifle
   const d=DEF[curWeapon(v).id],ads=mine&&!low&&!!v.input.ads&&!!d.gun&&!(v.reloadT>0),scoped=ads&&ADS.scope.includes(d.model)&&adsT>.7;
   adsT+=((ads?1:0)-adsT)*Math.min(1,dt*12);
@@ -113,7 +113,7 @@ export function updateFps(v,dt){
   // the aim drifts (steadier crouched or prone, wider through a scope; Shift holds the breath for a few seconds)
   const holding=scoped&&view.breathKey&&breathRest<=0;
   if(holding){breathT+=dt;if(breathT>BREATH){breathRest=BREATH_REST;breathT=0;}}else{if(breathRest>0)breathRest-=dt;breathT=Math.max(0,breathT-dt);}
-  const t=performance.now()/1000,amp=mine&&!low?SWAY.base*((v.moving||0)>.3?SWAY.moving:1)*st.spread*(ads?SWAY.ads:1)*(scoped?SWAY.scope:1)*(holding?.08:1):0;
+  const t=performance.now()/1000,amp=mine&&!low?SWAY.base*((v.moving||0)>.3?SWAY.moving:1)*(v.sneak?SNEAK.spread:1)*(ads?SWAY.ads:1)*(scoped?SWAY.scope:1)*(holding?.08:1):0;
   view.sway+=((Math.sin(t*1.1)+.5*Math.sin(t*2.7+1))/1.5*amp-view.sway)*Math.min(1,dt*6);
   swayP+=((Math.sin(t*1.6+2)+.4*Math.sin(t*3.3))/1.4*amp*.7-swayP)*Math.min(1,dt*6);
   // every shot kicks the view up and a little sideways, more as the spread grows
@@ -124,8 +124,7 @@ export function updateFps(v,dt){
   v.b.root.visible=false;   // no own body in front of the eyes (animate() shows it again next frame)
   viewModel(v,ads,scoped,dt);
   const cr=$('cross');if(cr){const s='scale('+(1+(v.bloom||0)*.7).toFixed(2)+')';if(cr.style.transform!==s)cr.style.transform=s;}
-  if(isTouch){const g=!!d.gun&&!low;if($('bAds').hidden===g)$('bAds').hidden=!g;if($('bStance').hidden)$('bStance').hidden=false;
-    $('bAds').classList.toggle('on',!!v.input.ads);const sn=st.name||'ยืน';if($('bStance').textContent!==sn)$('bStance').textContent=sn;}
+  if(isTouch){const g=!!d.gun&&!low;if($('bAds').hidden===g)$('bAds').hidden=!g;$('bAds').classList.toggle('on',!!v.input.ads);}
   const k=shownRoom();if(k>=0){const r=rooms[k],s=shell(r);s.visible=true;r.shellDoor.visible=r.cutDoor.visible;}
   // the cursor comes back for the bag and the pause menu; a click on the game takes the mouse again
   if(mouseLocked()&&(!$('bag').hidden||!$('pause').hidden||!$('overlay').hidden))document.exitPointerLock();

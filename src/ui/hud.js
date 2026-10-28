@@ -15,7 +15,6 @@ import {send,isClient} from '../core/bus.js';
 import {FX} from '../systems/effects.js';
 import {throwPick} from '../systems/throw.js';
 const THROW_ICON={molotov:'🔥',grenade:'💣',flare:'🎆'};
-import {STANCE} from '../config/handling.js';
 import {shake} from './feel.js';
 
 // ---------- messages ----------
@@ -72,7 +71,7 @@ export function updateLoadout(force){
 }
 let stanceShown=-1;
 export function updateHUD(dt){
-  const sv=player.alive&&!(player.bleed>0)?player.stance|0:0;if(sv!==stanceShown){stanceShown=sv;$('stanceTag').hidden=!sv;$('stanceTag').textContent=STANCE[sv].name;}   // v0.29
+  const sv=player.alive&&!(player.bleed>0)&&player.sneak?1:0;if(sv!==stanceShown){stanceShown=sv;$('stanceTag').hidden=!sv;$('stanceTag').textContent='ย่อง';}   // v0.29, v0.44 only sneaking
   // v0.42 no clock, day, phase, time speed or head counts on screen: light, sound and what happens tell the time
   let ty=null;for(const a of agents)if(a.state==='zombie'&&a.kind==='tyrant'&&!a.retreat)ty=a;
   const bossOn=!!ty&&Math.sqrt(d2(ty,player))<34;if($('boss').hidden===bossOn)$('boss').hidden=!bossOn;if(ty)$('bossfill').style.width=Math.max(0,ty.hp/ty.maxHp*100)+'%';
