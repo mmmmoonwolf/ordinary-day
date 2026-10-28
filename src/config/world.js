@@ -8,6 +8,7 @@ export function nearestIdx(v){let b=0;for(let i=1;i<5;i++) if(Math.abs(v-RC[i])<
 // other axis. The rect overlaps the city a little so the gate can be crossed; the wall in between is solid.
 // mid: where the minimap centres while a player is out there.
 export const GATE=4;
+const ROAD_END=556;   // where the highway ends at the army camp's gate (v0.45, v0.46)
 export const AREAS=[
   {id:'farm',x0:-129,x1:-61,z0:-29,z1:29,wall:{axis:'x',v:-68.5},mid:[-99,0]},
   {id:'suburb',x0:-31,x1:31,z0:61,z1:129,wall:{axis:'z',v:68.5},mid:[0,99]},
@@ -18,12 +19,14 @@ export const AREAS=[
   // overlap the road's strip they win, areaAt takes the first match).
   {id:'gas',x0:262,x1:312,z0:-44,z1:-9,wall:{axis:'z',v:-11},mid:[287,-20],open:true},
   {id:'cemetery',x0:392,x1:470,z0:9,z1:98,wall:{axis:'z',v:12},mid:[431,52],open:true},
+  // v0.46 the army camp at the road's end, past its gate (world/army.js): open after the third night, nothing spawns in it
+  {id:'army',x0:555,x1:612,z0:-16,z1:16,wall:{axis:'x',v:ROAD_END+.5},mid:[584,0],open:true,noSpawn:true},
   {id:'highway',x0:149,x1:566,z0:-16,z1:16,wall:{axis:'x',v:151},mid:[200,0],open:true,follow:true},
 ];
-export const FARM=AREAS[0],SUBURB=AREAS[1],EAST=AREAS[2],GAS=AREAS[3],CEMETERY=AREAS[4],HIGHWAY=AREAS[5],WALL_X=FARM.wall.v,WALL_Z=SUBURB.wall.v;
+export const FARM=AREAS[0],SUBURB=AREAS[1],EAST=AREAS[2],GAS=AREAS[3],CEMETERY=AREAS[4],ARMY=AREAS[5],HIGHWAY=AREAS[6],WALL_X=FARM.wall.v,WALL_Z=SUBURB.wall.v;
 // v0.45 the highway's road: two lanes along z = 0 (half width), the side road south to the cemetery at x, and where the
 // road ends for now (a roadblock: the next town is not built yet)
-export const ROAD={half:4.2,end:556,side:{x:431,half:2.6,z1:34}};
+export const ROAD={half:4.2,end:ROAD_END,side:{x:431,half:2.6,z1:34}};
 // inside area A (past its wall line and within its rectangle)
 export const inArea=(A,x,z)=>beyond(A,x,z)>0&&x>A.x0&&x<A.x1&&z>A.z0&&z<A.z1;
 // v0.25 the river east of town: water from x0 to x1 (solid, walk round it), crossed only on the bridge (|z| < half)

@@ -18,7 +18,7 @@ import {partyOf} from '../config/party.js';
 import {makeItem,spawnDrop,reachableSpot} from './drops.js';
 import {sfx} from './audio.js';
 
-// ---------- daily events, days 2-7 (v0.8) ----------
+// ---------- daily events, from day 2 to the day the army camp opens (v0.8; days 2-7 until v0.46) ----------
 // G.plan is drawn once per game (saved with G): each day gets an airdrop, a horde or a blackout, sometimes two.
 //   airdrop  (day)   a crate lands at a street corner with Civilian loot around it; walkers wander over to it
 //   horde    (night) the radio warns at 19:00, then a pack walks along one main road across the city and leaves
@@ -26,7 +26,7 @@ import {sfx} from './audio.js';
 // Everything is timed on G.min, so ×2 / ×4 changes nothing.
 export function planEvents(){
   const plan=[];
-  for(let day=2;day<=GOAL_NIGHTS;day++){
+  for(let day=2;day<=GOAL_NIGHTS+1;day++){   // v0.46 through the day the army camp opens
     const base=(day-1)*1440,n=plan.length;
     if(Math.random()<EVENT_CHANCE.airdrop)plan.push({kind:'airdrop',at:base+Math.round(rnd(10*60,15*60))});
     if(day>=3&&Math.random()<EVENT_CHANCE.horde){const at=base+Math.round(rnd(21*60,23*60+30));plan.push({kind:'horde',at,warn:base+19*60});}

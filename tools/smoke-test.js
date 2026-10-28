@@ -21,7 +21,7 @@ const { infectPlayer } = await import('../src/systems/infection.js');
 const { useHeal } = await import('../src/systems/inventory.js');
 const { gameOver, hhmm } = await import('../src/ui/hud.js');
 const clockTxt = () => hhmm(G.min) + ' ' + G.phase;   // v0.42 the clock is no longer on screen
-const { LZ } = await import('../src/config/goal.js');
+const { LZ, EXIT } = await import('../src/config/goal.js');
 const T = { get inv() { return P.player.gear; }, get player() { return P.player; }, makeItem, drops, G, agents, becomeZombie, makeAgent, renderBag, openBag, closeBag };
 
 
@@ -80,7 +80,8 @@ const bad = m => errs.push('v0.4 test: ' + m);
 els.bAgain.fire('click'); T.G.running = true;
 T.player.hp = 50; infectPlayer(T.player); step(300);
 const pc = T.player.infect;
-if (!(pc > 0.05 && pc < 0.2)) bad('infection after 5 s should be ~8%, got ' + pc);
+{ const Tm = await import('../src/config/time.js'), Zc = await import('../src/config/zombies.js'), want = 5 * Tm.RATE / Zc.INFECT_MINUTES;   // v0.46 follows the length of a day
+  if (!(pc > want * .7 && pc < want * 1.5)) bad('infection after 5 s should be ~' + (want * 100).toFixed(1) + '%, got ' + pc); }
 if (T.player.hp > 50.01) bad('HP regenerated while infected');
 if (els.infRow.hidden) bad('infection bar hidden');
 T.inv.bag.push({ id: 'antibiotic', n: 1 }); T.player.hp = T.player.maxHp; useHeal(T.player);
@@ -93,14 +94,21 @@ if (T.player.alive || T.G.endCause !== 'infected') bad('infection at 100% did no
 gameOver();
 if (els.oTitle.textContent !== 'คุณกลายเป็นซอมบี้' || !els.sKillsBy.innerHTML.includes('Tyrant') || !els.sBest.innerHTML.includes('สถิติดีสุด')) bad('infected game-over summary not filled');
 console.log('infection: after 5 s', (pc * 100).toFixed(1) + '%', '| summary:', els.oTitle.textContent, '|', els.sBest.innerHTML.replace(/<[^>]+>/g, ''));
-// 5) goal: day 8 morning, helicopter lands at the LZ, reaching it wins
+// 5) goal (v0.46): the army camp at the end of the highway is shut until the morning after the third night, then its
+// gate opens, soldiers shoot, and getting through past EXIT.x wins
 els.bAgain.fire('click'); T.G.running = true;
-T.G.min = 7 * 1440 + 6 * 60 + 5; step(20);
-if (els.lz.hidden) bad('rescue arrow hidden on day 8 morning');
-T.G.min = 7 * 1440 + 8 * 60 + 30; step(20);
-if (T.G.over) bad('won without reaching the LZ');
-T.player.pos.x = LZ.x + 1; T.player.pos.z = LZ.z; step(20);
-if (!T.G.over || T.G.endCause !== 'won' || els.oTitle.textContent !== 'คุณรอดแล้ว') bad('reaching the helicopter did not win (over ' + T.G.over + ', cause ' + T.G.endCause + ')');
+const Army = await import('../src/world/army.js'), ArmyS = await import('../src/systems/army.js');
+T.G.min = 3 * 1440 + 5 * 60; step(20);
+if (Army.army.open || !els.lz.hidden) bad('the army camp open before the third night was over');
+T.G.min = 3 * 1440 + 6 * 60 + 5; step(20);
+if (els.lz.hidden || !Army.army.open) bad('way-out arrow hidden or the gate shut on day 4 morning');
+if (Army.army.gate.x0 > -1e5) bad('the gate still blocks the road once open');
+{ const z = T.makeAgent(EXIT.gate - 12, 2); T.becomeZombie(z, 'zombie'); T.agents.push(z); const hp0 = z.hp; for (let i = 0; i < 240 && z.state === 'zombie'; i++) step(1);
+  if (z.state === 'zombie' && z.hp >= hp0) bad('the soldiers did not shoot a zombie by the gate'); if (T.agents.includes(z)) T.agents.splice(T.agents.indexOf(z), 1); }
+T.G.min = 3 * 1440 + 8 * 60 + 30; step(20);
+if (T.G.over) bad('won without getting through the camp');
+T.player.pos.x = EXIT.x + 1; T.player.pos.z = EXIT.z; step(20);
+if (!T.G.over || T.G.endCause !== 'won' || els.oTitle.textContent !== 'คุณรอดแล้ว') bad('getting through the army camp did not win (over ' + T.G.over + ', cause ' + T.G.endCause + ')');
 if (store.has('ordinary-day.save')) bad('save kept after winning');
 console.log('goal:', els.oEyebrow.textContent, els.oTitle.textContent, '|', els.sNights.textContent, 'nights | best', store.get('ordinary-day.best'));
 
@@ -318,7 +326,7 @@ const Ev = await import('../src/systems/events.js');
 const St = await import('../src/ui/settings.js');
 const { updateMusic } = await import('../src/systems/audio.js');
 clear();
-for (let day = 2; day <= 7; day++) if (!T.G.plan.some(e => Math.floor(e.at / 1440) + 1 === day)) efail('day ' + day + ' has no event');
+for (let day = 2; day <= (await import('../src/config/goal.js')).GOAL_NIGHTS + 1; day++) if (!T.G.plan.some(e => Math.floor(e.at / 1440) + 1 === day)) efail('day ' + day + ' has no event');
 if (T.G.plan.some(e => e.kind === 'horde' && Math.floor(e.at / 1440) + 1 < 3)) efail('horde before day 3');
 // airdrop now: crate + loot + map marker, gone the next morning (its loot stays)
 T.G.min = 1440 + 11 * 60; T.G.plan = [{ kind: 'airdrop', at: T.G.min + 1, done: false }]; const nd = T.drops.length; step(20);
@@ -386,9 +394,9 @@ store.set('ordinary-day.save', JSON.stringify({ v: 1, savedAt: 0, G: Object.assi
 if (!S.loadGame() || P.players.length !== 1 || Math.round(T.player.hp) !== 77 || !T.inv.bag.some(e => e.id === 'a9' && e.n === 7)) mfail('a v1 save did not load into one player');
 // the rescue waits for every live player
 clear(); const r3 = Game.addPlayer(); T.player.inv = r3.inv = 1e9;
-T.G.min = 7 * 1440 + 9 * 60; Object.assign(T.player.pos, { x: LZ.x, z: LZ.z }); step(5);
+T.G.min = 3 * 1440 + 9 * 60; Object.assign(T.player.pos, { x: EXIT.x + 1, z: EXIT.z }); step(5);
 if (T.G.over) mfail('rescued while the second player was still away');
-Object.assign(r3.pos, { x: LZ.x + 1, z: LZ.z }); step(5);
+Object.assign(r3.pos, { x: EXIT.x + 2, z: EXIT.z }); step(5);
 if (!T.G.over || T.G.endCause !== 'won') mfail('not rescued with both players at the LZ');
 // fixed steps: game time per real second does not depend on the frame rate
 clear(); const t0 = T.G.min; step(60); const fast = T.G.min - t0;

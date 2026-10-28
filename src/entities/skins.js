@@ -125,6 +125,13 @@ export function previewModel(look){
   if(clips.Idle)mixer.clipAction(clips.Idle).play();
   return {o,mixer};
 }
+// v0.46 a figure that is not an agent (the soldiers on the army camp's towers): a look, holding one clip
+export function figureModel(look,clip){
+  if(!skins.ready)return null;
+  const a={state:'player',id:0,wear:look},{o,bones}=build(a),mixer=new THREE.AnimationMixer(o),c=clips[clip]||clips.Idle_Gun||clips.Idle;
+  if(c)mixer.clipAction(c).play();
+  return {o,mixer,hand:bones.WristR||bones.RightHand||null};
+}
 // graphics quality "low" goes back to the blocky people; anything else puts the models back on as they are drawn
 export function setSkinsOn(on){
   skins.on=on;if(on)return;

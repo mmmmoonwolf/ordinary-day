@@ -71,9 +71,10 @@ export function spawnPopulation(){
 export function spawnEdge(kind){
   if(agents.length>=95&&kind!=='tyrant')return null;
   // v0.22 with a player out in an area (the farm, the suburb), half the zombies come in along its far edges instead
+  // (v0.46 not in an area that spawns nothing, the army camp, nor at a point inside another area)
   const out=players.map(p=>p.alive&&areaAt(p.pos.x,p.pos.z)).filter(Boolean);
-  if(out.length&&Math.random()<.5){const A=out[Math.floor(Math.random()*out.length)];for(let t=0;t<12;t++){const x=A.x0+1.5+Math.random()*(A.x1-A.x0-3),z=A.z0+1.5+Math.random()*(A.z1-A.z0-3);
-    if(beyond(A,x,z)<12||nearestPlayerDist(x,z)<24||!freeAt(x,z,.5))continue;const a=makeAgent(x,z);becomeZombie(a,kind);agents.push(a);return a;}}
+  if(out.length&&Math.random()<.5){const A=out[Math.floor(Math.random()*out.length)];if(!A.noSpawn)for(let t=0;t<12;t++){const x=A.x0+1.5+Math.random()*(A.x1-A.x0-3),z=A.z0+1.5+Math.random()*(A.z1-A.z0-3);
+    if(beyond(A,x,z)<12||areaAt(x,z)!==A||nearestPlayerDist(x,z)<24||!freeAt(x,z,.5))continue;const a=makeAgent(x,z);becomeZombie(a,kind);agents.push(a);return a;}}
   for(let tries=0;tries<24;tries++){const n=randomNode();if(n.i!==0&&n.i!==4&&n.j!==0&&n.j!==4&&tries<18)continue;const [x,z]=nodeXZ(n);
     if(nearestPlayerDist(x,z)<28&&tries<23)continue;const a=makeAgent(x,z);becomeZombie(a,kind);agents.push(a);return a;}
   return null;
