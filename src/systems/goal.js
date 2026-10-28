@@ -8,7 +8,7 @@ import {player,players} from '../entities/player.js';
 import {clearSave} from './save.js';
 import {isClient} from '../core/bus.js';
 import {sfx} from './audio.js';
-import {say,gameOver} from '../ui/hud.js';
+import {gameOver} from '../ui/hud.js';
 
 // ---------- rescue ----------
 // After GOAL_NIGHTS nights a helicopter lands at the LZ every morning (RESCUE_FROM–RESCUE_UNTIL). Reaching it wins.
@@ -44,13 +44,10 @@ export function updateGoal(dt,now){
   }
   if(!G.running||!ready||isClient())return;   // in a friend's room the host decides the rescue (v0.12)
   const stage=tod>=DAY_START&&tod<RESCUE_FROM?'coming':t>=0&&up<0?'landed':up>=0?'left':'';
-  if(stage&&G.rescueSaid!==day+':'+stage){G.rescueSaid=day+':'+stage;
-    if(stage==='coming')say((day===GOAL_NIGHTS+1?'รอดครบ '+GOAL_NIGHTS+' คืนแล้ว! ':'')+'วิทยุ: เฮลิคอปเตอร์กู้ภัยจะลงจอดที่สี่แยกข้างสวนตอน 08:00 และรอถึง 12:00 ตามลูกศรไป','radio',9);
-    else if(stage==='landed')say('เฮลิคอปเตอร์มาถึงแล้ว! ไปให้ถึงก่อน 12:00','alarm',7);
-    else say('เฮลิคอปเตอร์บินออกไปแล้ว จะกลับมาอีกพรุ่งนี้ 08:00','alarm',7);}
+  if(stage&&G.rescueSaid!==day+':'+stage)G.rescueSaid=day+':'+stage;   // v0.42 no radio words: the rotor and the arrow tell it
   // everyone still alive has to be on board (v0.9: one or more players)
   const alive=players.filter(p=>p.alive&&!p.away);   // v0.12: not those whose device dropped out
   if(h===0&&alive.length&&alive.every(p=>p.down<=0&&!(p.bleed>0)&&Math.hypot(LZ.x-p.pos.x,LZ.z-p.pos.z)<RESCUE_RADIUS)){
-    G.endCause='won';clearSave();sfx.rotor(0);sfx.win();say('ขึ้นเฮลิคอปเตอร์ได้แล้ว คุณรอด!','',6);gameOver();
+    G.endCause='won';clearSave();sfx.rotor(0);sfx.win();gameOver();
   }
 }

@@ -14,14 +14,15 @@ export const PLACES=[
 // category weights for the floor loot spots of each place (day and night alike; weapon and ammo grades still follow the
 // phase, so the gun shop has police and military guns only at night, like everywhere else)
 export const PLACE_W={
-  hospital:{med:75,food:10,bag:5,mat:10},
+  // v0.42 without food, planks and bottles the grocery, the diner and the hardware store carry other things (PLACEHOLDER)
+  hospital:{med:90,bag:10},
   gunshop:{weapon:35,ammo:60,bag:5},
-  grocery:{food:80,throw:10,med:5,bag:5},
-  diner:{food:85,throw:15},
-  pharmacy:{med:85,food:15},
-  hardware:{mat:50,throw:20,melee:20,bag:10},
-  farm:{food:55,mat:12,melee:12,weapon:4,ammo:5,throw:8,bag:4},
-  camp:{weapon:28,ammo:30,med:20,food:10,throw:8,bag:4},   // v0.26 the camp: grades better than the street (systems/drops.js CAMP_GRADE)   // v0.22 the farm (indoors and out), PLACEHOLDER
+  grocery:{med:30,ammo:25,throw:20,bag:25},
+  diner:{throw:45,med:30,ammo:25},
+  pharmacy:{med:100},
+  hardware:{melee:55,throw:30,bag:15},
+  farm:{melee:35,weapon:12,ammo:28,throw:15,bag:10},
+  camp:{weapon:28,ammo:30,med:20,throw:10,bag:4},   // v0.26 the camp: grades better than the street (systems/drops.js CAMP_GRADE)   // v0.22 the farm (indoors and out), PLACEHOLDER
 };
 // v0.22 the farm west of town (world/farm.js): its barn is a place like the shops, but not one of the six above
 export const BARN={type:'farm',name:'โรงนา',sign:'FARM',color:'#b5654a',box:'farm'};

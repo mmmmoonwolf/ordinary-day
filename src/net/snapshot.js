@@ -20,7 +20,7 @@ const ST=['human','infected','zombie','dead'];
 const r2=v=>Math.round((v||0)*100)/100;
 export function freshSent(){return {seen:new Set(),doors:'',broken:-1,drops:'',gear:'',drop:'',searched:'',who:''};}
 export function encodeWorld(c,me){
-  const s={t:'s',g:{min:r2(G.min),ph:G.phase,rt:G.rainTarget,ob:G.outbreak,bo:G.blackout,ov:G.over,k:G.kills,kb:G.killsBy,df:G.diff,ec:G.endCause,fg:G.fog,ht:G.heat,st:G.site,bl:G.blown,tr:G.traps}};   // v0.23 blown gas cylinders   // fog / heat / event site (v0.18)
+  const s={t:'s',g:{min:r2(G.min),ph:G.phase,rt:G.rainTarget,ob:G.outbreak,bo:G.blackout,ov:G.over,k:G.kills,kb:G.killsBy,df:G.diff,ec:G.endCause,fg:G.fog,st:G.site,bl:G.blown,tr:G.traps}};   // v0.23 blown gas cylinders   // fog / heat / event site (v0.18)
   const dj=JSON.stringify(G.doors);if(dj!==c.doors){c.doors=dj;s.doors=G.doors;}
   const sj=G.searched.join();if(sj!==c.searched){c.searched=sj;s.sr=G.searched;}   // v0.15
   if(G.broken.length!==c.broken){c.broken=G.broken.length;s.broken=G.broken;}
@@ -29,8 +29,8 @@ export function encodeWorld(c,me){
     p.stance|0,r2(p.reloadT),r2(p.swing),r2(p.swingDur),r2(p.recoil),p.inv>0?1:0,p.away?1:0,r2(p.reviveT),r2(p.airH||0)]);   // v0.30 airH: off the ground, vaulting or hopping
   const who=players.map(p=>[p.id,p.name,p.wear||null]),wj=JSON.stringify(who);if(wj!==c.who){c.who=wj;s.who=who;}   // v0.41 names and clothes, when they change
   const gj=JSON.stringify(me.gear);
-  s.me={id:me.id,inf:r2(me.infect),fo:r2(me.food),wa:r2(me.water),ec:me.endCause,near:me.near?me.near.nid:0,full:me.full?me.full.nid:0,
-    nd:me.nearDoor,fd:me.fixDoor,dn:me.nearDown?me.nearDown.id:-1,hp:me.helping?me.helping.id:-1,ht:r2(me.helpT),starv:me.starving?1:0,nb:me.nearBox,sb:me.searching,st:r2(me.searchT)};
+  s.me={id:me.id,inf:r2(me.infect),ec:me.endCause,near:me.near?me.near.nid:0,full:me.full?me.full.nid:0,
+    nd:me.nearDoor,fd:me.fixDoor,dn:me.nearDown?me.nearDown.id:-1,hp:me.helping?me.helping.id:-1,ht:r2(me.helpT),nb:me.nearBox,sb:me.searching,st:r2(me.searchT)};
   if(gj!==c.gear){c.gear=gj;s.me.gear=me.gear;}
   s.ag=[];s.nw=[];
   for(const a of agents){
@@ -48,7 +48,7 @@ export function clearClientMaps(){byNid.clear();looks.clear();dropByNid.clear();
 export function dropOf(nid){return dropByNid.get(nid)||null;}
 const want=(a,x,z)=>{a.nx=x;a.nz=z;if(!(Math.hypot(x-a.pos.x,z-a.pos.z)<4)){a.pos.x=x;a.pos.z=z;}};   // far off (new, or a jump): no sliding
 export function applyWorld(s,myId){
-  const g=s.g;Object.assign(G,{min:g.min,phase:g.ph,rainTarget:g.rt,outbreak:g.ob,blackout:g.bo,kills:g.k,killsBy:g.kb||{},diff:g.df,fog:g.fg||0,heat:g.ht||0,site:g.st||null});
+  const g=s.g;Object.assign(G,{min:g.min,phase:g.ph,rainTarget:g.rt,outbreak:g.ob,blackout:g.bo,kills:g.k,killsBy:g.kb||{},diff:g.df,fog:g.fg||0,site:g.st||null});
   if(g.bl&&g.bl.length!==(G.blown||[]).length){G.blown=g.bl.slice();applyTanks();}
   if(g.tr&&g.tr.length!==(G.traps||[]).length){G.traps=g.tr.slice();applyTraps();}   // v0.26
   if(s.doors)applyDoors(s.doors);
@@ -78,7 +78,7 @@ export function applyWorld(s,myId){
   const me=s.me;
   if(me&&player){
     if(me.gear)player.gear=me.gear;
-    Object.assign(player,{infect:me.inf,food:me.fo,water:me.wa,endCause:me.ec,starving:!!me.starv,nearDoor:me.nd,fixDoor:me.fd,helpT:me.ht,nearBox:me.nb??-1,searching:me.sb??-1,searchT:me.st||0,
+    Object.assign(player,{infect:me.inf,endCause:me.ec,nearDoor:me.nd,fixDoor:me.fd,helpT:me.ht,nearBox:me.nb??-1,searching:me.sb??-1,searchT:me.st||0,
       near:dropOf(me.near),full:dropOf(me.full),nearDown:players.find(q=>q.id===me.dn)||null,helping:players.find(q=>q.id===me.hp)||null});
   }
   // people and zombies

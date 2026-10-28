@@ -1,6 +1,6 @@
 import {bus} from '../core/bus.js';
 import {player,startHelp} from '../entities/player.js';
-import {pickup,useHeal,eatBest,switchTo,useItemAt,useFoodAt,equipFromBag,holdSlot,unequip,dropFromBag,dropEquipped} from './inventory.js';
+import {pickup,useHeal,switchTo,useItemAt,equipFromBag,holdSlot,unequip,dropFromBag,dropEquipped} from './inventory.js';
 import {startReload} from './combat.js';
 import {toggleDoor,fixDoor} from './doors.js';
 import {throwBottle,pickThrow} from './throw.js';
@@ -13,8 +13,8 @@ export const ACTIONS={
   // E / the pick button: help a downed (or with a Kit, dead) teammate, take the item, work the door or search the furniture
   use(p){if(p.nearDown)startHelp(p,p.nearDown);else if(p.near)pickup(p,p.near);else if(p.nearDoor>=0)toggleDoor(p,p.nearDoor);else if(p.nearBox>=0)startSearch(p,p.nearBox);},
   fix(p){if(p.fixDoor>=0)fixDoor(p,p.fixDoor);},
-  reload:p=>startReload(p),heal:p=>useHeal(p),eat:p=>eatBest(p),throw:p=>throwBottle(p),pickThrow:(p,id)=>pickThrow(p,id),
-  slot:(p,s)=>{if(['primary','secondary','melee'].includes(s))switchTo(p,s);},equip:equipFromBag,hold:holdSlot,unequip,useAt:useItemAt,foodAt:useFoodAt,dropBag:dropFromBag,dropEq:dropEquipped,
+  reload:p=>startReload(p),heal:p=>useHeal(p),throw:p=>throwBottle(p),pickThrow:(p,id)=>pickThrow(p,id),
+  slot:(p,s)=>{if(['primary','secondary','melee'].includes(s))switchTo(p,s);},equip:equipFromBag,hold:holdSlot,unequip,useAt:useItemAt,dropBag:dropFromBag,dropEq:dropEquipped,
 };
 export function act(name,...args){
   if(!Object.prototype.hasOwnProperty.call(ACTIONS,name))return;

@@ -12,14 +12,13 @@ import {uiFor} from '../ui/hud.js';
 export function infectPlayer(p){
   if(!INFECTION.on||!p.alive||p.infect>0)return;   // switched off (v0.18)
   p.infect=.001;p.infWarn=0;sfxFor(p).infect();
-  uiFor(p).say('คุณถูกกัดและติดเชื้อ! หา Antibiotic ก่อนเชื้อลามถึง 100%','alarm',6);
 }
 export function cureInfection(p){p.infect=0;p.infWarn=0;}
 export function updateInfection(p,dt){
   if(!p.alive||!(p.infect>0)||p.down>0||p.bleed>0)return;   // paused while down (v0.10)
   const U=uiFor(p);
   p.infect=Math.min(1,p.infect+dt*RATE*SPEEDS[G.speedIdx]/INFECT_MINUTES);
-  if(p.infect>=.5&&p.infWarn<1){p.infWarn=1;U.feed('เชื้อลามไปครึ่งทางแล้ว ต้องใช้ Antibiotic','warn');sfxFor(p).infect();}
-  if(p.infect>=.8&&p.infWarn<2){p.infWarn=2;U.say('ตัวเริ่มชา สายตาพร่า… เหลือเวลาไม่มาก','alarm',5);sfxFor(p).infect();}
+  if(p.infect>=.5&&p.infWarn<1){p.infWarn=1;sfxFor(p).infect();}
+  if(p.infect>=.8&&p.infWarn<2){p.infWarn=2;sfxFor(p).infect();}
   if(p.infect>=1){p.endCause='infected';p.inv=0;hurtPlayer(p,p.hp+999);}
 }

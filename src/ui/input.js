@@ -2,13 +2,12 @@ import {$,isTouch} from '../core/util.js';
 import {cv,zoom,camera,view} from '../core/renderer.js';
 import {G} from '../core/state.js';
 import {keys,ctl,mouse,joy} from '../core/controls.js';
-import {SPEEDS} from '../config/time.js';
-import {player,isSolo} from '../entities/player.js';
+import {player} from '../entities/player.js';
 import {act} from '../systems/actions.js';
 import {DIFFS} from '../config/difficulty.js';
 import {reset} from '../systems/game.js';
 import {readSave,loadGame,clearSave} from '../systems/save.js';
-import {chipEls,hhmm,say} from './hud.js';
+import {chipEls} from './hud.js';
 import {openBag,closeBag} from './bag.js';
 import {isMuted,toggleMute} from '../systems/audio.js';
 import {isSettingsOpen,closeSettings} from './settings.js';
@@ -20,8 +19,7 @@ let rightId=null,lookId=null,lookX=0,lookY=0;   // v0.28 a finger turning the fi
 // start screen: offer "continue" when an autosave exists; starting a new day overwrites it
 export function showContinue(){
   const s=readSave(),has=!!s;
-  $('bContinue').hidden=!has;$('bStart').classList.toggle('alt',has);$('saveNote').hidden=!has;
-  if(has)$('contInfo').textContent='วันที่ '+(Math.floor(s.G.min/1440)+1)+' · '+hhmm(s.G.min);
+  $('bContinue').hidden=!has;$('bStart').classList.toggle('alt',has);
 }
 // E / the pick button: open the bag when only a full-bag item is in reach, otherwise the 'use' action (systems/actions.js)
 function usePick(){if(player.full&&!player.near&&!player.nearDown)openBag();else act('use');}
@@ -73,7 +71,7 @@ export function initInput(){
     keys[e.code]=true;
     if(e.code==='Space'){e.preventDefault();if(!e.repeat){if(view.fps)ctl.jumpQ=.25;else{ctl.fireHeld=true;ctl.fireQ=.2;}}}   // v0.30 first person: Space vaults / hops
     if(e.code==='Digit1')act('slot','primary');if(e.code==='Digit2')act('slot','secondary');if(e.code==='Digit3')act('slot','melee');
-    if(e.code==='KeyR')act('reload');if(e.code==='KeyH')act('heal');if(e.code==='KeyG')act('eat');
+    if(e.code==='KeyR')act('reload');if(e.code==='KeyH')act('heal');
     if(e.code==='KeyE'||e.code==='KeyF')usePick();
     if(e.code==='KeyB')act('fix');
     if(e.code==='KeyQ'&&!e.repeat)act('throw');
@@ -116,7 +114,6 @@ export function initInput(){
   $('bAds').addEventListener('click',()=>{ctl.adsTouch=!ctl.adsTouch;});   // v0.29 touch: aim down the sights on / off
   $('bStance').addEventListener('click',()=>{ctl.stance=(ctl.stance+1)%3;});
   $('bZin').addEventListener('click',()=>zoom(1/1.2));$('bZout').addEventListener('click',()=>zoom(1.2));
-  $('bSpeed').addEventListener('click',()=>{if(!isSolo())return;G.speedIdx=(G.speedIdx+1)%SPEEDS.length;$('bSpeed').textContent='×'+SPEEDS[G.speedIdx];});
   $('bBag').addEventListener('click',()=>{$('bag').hidden?openBag():closeBag();});
   $('bagClose').addEventListener('click',closeBag);
   $('bag').addEventListener('pointerdown',e=>{if(e.target===$('bag'))closeBag();});
@@ -128,10 +125,9 @@ export function initInput(){
   for(const ev of ['pointerup','pointercancel','lostpointercapture'])atk.addEventListener(ev,()=>{ctl.fireHeld=false;});
   $('bReload').addEventListener('click',()=>act('reload'));
   $('bHeal').addEventListener('click',()=>act('heal'));
-  $('bEat').addEventListener('click',()=>act('eat'));
   // difficulty for new games, remembered in this browser; a continued save keeps its own
   let pref='normal';try{pref=localStorage.getItem('ordinary-day.diff')||'normal';}catch(_){}
-  const pickDiff=k=>{if(!DIFFS[k])k='normal';G.diff=k;for(const b of document.querySelectorAll('.diffs button')){b.classList.toggle('on',b.dataset.diff===k);b.setAttribute('aria-checked',b.dataset.diff===k);}$('diffNote').textContent=DIFFS[k].desc;try{localStorage.setItem('ordinary-day.diff',k);}catch(_){}};
+  const pickDiff=k=>{if(!DIFFS[k])k='normal';G.diff=k;for(const b of document.querySelectorAll('.diffs button')){b.classList.toggle('on',b.dataset.diff===k);b.setAttribute('aria-checked',b.dataset.diff===k);}try{localStorage.setItem('ordinary-day.diff',k);}catch(_){}};
   for(const b of document.querySelectorAll('.diffs button'))b.addEventListener('click',()=>pickDiff(b.dataset.diff));
   pickDiff(pref);
   $('bPick').addEventListener('click',usePick);
@@ -139,12 +135,9 @@ export function initInput(){
   $('bThrow').addEventListener('click',()=>act('throw'));
   for(const c of chipEls)c.addEventListener('click',()=>act('slot',c.dataset.slot));
   $('bStart').addEventListener('click',()=>{clearSave();reset();ctl.stance=0;ctl.adsTouch=false;$('overlay').hidden=true;G.running=true;});
-  $('bContinue').addEventListener('click',()=>{if(!loadGame()){showContinue();return;}$('overlay').hidden=true;G.running=true;say('เล่นต่อจากเซฟ · '+$('contInfo').textContent,'',4);});
+  $('bContinue').addEventListener('click',()=>{if(!loadGame()){showContinue();return;}$('overlay').hidden=true;G.running=true;});
   showContinue();
   for(const id of ['bSound','bSound2'])$(id).addEventListener('click',()=>{toggleMute();showSound();});showSound();
   $('bAgain').addEventListener('click',()=>{reset();ctl.stance=0;ctl.adsTouch=false;$('overlay').hidden=true;G.running=true;});
   if(isTouch){$('atkKey').textContent='กดค้าง';}
-  $('keys').innerHTML=isTouch
-    ?'<kbd>นิ้วซ้าย</kbd><span>ลากเพื่อเดิน ดันสุดเพื่อวิ่ง</span><kbd>ปุ่มโจมตี</kbd><span>กดค้างเพื่อยิงต่อเนื่อง เล็งให้อัตโนมัติ</span><kbd>1 2 3</kbd><span>สลับอาวุธหลัก รอง ประชิด</span><kbd>👁</kbd><span>มุมมองบุคคลที่หนึ่ง (ทดลอง) นิ้วขวาลากเพื่อหันมอง ปุ่ม 🎯 เล็งศูนย์ ปุ่มท่าทาง ยืน หมอบ นอน</span><kbd>ดันจอยสุด</kbd><span>วิ่งชนของเตี้ย เช่นม้านั่ง รถ โต๊ะ แล้วกระโดดข้าม ซอมบี้ต้องเดินอ้อม</span><kbd>กระเป๋า</kbd><span>ติดตั้ง ใช้ หรือทิ้งของ (เกมหยุดระหว่างเปิด)</span>'
-    :'<kbd>W A S D</kbd><span>เดิน (Shift วิ่ง กลางคืนเสียงวิ่งเรียกซอมบี้)</span><kbd>เมาส์</kbd><span>เล็ง · คลิกค้างเพื่อโจมตี</span><kbd>1 2 3</kbd><span>สลับอาวุธหลัก รอง ประชิด</span><kbd>R · E · H</kbd><span>รีโหลด · เก็บของ · ใช้ยา</span><kbd>Tab</kbd><span>เปิดกระเป๋า (เกมหยุดระหว่างเปิด)</span><kbd>V</kbd><span>มุมมองบุคคลที่หนึ่ง (ทดลอง) เมาส์หันมอง</span><kbd>คลิกขวา</kbd><span>เล็งศูนย์ (ปืน) · Sniper มองผ่านกล้อง กด Shift กลั้นหายใจ</span><kbd>C · Z</kbd><span>หมอบ · นอนราบ (เดินช้า เสียงเบา ซอมบี้เห็นยาก ยิงแม่นขึ้น)</span><kbd>Shift + เดินชน</kbd><span>วิ่งชนของเตี้ย (ม้านั่ง รถ เคาน์เตอร์ โต๊ะ) แล้วกระโดดข้าม · มุมบุคคลที่หนึ่งกด Space</span>';
 }

@@ -15,16 +15,16 @@ import {uiFor} from '../ui/hud.js';
 
 // ---------- thrown things (v0.7, v0.23) ----------
 // Q / the throw button throws toward where the player aims (p.input.aimDist from the mouse on desktop, else ahead). It
-// flies in an arc and lands where aimed or at the first wall. A bottle breaks and its noise draws zombies; a Molotov
+// flies in an arc and lands where aimed or at the first wall (v0.42 no bottles any more). A flare's light and noise draw zombies; a Molotov
 // sets the ground on fire there; a grenade blows up a moment later (systems/blast.js). The player picks which one in the
-// bag (p.gear.throwId); with none picked, or none of it left, the first they have of bottle, Molotov, grenade.
-export const THROWS=['bottle','flare','molotov','grenade'];
+// bag (p.gear.throwId); with none picked, or none of it left, the first they have of flare, Molotov, grenade.
+export const THROWS=['flare','molotov','grenade'];   // v0.42 no bottles
 export function throwPick(g){const has=id=>g.bag.some(e=>e.id===id&&e.n>0);return g.throwId&&has(g.throwId)?g.throwId:THROWS.find(has)||null;}
 const flying=[];
 export function throwBottle(p){
   if(!p.alive||p.down>0||p.bleed>0)return false;
   const U=uiFor(p),id=throwPick(p.gear);
-  if(!id||countAmmo(p,id)<=0){U.feedOnce('nobottle','ไม่มีของให้ขว้าง (ขวด Molotov หรือระเบิดมือ)','warn');return false;}
+  if(!id||countAmmo(p,id)<=0){U.feedOnce('nobottle','ไม่มีของให้ขว้าง','warn');return false;}
   takeAmmo(p,id,1);
   const fx=Math.sin(p.face),fz=Math.cos(p.face),x0=p.pos.x,z0=p.pos.z;
   let dist=p.input.aim?clamp(p.input.aimDist,2,THROW_RANGE):THROW_RANGE*.9;

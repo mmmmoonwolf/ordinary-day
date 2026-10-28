@@ -1,4 +1,4 @@
-import {$,isTouch} from '../core/util.js';
+import {$} from '../core/util.js';
 import {G} from '../core/state.js';
 import {ctl,joy} from '../core/controls.js';
 import {DEF,STACKS,GRADES,SLOTNAME,itemColor,durPct} from '../config/items.js';
@@ -15,9 +15,7 @@ function itemDesc(it){
   if(d.kind==='weapon'){
     if(d.gun)return SLOTNAME[d.slot]+' · แม็ก '+d.mag+' นัด · ใช้กระสุน '+DEF[d.ammo].name+(d.auto?' · ยิงอัตโนมัติ':'')+(d.pierce?' · ทะลุได้ '+d.pierce+' ตัว':'')+(d.heavy?' · เดินช้าลงขณะยิง':'')+' · ในแม็กตอนนี้ '+it.mag+' นัด';
     return SLOTNAME[d.slot]+' · ระยะ '+(d.range||1.4).toFixed(1)+' ม.'+(d.cleave?' · โดนหลายตัวในวงฟัน':'')+(d.dur?' · ความทนเหลือ '+Math.ceil(durPct(it)*100)+'% (พังเมื่อหมด)':'');}
-  if(d.kind==='mat')return 'ใช้ตอกประตูที่ปิดอยู่ให้ทนขึ้น หรือซ่อมประตูที่พัง ยืนใกล้ประตูแล้ว'+(isTouch?'แตะปุ่มตอกไม้':'กด B')+' · มี '+it.n+' แผ่น';
-  if(d.kind==='throw')return (d.lure?'ยิงพลุไปทางที่เล็ง พลุไหม้สีแดง 20 วินาที ซอมบี้ทั้งย่านเดินไปหา ใช้ล่อให้พ้นทาง ':d.fire?'ขว้างแล้วไฟลุกเป็นวง ซอมบี้ที่เดินผ่านไหม้ อย่าเดินเข้าไปเอง ':d.blast?'ขว้างแล้วระเบิดหลังตก 1 วินาที รัศมีราว 4.5 ม. ถอยให้พ้น ':'ขว้างให้แตกเสียงดัง ซอมบี้จะไปดูที่จุดนั้น ')+(isTouch?'แตะปุ่มขว้าง':'กด Q (ขว้างไปทางที่เล็ง)')+' · มี '+it.n+' ชิ้น'+' · มี '+it.n+' ขวด';
-  if(d.kind==='food')return (d.food?'อิ่มขึ้น '+d.food+'%':'หายกระหาย '+d.water+'%')+' · มี '+it.n+' ชิ้น';
+  if(d.kind==='throw')return 'มี '+it.n+' ชิ้น';   // v0.42 no how-to text (it also said the count twice)
   if(d.kind==='ammo')return 'มี '+it.n+' นัด';
   if(d.kind==='heal')return 'ฟื้น '+Math.round(d.heal*100)+'% ของ HP สูงสุด'+(d.cure?' และรักษาการติดเชื้อ':'')+' · มี '+it.n+' ชิ้น';
   if(d.kind==='revive')return 'ทำงานอัตโนมัติเมื่อ HP หมด ชุบชีวิตด้วย HP 100% (ใช้ครั้งเดียว)';
@@ -43,10 +41,10 @@ export function renderBag(){
     b.onclick=()=>{sel={where:'bag',i};renderBag();};grid.appendChild(b);
   }
   const cap=$('bagCap');cap.textContent=inv.bag.length+'/'+inv.cap;cap.classList.toggle('full',inv.bag.length>=inv.cap);
-  $('bagLabel').textContent=inv.cap>6?'ช่องเก็บของ · กระเป๋าเป้':'ช่องเก็บของ · กระเป๋ากางเกง (หากระเป๋าเป้เพื่อเพิ่มช่อง)';
+  $('bagLabel').textContent=inv.cap>6?'กระเป๋าเป้':'กระเป๋ากางเกง';   // v0.42 no hints
   const det=$('bagDetail');det.innerHTML='';det.style.removeProperty('--cat');
   const it=sel?(sel.where==='bag'?inv.bag[sel.i]:inv.eq[sel.slot]):null;
-  if(!it){sel=null;det.innerHTML='<p>แตะไอเท็มเพื่อดูรายละเอียด ติดตั้ง ใช้ หรือทิ้ง</p>';return;}
+  if(!it){sel=null;det.innerHTML='';return;}
   const d=DEF[it.id];det.style.setProperty('--cat',itemColor(it.id));
   det.innerHTML=`<h3>${d.name}${d.grade?`<small>${GRADES[d.grade].name.toUpperCase()} GRADE</small>`:''}</h3>`+(d.kind==='weapon'?`<div class="sbars">${bars('DMG',d.dmgR)}${d.gun?bars('FIRE RATE',d.rateR):''}</div>`:'')+`<p>${itemDesc(it)}</p>`;
   const acts=document.createElement('div');acts.className='acts';
@@ -54,7 +52,6 @@ export function renderBag(){
   if(sel.where==='bag'){
     // each button is an action (v0.12): run here, or sent to the host when playing in someone else's game
     if(d.kind==='weapon')btn(inv.eq[d.slot]?'สลับกับ '+DEF[inv.eq[d.slot].id].name:'ติดตั้ง',()=>{act('equip',sel.i);sel={where:'eq',slot:d.slot};},true);
-    if(d.kind==='food')btn(d.water?'ดื่ม':'กิน',()=>{act('foodAt',sel.i);if(inv.bag[sel.i]!==it)sel=null;},true);
     if(d.kind==='throw')btn(throwPick(inv)===it.id?'ขว้างอันนี้อยู่':'ใช้ปุ่มขว้างกับอันนี้',()=>act('pickThrow',it.id),true,throwPick(inv)===it.id);   // v0.23
     if(d.kind==='heal')btn('ใช้',()=>{act('useAt',sel.i);if(inv.bag[sel.i]!==it)sel=null;},true,player.hp>=player.maxHp&&!(d.cure&&player.infect>0));
     btn('ทิ้ง',()=>{act('dropBag',sel.i);sel=null;});

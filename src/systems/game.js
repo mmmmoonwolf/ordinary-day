@@ -8,7 +8,6 @@ import {blood} from './effects.js';
 import {drops,removeDrop,spawnDrop,makeItem,fillDay} from './drops.js';
 import {EVENTS} from './phases.js';
 import {updateLoadout} from '../ui/hud.js';
-import {clearTip} from '../ui/tips.js';
 import {restoreObstacles} from './obstacles.js';
 import {REFILL,BAG_HELP} from '../config/loot.js';
 import {restoreDoors} from './doors.js';
@@ -33,7 +32,7 @@ export function clearWorld(){
 }
 export function reset(){
   clearWorld();
-  const me=makePlayer(0);me.local=true;applyProfile(me);players.push(me);setPlayer(me);   // v0.41 the name and clothes made on the start screenspawnPopulation();camTarget.set(player.pos.x,0,player.pos.z);   // one player on this device; more join with addPlayer() (v0.9)
+  const me=makePlayer(0);me.local=true;applyProfile(me);players.push(me);setPlayer(me);spawnPopulation();camTarget.set(player.pos.x,0,player.pos.z);   // one player on this device; more join with addPlayer() (v0.9); v0.41 wearing the name and clothes made on the start screen
   let near=null,nd=1e9;for(const s of lootSpots){if(s.zone!=='city')continue;const d=Math.hypot(s.x-player.pos.x,s.z-player.pos.z);if(d>4&&d<nd){nd=d;near=s;}}
   if(near)spawnDrop(makeItem(pick(['pipe_c','knife_c','bat_c'])),near.x,near.z,near);
   // v0.37 and a backpack a little further on (config/loot.js BAG_HELP.start)
@@ -41,5 +40,5 @@ export function reset(){
   if(far.length){const s=pick(far);spawnDrop(makeItem('backpack'),s.x,s.z,s);}
   for(const s of lootSpots)if(s.zone==='ambulance')spawnDrop(makeItem('resurrect'),s.x,s.z,s);
   fillDay(REFILL.start);
-  $('hurt').style.opacity=0;$('boss').hidden=true;clearTip();updateLoadout(true);
+  $('hurt').style.opacity=0;$('boss').hidden=true;updateLoadout(true);
 }

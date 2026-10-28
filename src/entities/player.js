@@ -11,14 +11,13 @@ import {drops} from '../systems/drops.js';
 import {curWeapon,pickup,freshGear} from '../systems/inventory.js';
 import {aimAssist,finishReload,fireGun,meleeHit,die} from '../systems/combat.js';
 import {updateInfection,cureInfection} from '../systems/infection.js';
-import {updateNeeds} from '../systems/needs.js';
-import {LOW_NEED} from '../config/needs.js';
 import {STANCE,ADS,BLOOM,VAULT} from '../config/handling.js';
 import {startVault,updateVault} from '../systems/vault.js';
 import {sfxFor} from '../systems/audio.js';
 import {nearDoor,nearFixDoor} from '../systems/doors.js';
 import {nearBoxOf,keepSearching} from '../systems/search.js';
 import {CRAWL_SPEED,REVIVE_SECONDS,REVIVE_RANGE,REVIVE_HP} from '../config/party.js';
+import {REGEN} from '../config/health.js';
 import {uiFor} from '../ui/hud.js';
 
 // ---------- players (v0.9) ----------
@@ -34,7 +33,7 @@ export const freshInput=()=>({mx:0,mz:0,mag:0,run:false,sneak:false,slow:false,a
 export function makePlayer(i=0){
   const p=makeAgent(OFF+i*1.3,OFF,LOOKS[i%LOOKS.length]);
   Object.assign(p,{state:'player',id:i,name:'ผู้เล่น '+(i+1),local:false,away:false,token:null,hp:100,maxHp:100,alive:true,swing:0,swingDur:.4,hitDone:true,lastHit:-99,face:Math.PI*1.25,cool:0,reloadT:0,recoil:0,aimT:0,held:null,heldId:'fist',down:0,inv:0,
-    infect:0,infWarn:0,food:100,water:100,needWarn:0,starving:false,room:-1,nearDoor:-1,bleed:0,reviveT:0,helping:null,helpT:0,nearDown:null,fixDoor:-1,nearBox:-1,searching:-1,searchT:0,searchHit:0,near:null,full:null,sneak:false,stance:0,ads:false,bloom:0,vault:null,hop:0,airH:0,runNoise:0,stay:null,endCause:null,gear:freshGear(),input:freshInput()});
+    infect:0,infWarn:0,room:-1,nearDoor:-1,bleed:0,reviveT:0,helping:null,helpT:0,nearDown:null,fixDoor:-1,nearBox:-1,searching:-1,searchT:0,searchHit:0,near:null,full:null,sneak:false,stance:0,ads:false,bloom:0,vault:null,hop:0,airH:0,runNoise:0,stay:null,endCause:null,gear:freshGear(),input:freshInput()});
   return p;
 }
 // players that zombies can go after (v0.12: not one whose device has dropped out of the game, p.away)
@@ -101,8 +100,8 @@ export function updatePlayer(p,dt){
   const np=nearestPickable(p);p.full=!np&&full?full:null;p.near=p.full?null:np;
   p.nearDoor=p.full||np?-1:nearDoor(p);p.fixDoor=nearFixDoor(p);
   p.nearBox=p.full||np||p.nearDoor>=0?-1:nearBoxOf(p);
-  if(performance.now()/1000-p.lastHit>6&&p.hp<p.maxHp&&!(p.infect>0)&&p.food>=LOW_NEED&&p.water>=LOW_NEED)p.hp=Math.min(p.maxHp,p.hp+1.5*dt);
-  updateInfection(p,dt);updateNeeds(p,dt);
+  const cap=p.maxHp*REGEN.cap;if(performance.now()/1000-p.lastHit>REGEN.after&&p.hp<cap&&!(p.infect>0))p.hp=Math.min(cap,p.hp+REGEN.rate*dt);   // v0.42 slower, up to a cap (config/health.js)
+  updateInfection(p,dt);
 }
 // ---------- downed and helping up (v0.10) ----------
 // A downed player can only crawl; the clock runs down (hits take more off, see hurtPlayer) and at 0 they die.
@@ -131,7 +130,7 @@ function keepHelping(p,dt){
   q.reviveT=0;
   if(!q.alive){resurrect(p,q);return false;}
   q.bleed=0;q.hp=REVIVE_HP;q.inv=2;q.lastHit=performance.now()/1000;
-  uiFor(q).say('เพื่อนช่วยพยุงคุณขึ้นมาแล้ว · HP '+REVIVE_HP,'',4);uiFor(p).feed('ช่วยเพื่อนลุกขึ้นได้แล้ว');
+  uiFor(p).feed('ช่วยเพื่อนลุกขึ้นได้แล้ว');
   return false;
 }
 // a Resurrection Kit used on a dead teammate (v0.11, the creator's call on open question 6): back with full HP, cured
@@ -139,9 +138,9 @@ function keepHelping(p,dt){
 function resurrect(p,q){
   const bag=p.gear.bag,i=bag.findIndex(e=>e.id==='resurrect');if(i<0)return;
   bag.splice(i,1);uiFor(p).updateLoadout(true);
-  Object.assign(q,{alive:true,state:'player',deadT:0,hp:q.maxHp,bleed:0,inv:3,down:0,endCause:null,food:Math.max(q.food,30),water:Math.max(q.water,30),lastHit:performance.now()/1000});
+  Object.assign(q,{alive:true,state:'player',deadT:0,hp:q.maxHp,bleed:0,inv:3,down:0,endCause:null,lastHit:performance.now()/1000});
   cureInfection(q);if(q.local)G.endCause=null;
-  uiFor(q).say(p.name+' ใช้ Resurrection Kit ชุบคุณกลับมาแล้ว','',5);uiFor(p).feed('ชุบ '+q.name+' กลับมาแล้ว');
+  uiFor(p).feed('ชุบ '+q.name+' กลับมาแล้ว');
 }
 export function syncHeld(p){
   const id=curWeapon(p).id;if(id===p.heldId)return;p.heldId=id;

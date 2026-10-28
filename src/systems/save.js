@@ -11,7 +11,7 @@ import {drops,spawnDrop,removeDrop} from './drops.js';
 import {freshGear,tidyBag} from './inventory.js';
 import {EVENTS} from './phases.js';
 import {reset,addPlayer} from './game.js';
-import {feed,updateLoadout} from '../ui/hud.js';
+import {updateLoadout} from '../ui/hud.js';
 import {applyBroken} from './obstacles.js';
 import {applyDoors} from './doors.js';
 import {cleanName,cleanLook} from '../core/profile.js';
@@ -23,13 +23,13 @@ import {applyEvents} from './events.js';
 const SAVE_KEY='ordinary-day.save',SAVE_VERSION=2;   // 2 (v0.9): players[] with their own gear; 1 still loads (one player)
 const AUTOSAVE_EVERY=15;   // real seconds while playing
 const AGENT_KEYS=['state','kind','face','phase','node','prev','jx','jz','walk','panic','tx','tz','wait','vendor','hp','maxHp','feed','atk','spd','stuckT','lost','turnT','heard','fuse','wind','retreat','shrieked','march','rise'];
-let sinceSave=0,toldPlayer=false;
+let sinceSave=0;
 
 const validItem=it=>it&&DEF[it.id];
 function snapshot(){
   const g=Object.assign({},G,{alertA:null,alertT:0,running:false,paused:false,over:false,lastMinShown:-1});
   return {v:SAVE_VERSION,savedAt:Date.now(),G:g,
-    players:players.map(p=>({x:p.pos.x,z:p.pos.z,face:p.face,hp:p.hp,alive:p.alive,down:p.down,bleed:p.bleed,inv:p.inv,infect:p.infect,infWarn:p.infWarn,food:p.food,water:p.water,sinceHit:performance.now()/1000-p.lastHit,stay:p.stay,gear:p.gear,token:p.token,name:p.name,wear:p.wear||null})),   // v0.41 name and clothes (friends'; this device's come from the profile)
+    players:players.map(p=>({x:p.pos.x,z:p.pos.z,face:p.face,hp:p.hp,alive:p.alive,down:p.down,bleed:p.bleed,inv:p.inv,infect:p.infect,infWarn:p.infWarn,sinceHit:performance.now()/1000-p.lastHit,stay:p.stay,gear:p.gear,token:p.token,name:p.name,wear:p.wear||null})),   // v0.41 name and clothes (friends'; this device's come from the profile)
     agents:agents.filter(a=>a.state!=='dead'&&!a.gone).map(a=>{const o={x:a.pos.x,z:a.pos.z,look:a.look};for(const k of AGENT_KEYS)o[k]=a[k];return o;}),
     drops:drops.map(d=>({item:d.item,x:d.x,z:d.z,spot:d.spot?lootSpots.indexOf(d.spot):-1,mine:!!d.mine}))};
 }
@@ -61,7 +61,7 @@ export function loadGame(){
     p.gear=Object.assign(freshGear(),{bag:(g.bag||[]).filter(validItem),cap:g.cap||6,active:g.active||'melee'});
     for(const k of ['primary','secondary','melee'])p.gear.eq[k]=validItem(eq[k])?eq[k]:null;
     tidyBag(p.gear);   // saves from before v0.14.1 can hold several stacks of one item
-    Object.assign(p.pos,{x:o.x,z:o.z});Object.assign(p,{face:o.face,hp:o.hp,down:o.down,bleed:o.bleed||0,inv:o.inv,infect:o.infect||0,infWarn:o.infWarn||0,food:o.food??100,water:o.water??100,stay:o.stay||null,lastHit:performance.now()/1000-o.sinceHit});
+    Object.assign(p.pos,{x:o.x,z:o.z});Object.assign(p,{face:o.face,hp:o.hp,down:o.down,bleed:o.bleed||0,inv:o.inv,infect:o.infect||0,infWarn:o.infWarn||0,stay:o.stay||null,lastHit:performance.now()/1000-o.sinceHit});
     if(o.alive===false)Object.assign(p,{alive:false,state:'dead',deadT:30});
     if(i)Object.assign(p,{token:o.token||null,away:true,name:cleanName(o.name)||p.name,wear:cleanLook(o.wear)});   // friends wait as they were until they join the room again (v0.12)
   });
@@ -78,7 +78,7 @@ export function loadGame(){
 }
 export function autosave(dt){
   sinceSave+=dt;if(sinceSave<AUTOSAVE_EVERY)return;
-  if(saveGame()&&!toldPlayer){toldPlayer=true;feed('บันทึกเกมอัตโนมัติแล้ว เล่นต่อได้แม้ปิดหน้าเว็บ');}
+  saveGame();
 }
 export function initSave(){
   // phones often close a tab without warning, so save whenever the page goes to the background

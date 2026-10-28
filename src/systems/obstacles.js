@@ -4,13 +4,11 @@ import {breakables} from '../world/props.js';
 import {boom} from './effects.js';
 import {sfx} from './audio.js';
 import {makeNoise} from '../entities/ai.js';
-import {feed} from '../ui/hud.js';
 import {markMapDirty} from '../ui/minimap.js';
 
 // ---------- obstacles the Tyrant can smash ----------
 // Cars, trash piles and benches (props.js `breakables`) get flattened when a Tyrant is stuck on them:
 // their box leaves `solids` so everyone can walk through. G.broken keeps their indices for the save.
-const NAME={car:'รถ',trash:'กองขยะ',bench:'ม้านั่ง'};
 function flatten(b,on){
   for(const m of b.meshes){
     if(m.userData.y0===undefined){m.userData.y0=m.position.y;m.userData.sy0=m.scale.y;}
@@ -23,7 +21,6 @@ function smash(b,fx){
   G.broken.push(breakables.indexOf(b));
   boom(b.x,.6,b.z,.4,6);
   sfx.crack();sfx.explode(b.x,b.z);makeNoise(b.x,b.z,30);
-  feed('Tyrant ทุบ'+(NAME[b.kind]||'สิ่งกีดขวาง')+'พัง','warn');
 }
 // breaks the nearest breakable within r of (x,z); returns true if it broke one
 export function smashNear(x,z,r){
