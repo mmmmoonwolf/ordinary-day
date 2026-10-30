@@ -159,6 +159,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 .go.alt{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
 .go span{font-weight:500;font-variant-numeric:tabular-nums}
 .starts{display:flex;gap:10px;flex-wrap:wrap}
+#pOver.pvp .stats{display:none}#pOver.pvp .kills{display:flex;flex-direction:column;gap:4px;font-size:15px}   /* v0.49 the PvP round's end */
 .savenote{font-size:12px;color:var(--ink-dim);margin:12px 0 0;max-width:40ch}
 #pause{position:fixed;inset:0;z-index:6;display:grid;place-items:center;background:rgba(8,9,10,.62);padding-block:calc(env(safe-area-inset-top,0px) + 16px) calc(env(safe-area-inset-bottom,0px) + 16px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .sheet.pausesheet{max-width:360px}
@@ -418,6 +419,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
     <div class="starts">
       <button class="go" id="bContinue" hidden>เล่นต่อ</button>
       <button class="go" id="bStart">เริ่มวันใหม่</button>
+      <button class="go alt" id="bPvpNew">สร้างห้อง PvP</button>
     </div>
     <div class="joinrow"><input id="roomCode" maxlength="5" placeholder="รหัสห้อง" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="รหัสห้องของเพื่อน"><button class="go alt" id="bJoin">เข้าห้องเพื่อน</button></div>
     <p class="savenote" id="joinMsg" aria-live="polite"></p>

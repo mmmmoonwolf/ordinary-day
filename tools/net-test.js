@@ -150,7 +150,7 @@ if (isClient) {
   const f2 = P.players.find(p => !p.local);
   if (c.mode !== 'pvp' || !c.me || !c.me.gear.eq.secondary || c.me.gear.eq.secondary.id !== PC.kit.gun) fail('PvP on the friend: ' + JSON.stringify({ mode: c.mode, gun: c.me && c.me.gear.eq.secondary }));
   f2.inv = 0; die(f2, P.player); c = await rounds(3);
-  if (c.me.alive || c.me.deaths !== 1 || !c.feed.some(t => t.includes('โดน'))) fail('PvP death on the friend: ' + JSON.stringify({ alive: c.me.alive, deaths: c.me.deaths, feed: c.feed }));
+  if (c.me.alive || c.me.deaths !== 1 || !c.feed.some(t => t.includes('ฆ่า'))) fail('PvP death on the friend: ' + JSON.stringify({ alive: c.me.alive, deaths: c.me.deaths, feed: c.feed }));
   await rounds(Math.ceil(PC.respawn * 20) + 4); c = await rounds(2);
   if (!c.me.alive || G.over || c.over) fail('PvP respawn on the friend: alive ' + c.me.alive + ' over ' + G.over);
   // closing the room sends the friend to the title
