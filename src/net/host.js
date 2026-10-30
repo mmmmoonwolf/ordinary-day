@@ -91,6 +91,6 @@ export function hostFrame(dt){
     const out=bus.out.splice(0);
     for(const c of room.conns){if(!c.p)continue;const l=out.filter(m=>m.to==='*'||m.to===c.p.id);if(l.length)c.link.send({t:'m',l});}
   }
-  snapT+=dt;if(snapT<SNAP_EVERY)return;snapT=0;
-  for(const c of room.conns)if(c.p)c.link.send(encodeWorld(c.sent,c.p));
+  snapT+=dt;if(snapT<SNAP_EVERY)return;const el=Math.round(snapT*1000)/1000;snapT=0;
+  for(const c of room.conns)if(c.p){const s=encodeWorld(c.sent,c.p);s.el=el;c.link.send(s);}   // v0.47.1 el: seconds since the last one
 }

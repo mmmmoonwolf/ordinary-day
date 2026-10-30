@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.47.1 | แก้เล่นออนไลน์: `jumpQ` ส่งครั้งเดียวแล้วล้างเหมือน `fireQ` (`clientStep()`), ค่าที่เครื่องเพื่อนนับถอยหลังเอง (`recoil` `swing` `reloadT`) รับจาก host เฉพาะตอนเริ่มใหม่ (`fresh()` ใน `snapshot.js`), snapshot มี `el` (วินาทีจาก snapshot ก่อน) ให้เครื่องเพื่อนเดินตำแหน่งต่อด้วยความเร็วล่าสุดไม่เกิน 0.12 วินาที (`vx` `vz` `ahead`), ผู้เล่นในเครื่องหันตาม `input.face` ทันที |
 | v0.47 | โหมด PvP (`config/pvp.js` `PVP`, `systems/pvp.js` `startPvp()` `updatePvp()` `spawnPoint()` `respawn()`, `G.mode` / `isPvp()` ใน `core/state.js`, `hurtPlayer(p,n,by)` `die(p,by)` `foesOf()` ใน `combat.js`, `p.frags` `p.deaths` `p.respawnT` `p.pvpIn`, `horde(count,cap)` ใน `events.js`, ปุ่ม `#bPvp`, snapshot `md` และคะแนนในแถวผู้เล่น) |
 | v0.46 | เป้าหมายใหม่ รอด 3 คืน (`GOAL_NIGHTS = 3`, `EXIT`, `exitOpen()`, `ARMY` ใน `config/goal.js`), วันละ 6 นาที (`DAY_REAL_SECONDS = 360`), ค่ายทหารสุดทางหลวง (`world/army.js` `buildArmyCamp()` `army` `setGateOpen()`, `AREAS` `army` แบบ `noSpawn`), ทหารยิงช่วย (`systems/army.js` `updateArmy()` `armyFrame()`, `figureModel()` ใน `skins.js`), `updateGoal()` ไม่มีเฮลิคอปเตอร์แล้ว |
 | v0.45 | ทางหลวง ปั๊มน้ำมัน สุสาน (`world/highway.js` `buildHighway()`, `AREAS` `gas` `cemetery` `highway` แบบ `open` / `follow`, `ROAD`, `inArea()`), `GASPLACE` / `PLACE_W.gas`, Graveyard Kit (`g_*`, `tone()` ใน `tools/build-props.mjs`), ซากรถไหม้ (`heavy` `burn`), รถที่ขับได้ (`world/vehicles.js` `rides`, `systems/vehicles.js` `driveStep()` `updateCars()` `enterCar()` `leaveCar()` `shieldDriver()` `applyCars()`, `config/vehicles.js` `CAR`, `G.cars`, `p.car` `p.nearCar`, snapshot `cars` / `car` / `nc`) |
@@ -937,6 +938,15 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **คะแนน:** เมนูหยุดเกมแสดงชื่อ ฆ่า ตาย ของทุกคน (ทั้ง host และเพื่อน, `frags` `deaths` อยู่ในแถวผู้เล่นของ snapshot)
 - **PLACEHOLDER:** ทุกค่าใน `PVP` (เวลาเริ่ม ดาเมจ เวลาเกิดใหม่ อมตะ ระยะห่าง ของเริ่มต้น ฝูง)
 - **ยังไม่ได้ทำ:** รถชนผู้เล่น · ทีม · จำกัดเวลา / คะแนนชนะ · เลือกโหมดตอนเริ่มเกมคนเดียว (ต้องเปิดห้อง)
+
+## แก้เล่นออนไลน์ (v0.47.1)
+
+ผู้สร้างแจ้ง: เพื่อนที่เข้าห้องกระโดดเอง และมือกระตุก (มุมบุคคลที่หนึ่ง)
+
+- **กระโดดเอง:** เครื่องเพื่อนส่ง `input` ทั้งก้อนไป host ทุก 0.05–0.5 วินาที `fireQ` (คลิกยิง) ถูกล้างหลังส่ง แต่ `jumpQ` (Space ในมุมบุคคลที่หนึ่ง) ไม่ถูกล้าง และเครื่องเพื่อนไม่ได้รัน `updatePlayer()` ที่ลดค่าลง host จึงได้ `jumpQ` ใหม่ทุกครึ่งวินาทีแล้วกระโดดซ้ำไปเรื่อย ๆ ตอนนี้ส่งทันทีแล้วล้างเหมือน `fireQ` (เทสต์: โค้ดเดิมกดครั้งเดียวกระโดด 5 ครั้งใน 2 วินาที ตอนนี้ 1 ครั้ง)
+- **มือกระตุก:** `recoil` `swing` `reloadT` เครื่องเพื่อนนับถอยหลังเองทุก step แต่ snapshot (15 ครั้ง/วินาที) เขียนค่าของ host ทับทุกครั้ง ท่ายิง ฟาด รีโหลดของแขนเลยเริ่มใหม่ซ้ำ ๆ และแรงถีบใน `updateFps()` ดีดกล้องซ้ำเมื่อค่าเด้งขึ้น ตอนนี้รับค่าจาก host เฉพาะตอนที่เริ่มใหม่จริง (สูงกว่าค่าในเครื่องเกินเกณฑ์) หรือจบแล้ว (0)
+- **เดินเป็นจังหวะ:** ตำแหน่งบนจอเพื่อนไล่ตาม snapshot ที่มาเป็นขั้น ๆ ตอนนี้ host บอกเวลาระหว่าง snapshot (`el`) เครื่องเพื่อนคิดความเร็วแล้วเดินเป้าหมายต่อจนกว่า snapshot ถัดไปจะมา (ไม่เกิน 0.12 วินาที) ใช้กับผู้เล่นและซอมบี้ทุกตัว (เทสต์: ระยะต่อ step ของผู้เล่นตัวเองบนจอเพื่อนแกว่ง 26% → 0%)
+- **หันช้า:** ผู้เล่นของเครื่องเพื่อนหันตามที่เล็งในเครื่องทันที ไม่รอ snapshot
 
 ## ระบบ loot
 

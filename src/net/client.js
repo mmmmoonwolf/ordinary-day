@@ -69,17 +69,22 @@ let sendT=0,lastSent='';
 export function clientStep(dt){
   if(!player)return;
   const I=player.input,k=JSON.stringify(I);sendT+=dt;
-  if(net.link&&(I.fireQ>0||(sendT>=.05&&k!==lastSent)||sendT>=.5)){net.link.send({t:'i',i:I});lastSent=k;sendT=0;I.fireQ=0;}
+  // v0.47.1 a Space press (jumpQ) goes once, like a click (fireQ): left in the input it was sent again every half second
+  // and the host made the player hop over and over
+  if(net.link&&(I.fireQ>0||I.jumpQ>0||(sendT>=.05&&k!==lastSent)||sendT>=.5)){net.link.send({t:'i',i:I});lastSent=k;sendT=0;I.fireQ=0;I.jumpQ=0;}
   const f=1-Math.exp(-dt*14);
   for(const a of agents)ease(a,dt,f);
   for(const p of players){
-    ease(p,dt,f);p.room=p.alive?roomAt(p.pos.x,p.pos.z):-1;
+    ease(p,dt,f);if(p===player&&p.alive&&I.face!==null&&p.car<0)p.face=I.face;   // v0.47.1 this device's player faces where it aims now, not a snapshot laterp.room=p.alive?roomAt(p.pos.x,p.pos.z):-1;
     p.swing=Math.max(0,p.swing-dt);p.recoil=Math.max(0,p.recoil-dt*8);p.reloadT=Math.max(0,p.reloadT-dt);if(p.inv>0)p.inv-=dt;
   }
   const v=viewed();if(v)showRoom(roomAt(v.pos.x,v.pos.z,.45));
 }
+// v0.47.1 between snapshots (15 a second) the target goes on at the speed between the last two (at most EXTRA s past
+// the last one), so things glide instead of moving in steps
+const EXTRA=.12;
 function ease(a,dt,f){
-  if(a.nx!==undefined){a.pos.x+=(a.nx-a.pos.x)*f;a.pos.z+=(a.nz-a.pos.z)*f;}
+  if(a.nx!==undefined){if(a.vx&&a.ahead<EXTRA){a.ahead+=dt;a.nx+=a.vx*dt;a.nz+=a.vz*dt;}a.pos.x+=(a.nx-a.pos.x)*f;a.pos.z+=(a.nz-a.pos.z)*f;}
   if(a.nface!==undefined)a.face=lerpAng(a.face,a.nface,Math.min(1,f*1.5));
   if(a.state==='dead')updateDead(a,dt);
   if(a.hitT>0){a.hitT-=dt;a.b.mats[0].emissive.setRGB(Math.max(0,a.hitT)*4,0,0);}
