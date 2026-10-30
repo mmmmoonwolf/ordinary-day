@@ -84,7 +84,8 @@ body.fps #bView{border-color:rgba(226,166,74,.75);background:rgba(226,166,74,.25
 #scope i{position:absolute;left:50%;top:50%;width:62vmin;height:62vmin;margin:-31vmin 0 0 -31vmin;border-radius:50%;
   background:linear-gradient(rgba(0,0,0,.85),rgba(0,0,0,.85)) center/1.5px 100% no-repeat,linear-gradient(90deg,rgba(0,0,0,.85),rgba(0,0,0,.85)) center/100% 1.5px no-repeat}
 body.scoped #scope{display:block}
-body.scoped #cross,body.fps.ads #cross{display:none}
+/* v0.48 aimed down the sights or through a scope: a small red dot in the middle instead of the ring (it used to vanish) */
+body.fps.ads #cross,body.scoped #cross{display:block;width:6px;height:6px;margin:-3px 0 0 -3px;border:1px solid rgba(0,0,0,.7);border-radius:50%;background:#ff4b3a;transform:none!important;z-index:2}
 #stanceTag{position:absolute;left:50%;top:calc(50% + 44px);transform:translateX(-50%);padding:3px 10px;background:var(--panel);border:1px solid var(--line);font-size:12px;font-weight:700;letter-spacing:.06em;pointer-events:none}
 #bAds{position:absolute;right:max(26px,calc(env(safe-area-inset-right,0px) + 26px));width:54px;height:54px;border-radius:50%;border:1.5px solid var(--line);background:var(--panel);font-size:13px;font-weight:700;display:grid;place-items:center;padding:0;touch-action:manipulation}
 #bAds{top:36%;font-size:22px}#bAds.on{border-color:rgba(226,166,74,.85);background:rgba(226,166,74,.3)}

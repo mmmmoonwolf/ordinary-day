@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.48 | เล็งศูนย์: `#cross` เป็นจุดแดงตอน `body.fps.ads` / `body.scoped` (เดิม `display:none`), `KICK.ads` `KICK.punch` `KICK.arms` ใน `config/handling.js`, `punch` (fov) ใน `updateFps()`, `viewArms(v,dt,scoped,ads)`, แรงถีบปืนกล่องหลังเลื่อนขึ้นศูนย์, `#scope` เลื่อนตาม `recoil` |
 | v0.47.1 | แก้เล่นออนไลน์: `jumpQ` ส่งครั้งเดียวแล้วล้างเหมือน `fireQ` (`clientStep()`), ค่าที่เครื่องเพื่อนนับถอยหลังเอง (`recoil` `swing` `reloadT`) รับจาก host เฉพาะตอนเริ่มใหม่ (`fresh()` ใน `snapshot.js`), snapshot มี `el` (วินาทีจาก snapshot ก่อน) ให้เครื่องเพื่อนเดินตำแหน่งต่อด้วยความเร็วล่าสุดไม่เกิน 0.12 วินาที (`vx` `vz` `ahead`), ผู้เล่นในเครื่องหันตาม `input.face` ทันที |
 | v0.47 | โหมด PvP (`config/pvp.js` `PVP`, `systems/pvp.js` `startPvp()` `updatePvp()` `spawnPoint()` `respawn()`, `G.mode` / `isPvp()` ใน `core/state.js`, `hurtPlayer(p,n,by)` `die(p,by)` `foesOf()` ใน `combat.js`, `p.frags` `p.deaths` `p.respawnT` `p.pvpIn`, `horde(count,cap)` ใน `events.js`, ปุ่ม `#bPvp`, snapshot `md` และคะแนนในแถวผู้เล่น) |
 | v0.46 | เป้าหมายใหม่ รอด 3 คืน (`GOAL_NIGHTS = 3`, `EXIT`, `exitOpen()`, `ARMY` ใน `config/goal.js`), วันละ 6 นาที (`DAY_REAL_SECONDS = 360`), ค่ายทหารสุดทางหลวง (`world/army.js` `buildArmyCamp()` `army` `setGateOpen()`, `AREAS` `army` แบบ `noSpawn`), ทหารยิงช่วย (`systems/army.js` `updateArmy()` `armyFrame()`, `figureModel()` ใน `skins.js`), `updateGoal()` ไม่มีเฮลิคอปเตอร์แล้ว |
@@ -947,6 +948,14 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **มือกระตุก:** `recoil` `swing` `reloadT` เครื่องเพื่อนนับถอยหลังเองทุก step แต่ snapshot (15 ครั้ง/วินาที) เขียนค่าของ host ทับทุกครั้ง ท่ายิง ฟาด รีโหลดของแขนเลยเริ่มใหม่ซ้ำ ๆ และแรงถีบใน `updateFps()` ดีดกล้องซ้ำเมื่อค่าเด้งขึ้น ตอนนี้รับค่าจาก host เฉพาะตอนที่เริ่มใหม่จริง (สูงกว่าค่าในเครื่องเกินเกณฑ์) หรือจบแล้ว (0)
 - **เดินเป็นจังหวะ:** ตำแหน่งบนจอเพื่อนไล่ตาม snapshot ที่มาเป็นขั้น ๆ ตอนนี้ host บอกเวลาระหว่าง snapshot (`el`) เครื่องเพื่อนคิดความเร็วแล้วเดินเป้าหมายต่อจนกว่า snapshot ถัดไปจะมา (ไม่เกิน 0.12 วินาที) ใช้กับผู้เล่นและซอมบี้ทุกตัว (เทสต์: ระยะต่อ step ของผู้เล่นตัวเองบนจอเพื่อนแกว่ง 26% → 0%)
 - **หันช้า:** ผู้เล่นของเครื่องเพื่อนหันตามที่เล็งในเครื่องทันที ไม่รอ snapshot
+
+## เล็งศูนย์มีเป้าและแรงถีบ (v0.48)
+
+ผู้สร้างแจ้ง: กด scope ปืนแล้วเป้ากลางจอหาย และอยากให้ปืนมีแรงผลักตอนเล็ง
+
+- **เป้ากลางจอ:** ตั้งแต่ v0.29 เล็งศูนย์ (`body.fps.ads`) และส่องกล้อง (`body.scoped`) ซ่อน `#cross` ทั้งหมด เพราะคิดว่าจะเล็งผ่านศูนย์ปืน แต่แขนตัวละคร (v0.39) ไม่ได้ยกปืนขึ้นตรงตา จึงไม่มีอะไรให้เล็ง ตอนนี้เป็นจุดแดงเล็ก 6 px กลางจอทั้งเล็งศูนย์และในกล้อง Sniper (เส้นกล้องสีดำมองไม่เห็นตอนมืด)
+- **แรงถีบตอนเล็ง:** เดิมกล้องดีดเหลือ 0.7 เท่าตอนเล็ง และปืนกล่องเลื่อนขึ้นศูนย์ทับแรงถีบจนไม่ขยับ ตอนนี้ (`KICK` PLACEHOLDER) กล้องดีด 1.3 เท่า (ขึ้นและส่ายข้าง) ภาพดันถอย (fov กว้างขึ้น 7% แล้วกลับใน ~0.1 วินาที) แขนและปืนกระแทกกลับ 2.2 เท่า วงกล้อง Sniper กระโดดลงและขยายตามแรงยิง (`#scope` transform) ยิงแบบไม่เล็งเหมือนเดิม
+- กระสุนยังกระจายแคบลงตอนเล็ง (`ADS.spread`) เหมือนเดิม แรงถีบเป็นภาพอย่างเดียว ไม่เปลี่ยนว่ากระสุนไปทางไหน
 
 ## ระบบ loot
 
