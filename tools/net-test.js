@@ -41,11 +41,12 @@ if (isClient) {
       else if (cmd === 'step') step(a[0]);
       else if (cmd === 'key') key(a[0], a[1]);
       else if (cmd === 'act') act(...a);
+      else if (cmd === 'jumpq') P.player.input.jumpQ = .25;   // v0.47.1 Space in first person
       else if (cmd === 'leave') net.leave('');
       else if (cmd === 'exit') { process.send({ ctlr: { errs } }); setTimeout(() => process.exit(0), 20); return; }
       const me = P.player;
       r = { role: bus.role, overlay: $('overlay').hidden, over: G.over, again: $('bAgain').hidden, joinMsg: $('joinMsg').textContent, min: G.min, id: net.net.id,
-        n: P.players.length, me: me && { id: me.id, x: me.pos.x, z: me.pos.z, gear: me.gear, alive: me.alive, deaths: me.deaths }, mode: G.mode, agents: agents.length,
+        n: P.players.length, me: me && { id: me.id, x: me.pos.x, z: me.pos.z, gear: me.gear, alive: me.alive, deaths: me.deaths, recoil: me.recoil }, mode: G.mode, agents: agents.length,
         zombies: agents.filter(x => x.state === 'zombie').map(x => x.kind), drops: drops.length, doors: G.doors.map(d => d.open),
         feed: $('feed').children.map(c => c.textContent), msg: $('msg').textContent, errs: errs.length, who: P.players.map(p => p.name + '|' + (p.wear ? p.wear.bd : '')) };
       process.send({ ctlr: r });
@@ -115,6 +116,22 @@ if (isClient) {
   if (!c.zombies.includes('sprinter')) fail('friend does not see the new sprinter');
   if (c.doors[0] !== G.doors[0].open) fail('door 0 differs');
   z.gone = true;
+  // v0.47.1 one Space press is one hop on the host (it used to come back every half second), and one shot kicks the
+  // friend's gun once (each snapshot used to set the recoil back up)
+  { await ask('jumpq'); let hops = 0, was = 0;
+    for (let i = 0; i < 45; i++) { await ask('step', 3); step(3); await sleep(2); const h = p2.hop > 0 ? 1 : 0; if (h && !was) hops++; was = h; }
+    if (hops !== 1) fail('one Space press made ' + hops + ' hops');
+    const { DEF } = await import('../src/config/items.js'); p2.gear.eq.secondary = { id: 'pistol_c', mag: 5 }; p2.gear.active = 'secondary'; p2.reloadT = 0;
+    const { fireGun } = await import('../src/systems/combat.js'); fireGun(p2, p2.gear.eq.secondary, DEF.pistol_c);
+    let kicks = 0, last = 0; for (let i = 0; i < 20; i++) { const r = await ask('step', 1); step(1); await sleep(2); if (r.me.recoil > last + .3) kicks++; last = r.me.recoil; }
+    if (kicks !== 1) fail('one shot kicked the friend\'s gun ' + kicks + ' times'); }
+  // v0.47.1 the friend's own player walking, as their screen shows it: steady steps, not a stop-and-go every snapshot
+  { Object.assign(p2.input, {}); await ask('key', 'KeyW', 'keydown'); for (let i = 0; i < 20; i++) { await ask('step', 1); step(1); await sleep(1); }
+    const xs = []; for (let i = 0; i < 60; i++) { const r = await ask('step', 1); step(1); await sleep(1); xs.push([r.me.x, r.me.z]); }
+    await ask('key', 'KeyW', 'keyup');
+    const d = xs.slice(1).map((q, i) => Math.hypot(q[0] - xs[i][0], q[1] - xs[i][1])), m = d.reduce((a, b) => a + b, 0) / d.length, cv = Math.sqrt(d.reduce((a, b) => a + (b - m) ** 2, 0) / d.length) / m;
+    console.log('net: friend walking, step size ' + m.toFixed(3) + ' m, variation ' + cv.toFixed(2));
+    if (!(cv < .35)) fail('the friend\'s walk is uneven on their screen (variation ' + cv.toFixed(2) + ')'); }
   // the friend drops out: their player waits (away), zombies leave it alone; the same device comes back to it
   await ask('leave'); await sleep(20); step(3);
   if (!p2.away || P.targets().includes(p2) || H.room.conns.length) fail('drop-out: away ' + p2.away + ', conns ' + H.room.conns.length);

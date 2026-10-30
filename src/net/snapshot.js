@@ -48,8 +48,19 @@ export function encodeWorld(c,me){
 const byNid=new Map(),looks=new Map(),dropByNid=new Map();
 export function clearClientMaps(){byNid.clear();looks.clear();dropByNid.clear();}
 export function dropOf(nid){return dropByNid.get(nid)||null;}
-const want=(a,x,z)=>{a.nx=x;a.nz=z;if(!(Math.hypot(x-a.pos.x,z-a.pos.z)<4)){a.pos.x=x;a.pos.z=z;}};   // far off (new, or a jump): no sliding
+// far off (new, or a jump): no sliding; v0.47.1 vx / vz: how fast it went since the last snapshot, by the host's clock
+// (`el` in the snapshot), for client.js to run it on until the next one
+let el=0;
+const want=(a,x,z)=>{
+  const jump=!(Math.hypot(x-a.pos.x,z-a.pos.z)<4),ok=!jump&&a.sx!==undefined&&el>.02&&el<.4;
+  a.vx=ok?(x-a.sx)/el:0;a.vz=ok?(z-a.sz)/el:0;a.sx=x;a.sz=z;a.ahead=0;
+  a.nx=x;a.nz=z;if(jump){a.pos.x=x;a.pos.z=z;}
+};
+// v0.47.1 a timer the client also runs down (recoil, a swing, a reload): taken from the host only when it starts again,
+// not every snapshot, or the shot / swing / reload pose (and the kick of the view) starts over 15 times a second
+const fresh=(mine,host,jump)=>host>mine+jump?host:host<=0?0:mine;
 export function applyWorld(s,myId){
+  el=s.el||0;
   const g=s.g;Object.assign(G,{min:g.min,phase:g.ph,rainTarget:g.rt,outbreak:g.ob,blackout:g.bo,kills:g.k,killsBy:g.kb||{},diff:g.df,fog:g.fg||0,site:g.st||null,mode:g.md||'coop'});
   if(g.bl&&g.bl.length!==(G.blown||[]).length){G.blown=g.bl.slice();applyTanks();}
   if(g.tr&&g.tr.length!==(G.traps||[]).length){G.traps=g.tr.slice();applyTraps();}   // v0.26
@@ -65,7 +76,9 @@ export function applyWorld(s,myId){
     let p=players.find(q=>q.id===id);
     if(!p){p=makePlayer(id);players.push(p);players.sort((a,b)=>a.id-b.id);}
     if(id===myId&&player!==p){p.local=true;setPlayer(p);}
-    want(p,x,z);p.nface=face;Object.assign(p,{hp,bleed,down,moving,sneak:!!sneak,reloadT,swing,swingDur,recoil,inv:inv?.5:0,away:!!away,reviveT,airH:airH||0,car:car??-1,frags:frags||0,deaths:deaths||0});
+    want(p,x,z);p.nface=face;
+    const sw=fresh(p.swing||0,swing,.12);if(sw!==p.swing&&sw>0)p.swingDur=swingDur;
+    Object.assign(p,{hp,bleed,down,moving,sneak:!!sneak,reloadT:fresh(p.reloadT||0,reloadT,.25),swing:sw,recoil:fresh(p.recoil||0,recoil,.45),inv:inv?.5:0,away:!!away,reviveT,airH:airH||0,car:car??-1,frags:frags||0,deaths:deaths||0});
     if(!alive&&p.alive){p.alive=false;p.state='dead';p.deadT=0;}else if(alive&&!p.alive){p.alive=true;p.state='player';p.deadT=0;}
     if(p!==player||!s.me||!s.me.gear){if(p!==player){const d=DEF[w];p.gear=freshGear();if(d&&d.slot){p.gear.eq[d.slot]={id:w,mag:0};p.gear.active=d.slot;}}}
   }
