@@ -1,6 +1,6 @@
 import {$} from '../core/util.js';
 import {scene,screenAngle} from '../core/renderer.js';
-import {G} from '../core/state.js';
+import {G,isPvp} from '../core/state.js';
 import {DAY_START} from '../config/time.js';
 import {GOAL_NIGHTS,EXIT,exitOpen,nightsSurvived} from '../config/goal.js';
 import {player,players} from '../entities/player.js';
@@ -20,7 +20,7 @@ function build(){
 }
 export function updateGoal(dt,now){
   if(!ring)build();
-  const open=exitOpen(G.min);
+  const open=exitOpen(G.min)&&!isPvp();   // v0.47 no way out in PvP: it goes on
   ring.material.opacity=open?.35+.35*Math.sin(now/250):0;
   // the arrow: to the gate, and once through it, on to the end of the camp
   const tx=player.pos.x<EXIT.gate?EXIT.gate:EXIT.x,dx=tx-player.pos.x,dz=EXIT.z-player.pos.z,dist=Math.hypot(EXIT.x-player.pos.x,dz);

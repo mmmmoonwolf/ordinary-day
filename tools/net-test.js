@@ -45,7 +45,7 @@ if (isClient) {
       else if (cmd === 'exit') { process.send({ ctlr: { errs } }); setTimeout(() => process.exit(0), 20); return; }
       const me = P.player;
       r = { role: bus.role, overlay: $('overlay').hidden, over: G.over, again: $('bAgain').hidden, joinMsg: $('joinMsg').textContent, min: G.min, id: net.net.id,
-        n: P.players.length, me: me && { id: me.id, x: me.pos.x, z: me.pos.z, gear: me.gear, alive: me.alive }, agents: agents.length,
+        n: P.players.length, me: me && { id: me.id, x: me.pos.x, z: me.pos.z, gear: me.gear, alive: me.alive, deaths: me.deaths }, mode: G.mode, agents: agents.length,
         zombies: agents.filter(x => x.state === 'zombie').map(x => x.kind), drops: drops.length, doors: G.doors.map(d => d.open),
         feed: $('feed').children.map(c => c.textContent), msg: $('msg').textContent, errs: errs.length, who: P.players.map(p => p.name + '|' + (p.wear ? p.wear.bd : '')) };
       process.send({ ctlr: r });
@@ -127,12 +127,21 @@ if (isClient) {
   if (!G.over || !c.over || !c.again) fail('game over: host ' + G.over + ', friend ' + c.over + ' (again hidden ' + c.again + ')');
   els.bAgain.fire('click'); c = await rounds(8);
   if (G.over || c.over || !c.overlay || c.n !== 2 || !c.me || !c.me.alive) fail('new game after game over: ' + JSON.stringify({ over: c.over, overlay: c.overlay, n: c.n }));
+  // v0.47 PvP in the same room: the friend sees the mode, gets the starting gun, is killed by the host and comes back
+  const Pv = await import('../src/systems/pvp.js'), PC = (await import('../src/config/pvp.js')).PVP;
+  Pv.startPvp(); G.running = true; c = await rounds(8);
+  const f2 = P.players.find(p => !p.local);
+  if (c.mode !== 'pvp' || !c.me || !c.me.gear.eq.secondary || c.me.gear.eq.secondary.id !== PC.kit.gun) fail('PvP on the friend: ' + JSON.stringify({ mode: c.mode, gun: c.me && c.me.gear.eq.secondary }));
+  f2.inv = 0; die(f2, P.player); c = await rounds(3);
+  if (c.me.alive || c.me.deaths !== 1 || !c.feed.some(t => t.includes('โดน'))) fail('PvP death on the friend: ' + JSON.stringify({ alive: c.me.alive, deaths: c.me.deaths, feed: c.feed }));
+  await rounds(Math.ceil(PC.respawn * 20) + 4); c = await rounds(2);
+  if (!c.me.alive || G.over || c.over) fail('PvP respawn on the friend: alive ' + c.me.alive + ' over ' + G.over);
   // closing the room sends the friend to the title
   els.bRoom.fire('click'); await sleep(20); c = await rounds(2);
   if (H.room.open || c.role !== 'off' || !c.joinMsg) fail('close room: friend role ' + c.role + ', msg ' + c.joinMsg);
   const end = await ask('exit');
   const all = errs.concat(end.errs.map(e => 'friend: ' + e));
-  console.log('net: join, world ' + JSON.stringify(seen) + ', input, pickup, bag, messages, zombie, door, drop-out + rejoin, game over + new day, close');
+  console.log('net: join, world ' + JSON.stringify(seen) + ', input, pickup, bag, messages, zombie, door, drop-out + rejoin, game over + new day, PvP, close');
   if (fails.length || all.length) { console.log('FAILED\n' + fails.join('\n') + (all.length ? '\n' + all.slice(0, 3).join('\n---\n') : '')); process.exit(1); }
   console.log('PASSED: online play over IPC');
   process.exit(0);

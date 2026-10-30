@@ -1,5 +1,5 @@
 import {$} from '../core/util.js';
-import {G} from '../core/state.js';
+import {G,isPvp} from '../core/state.js';
 import {DAY_START} from '../config/time.js';
 import {RC,areaAt,beyond} from '../config/world.js';
 import {EXIT,exitOpen} from '../config/goal.js';
@@ -57,7 +57,7 @@ function draw(now){
     else if(Math.hypot(a.pos.x-player.pos.x,a.pos.z-player.pos.z)<HEAR)dot(a.pos.x,a.pos.z,1.3*s,'#c9473a');
   }
   if(G.cars)for(const c of G.cars)if(c.hp>0){const [u,v]=xy(c.x,c.z),r=1.9*s;g.fillStyle='#9fd3a0';g.fillRect(u-r,v-r*.6,r*2,r*1.2);g.lineWidth=dpr;g.strokeStyle='#16130d';g.strokeRect(u-r,v-r*.6,r*2,r*1.2);}   // v0.45 cars that drive
-  for(const p of players)if(p!==player)dot(p.pos.x,p.pos.z,2.2*s,!p.alive?'#8a8a86':p.bleed>0?'#ff6b5a':'#7fc8ff','#16130d');   // other players (v0.9), red while down (v0.10)
+  if(!isPvp())for(const p of players)if(p!==player)dot(p.pos.x,p.pos.z,2.2*s,!p.alive?'#8a8a86':p.bleed>0?'#ff6b5a':'#7fc8ff','#16130d');   // other players (v0.9), red while down (v0.10); not in PvP (v0.47)
   // player: an arrow pointing where the player faces, in map space
   const [u,v]=xy(player.pos.x,player.pos.z),fx=Math.sin(player.face),fz=Math.cos(player.face),ang=Math.atan2((fx-fz)/Math.SQRT2,-(fx+fz)/Math.SQRT2);
   g.save();g.translate(u,v);g.rotate(ang);g.beginPath();g.moveTo(0,-4.2*s);g.lineTo(3*s,3.2*s);g.lineTo(0,1.6*s);g.lineTo(-3*s,3.2*s);g.closePath();

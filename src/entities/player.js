@@ -1,4 +1,4 @@
-import {G} from '../core/state.js';
+import {G,isPvp} from '../core/state.js';
 import {OFF} from '../config/world.js';
 import {DEF,STACKS} from '../config/items.js';
 import {collide} from '../world/collision.js';
@@ -44,7 +44,7 @@ export const isDown=p=>p.alive&&p.bleed>0;
 export const isSolo=()=>players.filter(p=>!p.away).length<2;
 // who the camera, sounds and cutaway follow: the player on this device, or once they are dead a teammate still alive
 export function viewed(){
-  if(!player||player.alive)return player;
+  if(!player||player.alive||isPvp())return player;   // v0.47 in PvP the camera waits on their own body until they come back
   return players.find(q=>q.alive&&!(q.bleed>0))||players.find(q=>q.alive)||player;
 }
 const hasKit=p=>p.gear.bag.some(e=>e.id==='resurrect');
@@ -117,8 +117,8 @@ function updateDowned(p,dt){
   p.moving=Math.min(p.moving,.4);
   p.bleed-=dt;if(p.bleed<=0)die(p);
 }
-// a teammate down, or dead (v0.11: a Resurrection Kit brings them back)
-function nearestDowned(p){let best=null,bd=REVIVE_RANGE;for(const q of players){if(q===p||!(isDown(q)||q.state==='dead'))continue;const d=Math.hypot(q.pos.x-p.pos.x,q.pos.z-p.pos.z);if(d<bd){bd=d;best=q;}}return best;}
+// a teammate down, or dead (v0.11: a Resurrection Kit brings them back); nobody to help in PvP (v0.47)
+function nearestDowned(p){if(isPvp())return null;let best=null,bd=REVIVE_RANGE;for(const q of players){if(q===p||!(isDown(q)||q.state==='dead'))continue;const d=Math.hypot(q.pos.x-p.pos.x,q.pos.z-p.pos.z);if(d<bd){bd=d;best=q;}}return best;}
 // E / the pick button next to a downed teammate starts helping; walking off, a new attack or the teammate gone stops it
 export function startHelp(p,q){
   if(!p.alive||p.bleed>0||p.down>0||!q||!(isDown(q)||q.state==='dead'))return false;

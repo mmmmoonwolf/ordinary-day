@@ -1,6 +1,6 @@
 import {clamp} from '../core/util.js';
 import {scene,activeCam,view} from '../core/renderer.js';
-import {G} from '../core/state.js';
+import {G,isPvp} from '../core/state.js';
 import {players,player} from '../entities/player.js';
 
 // ---------- names over heads and lights at the feet (v0.40) ----------
@@ -40,11 +40,11 @@ export function updateTags(){
     const behind=v.z>1,d=Math.hypot(p.pos.x-player.pos.x,p.pos.z-player.pos.z);
     let x=v.x,y=v.y,edge=false;if(behind){x=-x;y=-y;}
     if(behind||Math.abs(x)>1||Math.abs(y)>1){
-      if(mine){if(!t.el.hidden)t.el.hidden=true;continue;}
+      if(mine||isPvp()){if(!t.el.hidden)t.el.hidden=true;continue;}   // v0.47 no pointing the way to someone hunting you
       const m=Math.max(Math.abs(x),Math.abs(y),1e-3);x/=m;y/=m;edge=true;   // onto the edge of the screen, the way they are
     }
     const sx=clamp((x+1)/2*W,EDGE[0],W-EDGE[0]),sy=clamp((1-y)/2*H,EDGE[1],H-EDGE[2]);
-    const sub=(p.bleed>0?'ล้ม! ':'')+(!mine&&(edge||d>FAR)?Math.round(d)+' ม.':'');
+    const sub=(p.bleed>0?'ล้ม! ':'')+(!mine&&!isPvp()&&(edge||d>FAR)?Math.round(d)+' ม.':'');
     if(t.text!==p.name){t.text=p.name;t.name.textContent=p.name;}
     if(t.sub!==sub){t.sub=sub;t.info.textContent=sub;}
     t.el.classList.toggle('edge',edge);t.el.classList.toggle('down',p.bleed>0);

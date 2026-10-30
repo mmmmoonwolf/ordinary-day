@@ -1,5 +1,5 @@
 import {$} from '../core/util.js';
-import {G} from '../core/state.js';
+import {G,isPvp} from '../core/state.js';
 import {ctl,joy} from '../core/controls.js';
 import {player,isSolo} from '../entities/player.js';
 import {saveGame} from '../systems/save.js';
@@ -15,7 +15,7 @@ import {isClient} from '../core/bus.js';
 // Stops the game like the bag does (G.paused). Opens by itself when the page goes to the background,
 // so a phone player comes back to a paused game instead of a fight. With other players in the game it only opens
 // the menu: the world keeps going (v0.11).
-const when=()=>diffOf(G).name;   // v0.42 no day or time shown
+const when=()=>(isPvp()?'PvP · ':'')+diffOf(G).name;   // v0.42 no day or time shown; v0.47 the mode
 export function isPauseOpen(){return !$('pause').hidden;}
 export function openPause(){
   if(!G.running||G.over||!player.alive||isPauseOpen())return;
