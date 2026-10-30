@@ -21,7 +21,7 @@ export const fires=[];   // {x, z, r, t (seconds left)}
 export function blast(x,z,o,by){
   boom(x,1,z,.45,10);sfx.explode(x,z);makeNoise(x,z,o.noise);
   for(let i=0;i<5;i++)addBlood(x+(Math.random()*2-1)*o.r*.5,z+(Math.random()*2-1)*o.r*.5);
-  for(const p of players){if(!p.alive)continue;const d=Math.hypot(p.pos.x-x,p.pos.z-z);if(d<o.r&&!walledOff(x,z,p.pos.x,p.pos.z))hurtPlayer(p,Math.round(o.pdmg*(1-d/o.r*.5)));}
+  for(const p of players){if(!p.alive)continue;const d=Math.hypot(p.pos.x-x,p.pos.z-z);if(d<o.r&&!walledOff(x,z,p.pos.x,p.pos.z))hurtPlayer(p,Math.round(o.pdmg*(1-d/o.r*.5)),by);}   // v0.47 by: whose it was (PvP)
   for(let k=0;k<rooms.length;k++)if(doorDist(k,x,z)<o.r)damageDoor(k,o.door);
   for(const a of agents){if(a.state!=='zombie')continue;const d=Math.hypot(a.pos.x-x,a.pos.z-z);if(d>o.r||walledOff(x,z,a.pos.x,a.pos.z))continue;
     hurtZombie(a,o.zdmg*(1-d/o.r*.5),(a.pos.x-x)/(d||1),(a.pos.z-z)/(d||1),1.4,false,true,by);}

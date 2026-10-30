@@ -1,17 +1,18 @@
 import {rnd} from '../core/util.js';
 import {muzzle} from '../core/renderer.js';
-import {G} from '../core/state.js';
+import {G,isPvp} from '../core/state.js';
 import {ctl} from '../core/controls.js';
 import {DEF,durPct} from '../config/items.js';
 import {ADS,BLOOM,SNEAK} from '../config/handling.js';
 import {diffOf} from '../config/difficulty.js';
 import {BLEED_SECONDS,BLEED_PER_DMG} from '../config/party.js';
+import {PVP} from '../config/pvp.js';
 import {rayWall} from '../world/collision.js';
 import {walledOff} from '../world/interiors.js';
 import {agents} from '../entities/agents.js';
 import {players} from '../entities/player.js';
 import {hurtZombie,makeNoise} from '../entities/ai.js';
-import {addBlood,tracer} from './effects.js';
+import {addBlood,tracer,impact} from './effects.js';
 import {tankOnRay,blowTank} from './blast.js';
 import {curWeapon,countAmmo,takeAmmo} from './inventory.js';
 import {clearSave} from './save.js';
@@ -22,20 +23,22 @@ import {shieldDriver,leaveCar} from './vehicles.js';
 
 // ---------- combat ----------
 // returns false when the hit did not land (dead, knocked back by a Kit, invulnerable). The game ends when no player is left standing.
-export function hurtPlayer(p,n){
+// v0.47 `by`: the player whose gun, blow or blast it was (PvP); their damage is not scaled by the difficulty
+export function hurtPlayer(p,n,by){
   if(!p.alive||p.inv>0||p.down>0)return false;
-  if(shieldDriver(p,n*diffOf(G).dmg))return true;   // v0.45 in a car: the car takes it
+  const foe=by&&by!==p&&by.state==='player'?by:null;n*=foe?PVP.dmg:diffOf(G).dmg;
+  if(shieldDriver(p,n))return true;   // v0.45 in a car: the car takes it
   const U=uiFor(p);
   // already down (v0.10): every hit takes time off what is left before they bleed out
-  if(p.bleed>0){p.bleed-=n*diffOf(G).dmg*BLEED_PER_DMG;addBlood(p.pos.x,p.pos.z);U.hurt();if(p.bleed<=0)die(p);return true;}
-  p.hp-=n*diffOf(G).dmg;p.lastHit=performance.now()/1000;addBlood(p.pos.x,p.pos.z);
+  if(p.bleed>0){p.bleed-=n*BLEED_PER_DMG;addBlood(p.pos.x,p.pos.z);U.hurt();if(p.bleed<=0)die(p);return true;}
+  p.hp-=n;p.lastHit=performance.now()/1000;addBlood(p.pos.x,p.pos.z);
   U.hurt();
   if(p.hp<=0){
     const bag=p.gear.bag,ri=bag.findIndex(e=>e.id==='resurrect');
     if(ri>=0){bag.splice(ri,1);p.hp=0;p.down=1.8;if(p.local)ctl.fireHeld=false;cureInfection(p);p.endCause=null;if(p.local)G.endCause=null;U.updateLoadout(true);return true;}
     // a teammate still standing can help them up (v0.10); alone, or when nobody is left standing, it is death
-    if(p.endCause!=='infected'&&players.some(q=>q!==p&&standing(q))){goDown(p);return true;}
-    die(p);
+    if(!isPvp()&&p.endCause!=='infected'&&players.some(q=>q!==p&&standing(q))){goDown(p);return true;}   // v0.47 no going down in PvP
+    die(p,foe);
   }
   return true;
 }
@@ -43,10 +46,14 @@ export const standing=q=>q.alive&&!(q.bleed>0)&&!q.away;
 function goDown(p){
   leaveCar(p);p.hp=0;p.bleed=BLEED_SECONDS;p.reviveT=0;p.helping=null;p.swing=0;p.reloadT=0;p.sneak=false;p.endCause=null;if(p.local)ctl.fireHeld=false;   // v0.42 no words: the countdown on the pick button and the red name over the head say it
 }
-export function die(p){
+export function die(p,by){
   leaveCar(p);p.hp=0;p.bleed=0;p.helping=null;p.alive=false;p.state='dead';p.deadT=0;p.endCause=p.endCause||'hurt';
   sfx.scream(p.pos.x,p.pos.z);   // v0.19
   if(p.local){ctl.fireHeld=false;G.endCause=p.endCause;}
+  // v0.47 PvP: back in a moment somewhere else (systems/pvp.js); the one who landed the last hit gets the kill
+  if(isPvp()){p.respawnT=PVP.respawn;p.deaths=(p.deaths||0)+1;
+    if(by){by.frags=(by.frags||0)+1;uiFor(by).feed('ฆ่า '+p.name+' ได้');uiFor(p).feed('โดน '+by.name+' ฆ่า','warn');}
+    return;}
   if(players.some(q=>q.alive)){   // the others play on (v0.11): the dead watch a teammate and can be brought back with a Kit
     for(const q of players)if(q.alive)uiFor(q).feed(p.name+' ตาย','warn');
   }
@@ -54,6 +61,9 @@ export function die(p){
   if(!players.some(standing))for(const q of players)if(q.alive){q.endCause=q.endCause||'hurt';die(q);return;}
   if(!players.some(q=>q.alive)){clearSave();setTimeout(gameOver,1800);}
 }
+// v0.47 who else a player can hurt: in PvP everyone else still up and in the game
+export const foesOf=p=>isPvp()?players.filter(q=>q!==p&&q.alive&&!q.away&&!(q.inv>0)):[];
+function hitFoe(p,q,dmg,dx,dz,melee){if(hurtPlayer(q,dmg,p))impact(q.pos.x,q.pos.z,dx,dz,q.alive?0:1,p.id,melee);}
 // turns the player toward the best zombie in front, unless they aim with a mouse
 export function aimAssist(p,def){
   if(p.input.aim)return;
@@ -61,6 +71,8 @@ export function aimAssist(p,def){
   const fx=Math.sin(p.face),fz=Math.cos(p.face);let best=null,bs=-9;
   for(const z of agents){if(z.state!=='zombie'||z.retreat)continue;const dx=z.pos.x-p.pos.x,dz=z.pos.z-p.pos.z,d=Math.hypot(dx,dz);if(d>range||d<1e-3)continue;if(walledOff(p.pos.x,p.pos.z,z.pos.x,z.pos.z))continue;
     const dot=(dx*fx+dz*fz)/d;if(dot<cone&&d>2.2)continue;const s=dot-d/range*.6;if(s>bs){bs=s;best=z;}}
+  for(const q of foesOf(p)){const dx=q.pos.x-p.pos.x,dz=q.pos.z-p.pos.z,d=Math.hypot(dx,dz);if(d>range||d<1e-3)continue;if(walledOff(p.pos.x,p.pos.z,q.pos.x,q.pos.z))continue;   // v0.47 the other players in PvP
+    const dot=(dx*fx+dz*fz)/d;if(dot<cone&&d>2.2)continue;const s=dot-d/range*.6;if(s>bs){bs=s;best=q;}}
   if(best)p.face=Math.atan2(best.pos.x-p.pos.x,best.pos.z-p.pos.z);
 }
 export function startReload(p){
@@ -84,9 +96,10 @@ export function fireGun(p,w,def){
     let wall=rayWall(ox,oz,dx,dz,def.range);const tank=tankOnRay(ox,oz,dx,dz,wall+.6);if(tank)wall=Math.min(wall,tank[0]);   // v0.23 a gas cylinder stops the bullet, and goes off
     const hits=[];
     for(const z of agents){if(z.state!=='zombie')continue;const rx=z.pos.x-ox,rz=z.pos.z-oz,t=rx*dx+rz*dz;if(t<-.3||t>wall)continue;if(Math.abs(rx*dz-rz*dx)<.45+(z.rad-.34))hits.push([Math.max(t,0),z]);}
+    for(const q of foesOf(p)){const rx=q.pos.x-ox,rz=q.pos.z-oz,t=rx*dx+rz*dz;if(t<-.3||t>wall)continue;if(Math.abs(rx*dz-rz*dx)<.42)hits.push([Math.max(t,0),q]);}   // v0.47 PvP
     hits.sort((a,b)=>a[0]-b[0]);
     const n=Math.min(hits.length,def.pierce||1);let end=n?hits[n-1][0]:wall,armor=false;
-    for(let k=0;k<n;k++){const [t,z]=hits[k];if(hurtZombie(z,def.falloff?pd*(1-t/def.range*.6):pd,dx,dz,def.pellets?.12:.25,true,false,p))armor=true;}
+    for(let k=0;k<n;k++){const [t,z]=hits[k];if(z.state==='player'){hitFoe(p,z,def.falloff?pd*(1-t/def.range*.6):pd,dx,dz,false);continue;}if(hurtZombie(z,def.falloff?pd*(1-t/def.range*.6):pd,dx,dz,def.pellets?.12:.25,true,false,p))armor=true;}
     tracer(ox,oz,ox+dx*end,oz+dz*end,armor?'#a9d4ff':null);
     if(tank&&hits.length<(def.pierce||1))blowTank(tank[1],p);
   }
@@ -101,7 +114,10 @@ export function meleeHit(p,def){
   for(const z of agents){if(z.state!=='zombie')continue;const dx=z.pos.x-p.pos.x,dz=z.pos.z-p.pos.z,d=Math.hypot(dx,dz);
     if(d-(z.rad-.34)>def.range||d<1e-3)continue;if((dx*fx+dz*fz)/d<def.arc)continue;if(walledOff(p.pos.x,p.pos.z,z.pos.x,z.pos.z))continue;   // no hitting through a wall
     if(def.cleave){hurtZombie(z,def.dmg,dx/d,dz/d,def.kb,false,false,p);best=best||z;}else if(d<bd){bd=d;best=z;}}
-  if(best&&!def.cleave){const dx=best.pos.x-p.pos.x,dz=best.pos.z-p.pos.z,d=Math.hypot(dx,dz);hurtZombie(best,def.dmg,dx/d,dz/d,def.kb,false,false,p);}
+  for(const q of foesOf(p)){const dx=q.pos.x-p.pos.x,dz=q.pos.z-p.pos.z,d=Math.hypot(dx,dz);   // v0.47 PvP
+    if(d>def.range||d<1e-3)continue;if((dx*fx+dz*fz)/d<def.arc)continue;if(walledOff(p.pos.x,p.pos.z,q.pos.x,q.pos.z))continue;
+    if(def.cleave){hitFoe(p,q,def.dmg,dx/d,dz/d,true);best=best||q;}else if(d<bd){bd=d;best=q;}}
+  if(best&&!def.cleave){const dx=best.pos.x-p.pos.x,dz=best.pos.z-p.pos.z,d=Math.hypot(dx,dz);if(best.state==='player')hitFoe(p,best,def.dmg,dx/d,dz/d,true);else hurtZombie(best,def.dmg,dx/d,dz/d,def.kb,false,false,p);}
   if(best){
     const front=best.kind==='armor'&&(p.pos.x-best.pos.x)*Math.sin(best.face)+(p.pos.z-best.pos.z)*Math.cos(best.face)>0;   // v0.43 sound only: the blow rings on its armour
     sfx.hit(best.pos.x,best.pos.z,front?'metal':def===DEF.fist?'fist':BLADE.has(def.model)?'blade':'blunt');wearMelee(p,def);}

@@ -190,6 +190,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 .swatches button.orig{background:repeating-linear-gradient(45deg,#666 0 4px,#999 4px 8px)}
 @media (max-width:520px){.charwrap{flex-direction:column;align-items:center}.charview{flex-basis:auto}#charView{width:150px;height:200px}.charopts{width:100%}}
 #roomMsg b{color:var(--amber);font-size:16px;letter-spacing:.12em}
+.pvpscore{display:flex;flex-direction:column;gap:2px;margin-top:8px}
 .linkbtn{background:none;border:0;color:var(--ink-dim);text-decoration:underline;font:500 13px var(--f-ui);padding:8px 0;cursor:pointer;margin-top:4px}
 #fps{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 6px);transform:translateX(-50%);z-index:4;font:700 11px var(--f-clock);color:var(--ink-dim);text-shadow:0 1px 3px #000;pointer-events:none}
 .reportbox{display:grid;gap:8px}.reportbox label{font-size:12px;color:var(--ink-dim)}
@@ -355,6 +356,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
     <div class="pacts" id="pacts">
       <button class="go" id="bResume">เล่นต่อ</button>
       <button class="go alt" id="bRoom">เปิดห้องให้เพื่อนเข้า</button>
+      <button class="go alt" id="bPvp">เปิดห้อง PvP</button>
       <button class="go alt" id="bSaveNow">เซฟเกม</button>
       <button class="go alt" id="bSound2">เสียง: เปิด</button>
       <button class="go alt" id="bSettings">ตั้งค่า</button>

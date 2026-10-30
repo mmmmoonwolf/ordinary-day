@@ -1,5 +1,5 @@
 import {camTarget} from '../core/renderer.js';
-import {G} from '../core/state.js';
+import {G,isPvp} from '../core/state.js';
 import {applyTanks,clearFires} from './blast.js';
 import {applyTraps} from './camp.js';
 import {DEF} from '../config/items.js';
@@ -34,7 +34,7 @@ function snapshot(){
     drops:drops.map(d=>({item:d.item,x:d.x,z:d.z,spot:d.spot?lootSpots.indexOf(d.spot):-1,mine:!!d.mine}))};
 }
 export function saveGame(){
-  if(!player||!players.some(p=>p.alive)||G.over)return false;
+  if(!player||!players.some(p=>p.alive)||G.over||isPvp())return false;   // v0.47 a PvP game is never saved
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(snapshot()));sinceSave=0;return true;}catch(_){return false;}
 }
 // version 1 had one player and a shared `inv`; it becomes players[0] with that gear
@@ -51,7 +51,7 @@ export function loadGame(){
   reset();
   for(const a of agents)removeAgent(a);agents.length=0;
   while(drops.length)removeDrop(drops[0]);
-  Object.assign(G,s.G,{speedIdx:G.speedIdx,diff:s.G.diff||'normal'});
+  Object.assign(G,s.G,{speedIdx:G.speedIdx,diff:s.G.diff||'normal',mode:'coop'});
   for(const e of EVENTS)e.done=G.min>=e.t;
   G.searched=G.searched||[];   // before v0.15 nothing was searched
   G.broken=G.broken||[];applyBroken(G.broken);G.blown=G.blown||[];applyTanks();clearFires();G.traps=G.traps||[];applyTraps();   // v0.23 cylinders already blown
