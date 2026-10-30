@@ -1,4 +1,4 @@
-import {G} from '../core/state.js';
+import {G,isPvp} from '../core/state.js';
 import {CAR} from '../config/vehicles.js';
 import {inWorld} from '../config/world.js';
 import {solids} from '../world/collision.js';
@@ -6,6 +6,7 @@ import {rides,placeRide,CAR_HALF} from '../world/vehicles.js';
 import {agents} from '../entities/agents.js';
 import {players} from '../entities/player.js';
 import {hurtZombie,makeNoise} from '../entities/ai.js';
+import {hurtPlayer} from './combat.js';
 import {sfx,sfxFor} from './audio.js';
 import {uiFor} from '../ui/hud.js';
 
@@ -43,21 +44,26 @@ export function leaveCar(p){
   sfx.door(c.x,c.z);
 }
 function freeSpot(x,z){if(!inWorld(x,z,.4))return false;for(const b of solids)if(x>b.x0-.4&&x<b.x1+.4&&z>b.z0-.4&&z<b.z1+.4)return false;return true;}
-// would the car at (x,z) facing a hit anything (other than itself)? the four corners and the middles of its long sides
-function blocked(i,x,z,a){
-  const s=Math.sin(a),c=Math.cos(a),own=rides[i].box,[hw,hl]=CAR_HALF;
-  for(const [u,w] of [[hw,hl],[-hw,hl],[hw,-hl],[-hw,-hl],[hw,0],[-hw,0],[0,hl],[0,-hl]]){
-    const px=x+c*u+s*w,pz=z-s*u+c*w;if(!inWorld(px,pz))return true;
-    for(const b of solids){if(b===own)continue;if(px>b.x0&&px<b.x1&&pz>b.z0&&pz<b.z1)return true;}}
-  return false;
+// what the car at (x,z) facing a would hit (other than itself): the four corners and the middles of its sides and ends
+const EDGE=[[1,1],[-1,1],[1,-1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]];
+function hits(i,x,z,a){
+  const s=Math.sin(a),c=Math.cos(a),own=rides[i].box,[hw,hl]=CAR_HALF,out=new Set();
+  for(const [eu,ew] of EDGE){
+    const u=eu*hw,w=ew*hl,px=x+c*u+s*w,pz=z-s*u+c*w;if(!inWorld(px,pz))out.add('world');
+    for(const b of solids){if(b===own)continue;if(px>b.x0&&px<b.x1&&pz>b.z0&&pz<b.z1)out.add(b);}}
+  return out;
 }
+// v0.49 blocked only by something it is not already touching: a car that ended up over a post (or was parked on one, as
+// at the gas station) used to be stuck for good, forward and back
+function blocked(i,c,x,z){const now=hits(i,c.x,c.z,c.a);for(const h of hits(i,x,z,c.a))if(!now.has(h))return true;return false;}
 // a player driving, once a step, instead of walking (entities/player.js updatePlayer)
 export function driveStep(p,dt){
   const i=p.car,c=G.cars[i];if(!c||c.hp<=0){leaveCar(p);return;}
   const I=p.input;let target=0;
   if(I.mag>.1){
-    const want=Math.atan2(I.mx,I.mz),d=wrap(want-c.a),back=Math.abs(d)>2.2;   // pulling against the car backs it up
-    const turn=back?wrap(want-(c.a+Math.PI)):d,grip=Math.min(1,Math.abs(c.v)/3);
+    // pulling against the car backs it up (v0.49 only nearly straight back, and not while backing into something)
+    const want=Math.atan2(I.mx,I.mz),d=wrap(want-c.a),back=Math.abs(d)>CAR.backAt&&!(c.bump>0);
+    const turn=back?wrap(want-(c.a+Math.PI)):d,grip=Math.max(CAR.grip0,Math.min(1,Math.abs(c.v)/3));   // v0.49 it turns a little from standstill too
     c.a=wrap(c.a+Math.max(-1,Math.min(1,turn*2))*CAR.steer*grip*dt);   // front (or, backing up, the rear) swings toward the stick
     target=back?-CAR.rev*I.mag:CAR.max*I.mag*Math.max(.25,Math.cos(Math.min(Math.abs(d),1.4)));
   }
@@ -70,8 +76,10 @@ export function driveStep(p,dt){
 function move(i,c,dt,driver){
   if(Math.abs(c.v)<.01){c.v=0;return;}
   const nx=c.x+Math.sin(c.a)*c.v*dt,nz=c.z+Math.cos(c.a)*c.v*dt;
-  if(blocked(i,nx,nz,c.a)){
+  if(c.bump>0)c.bump-=dt;
+  if(blocked(i,c,nx,nz)){
     const hit=Math.abs(c.v);if(hit>4){c.hp-=hit*CAR.crash;sfx.clamp(c.x,c.z);if(driver)uiFor(driver).hurt();}   // a crash
+    if(c.v<0)c.bump=.8;   // v0.49 backed into something: pulling back now drives forward and turns instead
     c.v*=-.25;
   }else{c.x=nx;c.z=nz;}
   // running zombies down (from the front or the back, whichever way it goes)
@@ -80,7 +88,12 @@ function move(i,c,dt,driver){
       if(Math.abs(along)>CAR_HALF[1]+.4||Math.abs(lat)>CAR_HALF[0]+(z.rad||.34))continue;
       const k=Math.min(1,Math.abs(c.v)/CAR.max);z.carT=.7;
       hurtZombie(z,CAR.hitDmg*k,s*dir,co*dir,2.6*k,false,false,driver);sfx.hit(z.pos.x,z.pos.z,'blunt');
-      const big=z.kind==='tyrant'||z.kind==='armor';c.hp-=CAR.hitCost*(big?5:1);c.v*=big?.25:.82;}}
+      const big=z.kind==='tyrant'||z.kind==='armor';c.hp-=CAR.hitCost*(big?5:1);c.v*=big?.25:.82;}
+    // v0.49 PvP: other players too, the kill counting for the driver
+    if(isPvp())for(const q of players){if(q===driver||!q.alive||q.car>=0||q.carT>0)continue;const dx=q.pos.x-c.x,dz=q.pos.z-c.z,along=dx*s+dz*co,lat=dx*co-dz*s;
+      if(Math.abs(along)>CAR_HALF[1]+.4||Math.abs(lat)>CAR_HALF[0]+.34)continue;
+      const k=Math.min(1,Math.abs(c.v)/CAR.max);q.carT=.7;hurtPlayer(q,CAR.hitP*k,driver);sfx.hit(q.pos.x,q.pos.z,'blunt');
+      q.pos.x+=s*dir*2.2*k;q.pos.z+=co*dir*2.2*k;c.hp-=CAR.hitCost;c.v*=.8;}}
   if(c.hp<=0){c.hp=0;c.v=0;sfx.crack();const d=driverOf(i);if(d){uiFor(d).feed('รถพังแล้ว','warn');leaveCar(d);}}
   placeRide(rides[i],c.x,c.z,c.a,c.hp);
 }
@@ -89,6 +102,7 @@ export function updateCars(dt){
   if(!G.cars)return;
   for(let i=0;i<G.cars.length;i++){const c=G.cars[i];if(!driverOf(i)&&c.v){const dv=Math.min(Math.abs(c.v),CAR.drag*2*dt);c.v-=Math.sign(c.v)*dv;move(i,c,dt,null);}}
   for(const z of agents)if(z.carT>0)z.carT-=dt;
+  for(const p of players)if(p.carT>0)p.carT-=dt;
 }
 // a hit meant for a driver hits the car (true when it took it)
 export function shieldDriver(p,n){

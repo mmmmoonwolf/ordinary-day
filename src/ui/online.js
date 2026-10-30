@@ -63,6 +63,13 @@ export function initOnline(){
     say('เปิดห้อง PvP แล้ว · รหัส '+room.code+' ให้เพื่อนกรอกที่หน้าแรก','',8);
     busy=false;refreshOnline();
   });
+  // v0.49 straight from the start screen: a room and a PvP game (the survival save stays as it is)
+  $('bPvpNew').addEventListener('click',async()=>{
+    if(busy)return;busy=true;$('joinMsg').textContent='กำลังเปิดห้อง PvP …';
+    try{if(!room.open)await openRoom();}catch(e){$('joinMsg').textContent=e.message||'เปิดห้องไม่ได้';busy=false;return;}
+    startPvp();G.running=true;$('overlay').hidden=true;$('joinMsg').textContent='';updateLoadout(true);
+    say('ห้อง PvP รหัส '+room.code+' · ให้เพื่อนกรอกที่หน้าแรก','',10);busy=false;
+  });
   setInterval(()=>{if(!$('pause').hidden&&!busy)refreshOnline();},1000);   // the player count while the menu is open
 }
 // leaving the game for the title: a client leaves the room, a host closes it

@@ -15,6 +15,7 @@ import {hurtZombie,makeNoise} from '../entities/ai.js';
 import {addBlood,tracer,impact} from './effects.js';
 import {tankOnRay,blowTank} from './blast.js';
 import {curWeapon,countAmmo,takeAmmo} from './inventory.js';
+import {spawnDrop,reachableSpot} from './drops.js';
 import {clearSave} from './save.js';
 import {cureInfection} from './infection.js';
 import {sfx,sfxFor} from './audio.js';
@@ -35,7 +36,7 @@ export function hurtPlayer(p,n,by){
   U.hurt();
   if(p.hp<=0){
     const bag=p.gear.bag,ri=bag.findIndex(e=>e.id==='resurrect');
-    if(ri>=0){bag.splice(ri,1);p.hp=0;p.down=1.8;if(p.local)ctl.fireHeld=false;cureInfection(p);p.endCause=null;if(p.local)G.endCause=null;U.updateLoadout(true);return true;}
+    if(ri>=0&&!isPvp()){bag.splice(ri,1);p.hp=0;p.down=1.8;if(p.local)ctl.fireHeld=false;cureInfection(p);p.endCause=null;if(p.local)G.endCause=null;U.updateLoadout(true);return true;}
     // a teammate still standing can help them up (v0.10); alone, or when nobody is left standing, it is death
     if(!isPvp()&&p.endCause!=='infected'&&players.some(q=>q!==p&&standing(q))){goDown(p);return true;}   // v0.47 no going down in PvP
     die(p,foe);
@@ -51,8 +52,15 @@ export function die(p,by){
   sfx.scream(p.pos.x,p.pos.z);   // v0.19
   if(p.local){ctl.fireHeld=false;G.endCause=p.endCause;}
   // v0.47 PvP: back in a moment somewhere else (systems/pvp.js); the one who landed the last hit gets the kill
-  if(isPvp()){p.respawnT=PVP.respawn;p.deaths=(p.deaths||0)+1;
-    if(by){by.frags=(by.frags||0)+1;uiFor(by).feed('ฆ่า '+p.name+' ได้');uiFor(p).feed('โดน '+by.name+' ฆ่า','warn');}
+  if(isPvp()){p.respawnT=PVP.respawn;p.deaths=(p.deaths||0)+1;p.shield=false;
+    // v0.49 everyone sees who killed whom and how close the killer is to winning the round; a kill heals a little
+    if(by){by.frags=(by.frags||0)+1;by.hp=Math.min(by.maxHp,by.hp+PVP.killHeal);}
+    const line=by?by.name+' ฆ่า '+p.name+' · '+by.frags+'/'+PVP.round.kills:p.name+' ตาย';
+    for(const q of players)if(!q.away)uiFor(q).feed(line,q===p?'warn':'');
+    // v0.49 half of each kind of ammo stays where they fell, for whoever gets there first
+    if(PVP.dropAmmo>0)for(const e of p.gear.bag.slice()){if(DEF[e.id].kind!=='ammo')continue;const k=Math.floor(e.n*PVP.dropAmmo);if(k<=0)continue;
+      e.n-=k;if(e.n<=0)p.gear.bag.splice(p.gear.bag.indexOf(e),1);const [x,z]=reachableSpot(p.pos.x+rnd(-.6,.6),p.pos.z+rnd(-.6,.6));spawnDrop({id:e.id,n:k},x,z);}
+    uiFor(p).updateLoadout(true);
     return;}
   if(players.some(q=>q.alive)){   // the others play on (v0.11): the dead watch a teammate and can be brought back with a Kit
     for(const q of players)if(q.alive)uiFor(q).feed(p.name+' ตาย','warn');

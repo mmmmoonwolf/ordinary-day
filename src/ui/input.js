@@ -1,6 +1,6 @@
 import {$,isTouch} from '../core/util.js';
 import {cv,zoom,camera,view} from '../core/renderer.js';
-import {G} from '../core/state.js';
+import {G,isPvp} from '../core/state.js';
 import {keys,ctl,mouse,joy} from '../core/controls.js';
 import {player} from '../entities/player.js';
 import {act} from '../systems/actions.js';
@@ -137,6 +137,7 @@ export function initInput(){
   $('bContinue').addEventListener('click',()=>{if(!loadGame()){showContinue();return;}$('overlay').hidden=true;G.running=true;});
   showContinue();
   for(const id of ['bSound','bSound2'])$(id).addEventListener('click',()=>{toggleMute();showSound();});showSound();
-  $('bAgain').addEventListener('click',()=>{reset();ctl.sneak=false;ctl.adsTouch=false;$('overlay').hidden=true;G.running=true;});
+  $('bAgain').addEventListener('click',async()=>{if(isPvp()){(await import('../systems/pvp.js')).nextRound();return;}   // v0.49 the next PvP round
+    reset();ctl.sneak=false;ctl.adsTouch=false;$('overlay').hidden=true;G.running=true;});
   if(isTouch){$('atkKey').textContent='กดค้าง';}
 }

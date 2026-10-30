@@ -1,10 +1,11 @@
 import {$} from '../core/util.js';
-import {G} from '../core/state.js';
+import {G,isPvp} from '../core/state.js';
 import {DEF,GRADES,durPct} from '../config/items.js';
 import {diffOf} from '../config/difficulty.js';
 import {agents} from '../entities/agents.js';
 import {d2} from '../entities/movement.js';
-import {player} from '../entities/player.js';
+import {player,players} from '../entities/player.js';
+import {PVP} from '../config/pvp.js';
 import {curWeapon,countAmmo,gradeTag} from '../systems/inventory.js';
 import {closeBag} from './bag.js';
 import {ZC} from '../config/zombies.js';
@@ -87,9 +88,22 @@ const ENDINGS={
   infected:{eyebrow:'GAME OVER',title:'คุณกลายเป็นซอมบี้',text:'เชื้อลามถึง 100% ก่อนได้ใช้ Antibiotic'},
   won:{eyebrow:'ESCAPED',title:'คุณรอดแล้ว',text:'ทหารเปิดทางหลวงให้ผู้รอดชีวิตออกจากเมือง เดินทางต่อไปเมืองอื่น'},   // v0.46 (was the rescue helicopter)
 };
+const escHtml=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+// v0.49 the end of a PvP round: who won, everyone's kills and deaths, the next round on its own (systems/pvp.js)
+function pvpOver(){
+  const L=players.filter(p=>!p.away).sort((a,b)=>(b.frags||0)-(a.frags||0)||(a.deaths||0)-(b.deaths||0)),top=L[0],tie=L[1]&&(L[1].frags||0)===(top.frags||0);
+  $('oEyebrow').textContent='PVP · จบรอบ';$('oTitle').textContent=tie?'เสมอ':top===player?'คุณชนะ':(top?top.name:'')+' ชนะ';
+  $('oCause').textContent=(top&&(top.frags||0)>=PVP.round.kills?'ฆ่าครบ '+PVP.round.kills+' ก่อน':'หมดเวลา '+PVP.round.minutes+' นาที');
+  $('sKillsBy').innerHTML=L.map(p=>'<span>'+escHtml(p.name)+' — <b>'+(p.frags||0)+'</b> ฆ่า · '+(p.deaths||0)+' ตาย</span>').join('');
+  $('pOver').classList.add('pvp');$('sBest').innerHTML='';
+  $('bAgain').textContent='รอบใหม่';$('bAgain').hidden=isClient();$('overNote').textContent='รอบใหม่เริ่มเองใน '+PVP.round.gap+' วินาที';$('bOverTitle').hidden=!isClient();
+  $('pStart').hidden=true;$('pOver').hidden=false;$('overlay').hidden=false;
+}
 export function gameOver(){
   if(G.over)return;
   G.over=true;G.running=false;closeBag();$('pause').hidden=true;G.paused=false;
+  if(isPvp()){pvpOver();return;}
+  $('pOver').classList.remove('pvp');$('bAgain').textContent='เล่นอีกครั้ง';
   const end=ENDINGS[G.endCause]||ENDINGS.hurt,nights=nightsSurvived(G.min);
   $('oEyebrow').textContent=end.eyebrow+' · '+diffOf(G).name;$('oTitle').textContent=end.title;$('oCause').textContent=end.text;
   $('sNights').textContent=nights;$('sTime').textContent=hhmm(G.min);$('sDay').textContent=Math.floor(G.min/1440)+1;$('sKill').textContent=G.kills;

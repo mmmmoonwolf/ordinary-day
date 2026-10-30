@@ -44,14 +44,18 @@ function makeCrate(x,z){
   const box={x0:x-.6,x1:x+.6,z0:z-.6,z1:z+.6};solids.push(box);crate={g,box,flare};
 }
 export function clearCrate(){if(!crate)return;scene.remove(crate.g);const i=solids.indexOf(crate.box);if(i>=0)solids.splice(i,1);crate=null;}
-function airdrop(){
+// v0.49 loot(): what is in it instead (the PvP supply crate, systems/pvp.js); an earlier crate still standing goes
+export function airdrop(loot){
   // a street corner 20-70 m from the nearest player
-  const spots=[];for(let i=1;i<4;i++)for(let j=1;j<4;j++){const x=RC[i]+rnd(-2,2),z=RC[j]+rnd(-2,2),d=nearestPlayerDist(x,z);if(d>20&&d<70&&freeAt(x,z,1.2))spots.push([x,z]);}
+  clearCrate();const spots=[];for(let i=1;i<4;i++)for(let j=1;j<4;j++){const x=RC[i]+rnd(-2,2),z=RC[j]+rnd(-2,2),d=nearestPlayerDist(x,z);if(d>20&&d<70&&freeAt(x,z,1.2))spots.push([x,z]);}
+  // v0.49 the PvP crate also lands out of town, where the players are (any open loot spot at that distance)
+  if(!spots.length&&loot)for(const s of lootSpots){const d=nearestPlayerDist(s.x,s.z);if(d>20&&d<90&&roomAt(s.x,s.z)<0&&freeAt(s.x,s.z,1.2))spots.push([s.x,s.z]);}
   if(!spots.length)return;
   const [x,z]=pick(spots);makeCrate(x,z);G.drop={x,z,day:Math.floor(G.min/1440)+1};
   // daytime loot only: Police / Military grades stay night-only (confirmed rule)
   const items=[makeItem(pick(POOLS.civ.weapons)),makeItem(pick(POOLS.civ.ammo)),makeItem(pick(POOLS.civ.ammo)),makeItem(wpick(MED_W.day)),makeItem(wpick(MED_W.day)),makeItem(wpick(THROW_W))].slice(0,AIRDROP_ITEMS);
-  for(let k=partyOf(partySize(),'airdrop');k>0;k--)items.push(makeItem(pick([pick(POOLS.civ.ammo),wpick(MED_W.day)])));   // more players, more supplies (v0.10)
+  if(loot)items.splice(0,items.length,...loot());
+  else for(let k=partyOf(partySize(),'airdrop');k>0;k--)items.push(makeItem(pick([pick(POOLS.civ.ammo),wpick(MED_W.day)])));   // more players, more supplies (v0.10)
   items.forEach((it,k)=>{const a=k/items.length*Math.PI*2,[px,pz]=reachableSpot(x+Math.sin(a)*1.5,z+Math.cos(a)*1.5);spawnDrop(it,px,pz);});
   for(let k=0;k<3;k++){const a=rnd(0,6.28),r=rnd(7,10),wx=x+Math.sin(a)*r,wz=z+Math.cos(a)*r;if(!freeAt(wx,wz,.5))continue;const w=makeAgent(wx,wz);becomeZombie(w,'walker');agents.push(w);}
   sfx.radio();
@@ -115,7 +119,7 @@ const DAILY_RUN={
     for(let i=drops.length-1;i>=0;i--){const d=drops[i];if(!d.mine&&roomAt(d.x,d.z)===k)removeDrop(d);}
   },
 };
-const RUN={airdrop,horde:()=>horde(),blackout(){G.blackout=true;},...DAILY_RUN};
+const RUN={airdrop:()=>airdrop(),horde:()=>horde(),blackout(){G.blackout=true;},...DAILY_RUN};
 export function updateEvents(now){
   for(const e of G.plan||[]){
     if(e.warn&&!e.warned&&G.min>=e.warn&&G.min<e.at){e.warned=true;sfx.radio();}

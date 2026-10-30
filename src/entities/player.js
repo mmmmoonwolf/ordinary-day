@@ -18,6 +18,7 @@ import {nearDoor,nearFixDoor} from '../systems/doors.js';
 import {nearBoxOf,keepSearching} from '../systems/search.js';
 import {CRAWL_SPEED,REVIVE_SECONDS,REVIVE_RANGE,REVIVE_HP} from '../config/party.js';
 import {REGEN} from '../config/health.js';
+import {PVP} from '../config/pvp.js';
 import {uiFor} from '../ui/hud.js';
 import {driveStep,nearCar} from '../systems/vehicles.js';
 
@@ -90,6 +91,7 @@ export function updatePlayer(p,dt){
   if(p.helping&&!keepHelping(p,dt)){if(isDown(p.helping))p.helping.reviveT=0;p.helping=null;}
   if(p.searching>=0&&!keepSearching(p,dt)){p.searching=-1;p.searchT=0;}   // v0.15
   if((I.fire||I.fireQ>0)&&p.cool<=0&&p.reloadT<=0){
+    if(p.shield){p.shield=false;p.inv=0;}   // v0.49 PvP: just back, untouchable only until the first attack
     if(def.gun){if(def.auto||I.fireQ>0){I.fireQ=0;aimAssist(p,def);fireGun(p,w,def);}}
     else{I.fireQ=0;aimAssist(p,def);sfxFor(p).swing();p.swing=p.swingDur=def.cd;p.hitDone=false;p.cool=def.cd;p.aimT=.3;}
   }
@@ -105,7 +107,7 @@ export function updatePlayer(p,dt){
   p.nearDoor=p.full||np?-1:nearDoor(p);p.fixDoor=nearFixDoor(p);
   p.nearBox=p.full||np||p.nearDoor>=0?-1:nearBoxOf(p);
   p.nearCar=p.full||np||p.nearDoor>=0||p.nearBox>=0?-1:nearCar(p);   // v0.45 a car that still starts
-  const cap=p.maxHp*REGEN.cap;if(performance.now()/1000-p.lastHit>REGEN.after&&p.hp<cap&&!(p.infect>0))p.hp=Math.min(cap,p.hp+REGEN.rate*dt);   // v0.42 slower, up to a cap (config/health.js)
+  const R=isPvp()?PVP.regen:REGEN,cap=p.maxHp*R.cap;if(performance.now()/1000-p.lastHit>R.after&&p.hp<cap&&!(p.infect>0))p.hp=Math.min(cap,p.hp+R.rate*dt);   // v0.42 slower, up to a cap (config/health.js); v0.49 PvP faster, to full
   updateInfection(p,dt);
 }
 // ---------- downed and helping up (v0.10) ----------
