@@ -14,7 +14,7 @@ export const EYE=1.62;   // eye height in the first-person view (m)
 // breath (Shift while looking through the scope, for BREATH s, then a pause of BREATH_REST s)
 export const SWAY={base:.006,moving:2.2,ads:.7,scope:1.6};
 export const BREATH=3,BREATH_REST=4;
-export const KICK={pitch:.018,yaw:.006};   // camera kick per shot (rad), × (1 + bloom)
+export const KICK={pitch:.018,yaw:.006,ads:1.3,punch:.07,arms:2.2};   // camera kick per shot (rad), × (1 + bloom); v0.48 aimed down the sights or through a scope (PLACEHOLDER): the kick × ads, the view pushed back (fov × 1 + punch, fading) and the arms / gun shoved back × arms
 // vaulting low obstacles (v0.30): how far ahead (m), how deep an obstacle can be, how long it takes (s) and how high
 // the arc goes (m); running into one vaults when it is within auto m (v0.44 walking into one too, after pushing against it for push s);
 // a hop without anything to vault

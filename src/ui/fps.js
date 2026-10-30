@@ -56,7 +56,7 @@ export function fpsMove(ix,iy){const fx=Math.sin(view.yaw),fz=Math.cos(view.yaw)
 const ARMS={eye:[.03,-.12,0],kick:.07};
 let arms=null;const hv=new THREE.Vector3();
 const heldModel=def=>{const m=weaponModel(def.model,def.look);HOLD(m,def);return m;};
-function viewArms(v,dt,scoped){
+function viewArms(v,dt,scoped,ads){
   if(arms&&(arms.p!==v||!skins.on||arms.id!==skinId(v))){dropArms(arms);arms=null;}   // v0.41 or new clothes
   if(!arms&&skins.ready&&skins.on){arms=makeArms(v);if(arms){arms.o.rotation.y=Math.PI;fpsCam.add(arms.o);}}
   if(!arms)return false;
@@ -65,14 +65,14 @@ function viewArms(v,dt,scoped){
   const o=arms.o,head=arms.bones.Head;if(!head)return true;
   fpsCam.updateMatrixWorld();o.updateMatrixWorld(true);
   head.getWorldPosition(hv);fpsCam.worldToLocal(hv);
-  const [x,y]=ARMS.eye,z=ARMS.eye[2]+(v.recoil||0)*ARMS.kick;
+  const [x,y]=ARMS.eye,z=ARMS.eye[2]+(v.recoil||0)*ARMS.kick*(ads?KICK.arms:1);   // v0.48 harder aimed down the sights
   o.position.x+=x-hv.x;o.position.y+=y-hv.y;o.position.z+=z-hv.z;
   return true;
 }
 // the weapon in front of the camera
 const vm=new THREE.Group();fpsCam.add(vm);vm.visible=false;let vmId=null,vmModel=null,adsT=0,zoom=1;
 function viewModel(v,ads,scoped,dt){
-  if(viewArms(v,dt,scoped)){vm.visible=false;return;}
+  if(viewArms(v,dt,scoped,ads)){vm.visible=false;return;}
   const id=curWeapon(v).id;
   if(id!==vmId){vmId=id;if(vmModel){vm.remove(vmModel);vmModel=null;}
     if(id!=='fist'){const def=DEF[id];vmModel=weaponModel(def.model,def.look);vmModel.scale.setScalar(.42);vmModel.rotation.order='YXZ';vm.add(vmModel);
@@ -82,7 +82,7 @@ function viewModel(v,ads,scoped,dt){
   let x=gun?.13:.22,y=(gun?-.13:-.26)+Math.abs(sway),z=gun?-.3:-.36,rx=gun?0:-1,ry=Math.PI+(gun?0:.25);   // a melee weapon held up
   if(gun){z+=v.recoil*.06;rx+=v.recoil*.12;if(v.reloadT>0){y-=.12;rx-=.5;}}
   else if(v.swing>0){const k=1-v.swing/Math.max(.05,v.swingDur),a=Math.sin(k*Math.PI);rx=-1+a*1.5;ry=Math.PI+.6-k*1.2;x-=a*.12;}   // down and across
-  if(gun&&adsT>0){const k=adsT;x+=(0-x)*k;y+=(-.085-y)*k;z+=(-.24-z)*k;rx*=1-k*.6;}   // up to the eye, along the sights
+  if(gun&&adsT>0){const k=adsT;x+=(0-x)*k;y+=(-.085-y)*k;z+=(-.24-z)*k;rx*=1-k*.6;z+=v.recoil*.06*KICK.arms*k;rx+=v.recoil*.12*k;}   // up to the eye, along the sights; v0.48 the shot still shoves it back (the line above was undone here)
   vmModel.position.set(x+sway*(1-adsT*.8),y,z);vmModel.rotation.set(rx,ry,0);
 }
 // full-height walls, the space above the doorway, a tall door and a ceiling for room k, made the first time it is seen
@@ -97,7 +97,7 @@ function shell(r){
   r.cut.add(g);return (r.shell=g);
 }
 // once a frame, for the player the camera follows (the local one, or a teammate once dead)
-let bob=0,eyeY=EYE,lastRecoil=0,breathT=0,breathRest=0,swayP=0;
+let bob=0,eyeY=EYE,lastRecoil=0,punch=0,breathT=0,breathRest=0,swayP=0;
 export function updateFps(v,dt){
   const mine=v===player;
   if(!mine)view.yaw+=Math.atan2(Math.sin(v.face-view.yaw),Math.cos(v.face-view.yaw))*Math.min(1,dt*6);   // watching a teammate
@@ -107,9 +107,10 @@ export function updateFps(v,dt){
   // aiming down the sights: zoom in by gun, through the scope for a sniper rifle
   const d=DEF[curWeapon(v).id],ads=mine&&!low&&!!v.input.ads&&!!d.gun&&!(v.reloadT>0),scoped=ads&&ADS.scope.includes(d.model)&&adsT>.7;
   adsT+=((ads?1:0)-adsT)*Math.min(1,dt*12);
-  const zt=ads?ADS.zoom[d.model]||1.3:1;zoom+=(zt-zoom)*Math.min(1,dt*10);
-  if(Math.abs(fpsCam.fov-FOV/zoom)>.01){fpsCam.fov=FOV/zoom;fpsCam.updateProjectionMatrix();}
+  const zt=ads?ADS.zoom[d.model]||1.3:1;zoom+=(zt-zoom)*Math.min(1,dt*10);punch=Math.max(0,punch-dt*punch*9-dt*.02);
+  const fov=FOV/zoom*(1+punch);if(Math.abs(fpsCam.fov-fov)>.01){fpsCam.fov=fov;fpsCam.updateProjectionMatrix();}
   const B=document.body;if(B){if(B.classList.contains('scoped')!==scoped)B.classList.toggle('scoped',scoped);if(B.classList.contains('ads')!==adsT>.5)B.classList.toggle('ads',adsT>.5);}
+  if(scoped){const sc=$('scope'),r=v.recoil||0,s=r>.01?'translateY('+(r*4).toFixed(2)+'vmin) scale('+(1+r*.05).toFixed(3)+')':'';if(sc&&sc.style.transform!==s)sc.style.transform=s;}   // v0.48 the scope jumps with the shot
   // the aim drifts (steadier crouched or prone, wider through a scope; Shift holds the breath for a few seconds)
   const holding=scoped&&view.breathKey&&breathRest<=0;
   if(holding){breathT+=dt;if(breathT>BREATH){breathRest=BREATH_REST;breathT=0;}}else{if(breathRest>0)breathRest-=dt;breathT=Math.max(0,breathT-dt);}
@@ -117,7 +118,8 @@ export function updateFps(v,dt){
   view.sway+=((Math.sin(t*1.1)+.5*Math.sin(t*2.7+1))/1.5*amp-view.sway)*Math.min(1,dt*6);
   swayP+=((Math.sin(t*1.6+2)+.4*Math.sin(t*3.3))/1.4*amp*.7-swayP)*Math.min(1,dt*6);
   // every shot kicks the view up and a little sideways, more as the spread grows
-  if(mine&&(v.recoil||0)>lastRecoil+.3){const k=1+(v.bloom||0);view.pitch=clamp(view.pitch+KICK.pitch*k*(ads?.7:1),...PITCH);view.yaw+=(Math.random()-.5)*2*KICK.yaw*k;}
+  // v0.48 aimed down the sights it kicks harder (was .7) and pushes the view back, through a scope too
+  if(mine&&(v.recoil||0)>lastRecoil+.3){const k=1+(v.bloom||0);view.pitch=clamp(view.pitch+KICK.pitch*k*(ads?KICK.ads:1),...PITCH);view.yaw+=(Math.random()-.5)*2*KICK.yaw*k*(ads?KICK.ads:1);if(ads)punch=KICK.punch*k;}
   lastRecoil=v.recoil||0;
   fpsCam.position.set(v.pos.x,(v.y||0)+eye+(v.airH||0),v.pos.z);   // v0.30 over an obstacle or hopping
   fpsCam.rotation.set(view.pitch+swayP,view.yaw+view.sway+Math.PI,0,'YXZ');   // v0.37 this line had been swallowed by the comment above since v0.30
