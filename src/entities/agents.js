@@ -53,7 +53,17 @@ export function styleZombie(a){
   a.b.eyes.visible=a.kind!=='walker';
   if(a.kind==='armor'&&!a.b.extra){const g=new THREE.Group();g.add(part(vestMat,.58,.5,.36,0,1.2,0));g.add(part(vestMat,.36,.14,.36,0,1.86,0));a.b.body.add(g);a.b.extra=g;}
   if(a.kind==='tyrant'){a.b.armR.scale.set(1.5,1.25,1.5);a.b.head.scale.set(.26,.26,.26);}
+  if(a.kind==='nest')nestLook(a);
   zombify(a);   // the character model, if it wears one (v0.13)
+}
+// v0.57 a nest: the body hidden, a heap of swollen flesh in its place (lit from inside by its own material, which flashes
+// when hit like a zombie's shirt)
+function nestLook(a){
+  const m=a.b.mats[0];m.color.set('#2e1014');m.emissive.set('#000');a.b.body.visible=false;a.b.eyes.visible=false;a.rad=1.1;a.node=null;
+  if(a.b.nest)return;const g=new THREE.Group(),sac=S({color:'#5a2228',emissive:'#4a0a12',emissiveIntensity:.45,roughness:.45});
+  const ball=new THREE.SphereGeometry(1,10,8);
+  for(const [x,y,z,r,mm] of [[0,.35,0,.75,m],[.6,.25,.3,.5,m],[-.5,.22,.4,.45,m],[.2,.2,-.6,.5,m],[-.35,.6,-.2,.32,sac],[.4,.62,.05,.26,sac],[.05,.75,.35,.22,sac]]){const s=new THREE.Mesh(ball,mm);s.position.set(x,y,z);s.scale.set(r,r*.8,r);s.castShadow=true;g.add(s);}
+  a.b.root.add(g);a.b.nest=g;a.b.root.scale.set(1,1,1);
 }
 export function becomeZombie(a,kind){
   a.state='zombie';a.kind=kind||(isNightTod(G.min%1440)?'zombie':'walker');a.hp=ZC[a.kind].hp;a.maxHp=a.hp;
