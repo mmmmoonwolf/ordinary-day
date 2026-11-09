@@ -1,5 +1,6 @@
 import {$,pick} from '../core/util.js';
-import {OUTFITS,PALETTE,profile,saveProfile,cleanName,cleanLook,defaultLook,applyProfile} from '../core/profile.js';
+import {OUTFITS,PALETTE,profile,saveProfile,cleanName,cleanLook,defaultLook,applyProfile,lockOf,bestEver} from '../core/profile.js';
+import {JOBS,JOB_IDS,cleanJob} from '../config/jobs.js';
 import {G} from '../core/state.js';
 import {bus} from '../core/bus.js';
 import {skins,previewModel} from '../entities/skins.js';
@@ -18,9 +19,14 @@ export function initCreator(){
   n.addEventListener('input',()=>{profile.name=cleanName(n.value);saveProfile();if(player&&bus.role!=='client')player.name=profile.name||'ผู้เล่น 1';});
   $('bChar').addEventListener('click',open);
   $('bCharDone').addEventListener('click',close);
-  $('bCharRandom').addEventListener('click',()=>{const ids=OUTFITS[look.s].map(o=>o[0]);for(const k of PARTS)look[k]=pick(ids);for(const k of COLS)look.c[k]=Math.random()<.25?null:pick(PALETTE[k==='skin'?'skin':k==='hair'?'hair':'cloth']);changed();});
+  $('bCharRandom').addEventListener('click',()=>{const best=bestEver(),ids=OUTFITS[look.s].map(o=>o[0]).filter(id=>!lockOf(id,best));for(const k of PARTS)look[k]=pick(ids);for(const k of COLS)look.c[k]=Math.random()<.25?null:pick(PALETTE[k==='skin'?'skin':k==='hair'?'hair':'cloth']);changed();});
   for(const b of document.querySelectorAll('#charSex button'))b.addEventListener('click',()=>{if(look.s===b.dataset.sex)return;look=Object.assign(defaultLook(b.dataset.sex),{c:look.c});changed();});
+  // v0.58 the job: what they start with and a small edge (config/jobs.js), saved at once
+  const jr=[...document.querySelectorAll('.jobrow')][0];
+  if(jr){const step=d=>{const i=JOB_IDS.indexOf(cleanJob(profile.job));profile.job=JOB_IDS[(i+d+JOB_IDS.length)%JOB_IDS.length];saveProfile();if(player&&bus.role!=='client'&&!G.running)player.job=profile.job;changed();};
+    jr.querySelector('.prev').addEventListener('click',()=>step(-1));jr.querySelector('.next').addEventListener('click',()=>step(1));}
   for(const row of document.querySelectorAll('.partrow')){
+    if(!row.dataset.part)continue;
     const k=row.dataset.part,step=d=>{const ids=OUTFITS[look.s].map(o=>o[0]);look[k]=ids[(ids.indexOf(look[k])+d+ids.length)%ids.length];changed();};
     row.querySelector('.prev').addEventListener('click',()=>step(-1));row.querySelector('.next').addEventListener('click',()=>step(1));
   }
@@ -36,6 +42,7 @@ function open(){
   if(!view)view=makeView();view.start();changed();
 }
 function close(){
+  const best=bestEver(),free=OUTFITS[look.s].map(o=>o[0]).find(id=>!lockOf(id,best));for(const k of PARTS)if(lockOf(look[k],best))look[k]=free;   // v0.58 a locked outfit is only tried on
   profile.look=cleanLook(look);saveProfile();
   if(player&&bus.role!=='client'&&!G.running)applyProfile(player);   // the next game wears it (online, the next room joined)
   if(view)view.stop();
@@ -43,7 +50,9 @@ function close(){
 }
 function changed(){
   for(const b of document.querySelectorAll('#charSex button')){const on=b.dataset.sex===look.s;b.classList.toggle('on',on);b.setAttribute('aria-checked',on);}
-  for(const row of document.querySelectorAll('.partrow')){const o=OUTFITS[look.s].find(x=>x[0]===look[row.dataset.part]);row.querySelector('b').textContent=o?o[1]:'';}
+  const best=bestEver();
+  for(const row of document.querySelectorAll('.partrow')){if(!row.dataset.part)continue;const o=OUTFITS[look.s].find(x=>x[0]===look[row.dataset.part]),lk=o?lockOf(o[0],best):'';row.querySelector('b').textContent=o?o[1]+(lk?' 🔒 '+lk:''):'';row.classList.toggle('locked',!!lk);}
+  const jr=[...document.querySelectorAll('.jobrow')][0];if(jr){const J=JOBS[cleanJob(profile.job)];jr.querySelector('b').textContent=J.name+(J.hint?' · '+J.hint:'');}
   for(const box of document.querySelectorAll('.swatches'))for(const b of box.querySelectorAll('button'))b.classList.toggle('on',(b.dataset.c||null)===look.c[box.dataset.col]);
   if(view)view.show(look);
 }

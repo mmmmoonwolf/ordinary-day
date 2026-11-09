@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.58 | `config/jobs.js` `JOBS` `jobOf()` `cleanJob()`, `giveKit(p)` ใน `systems/game.js`, `p.job` `p.kitGot` (เซฟ ส่งใน 'hi'), `dropPack(p)` `PACK_KINDS` ใน `combat.js`, `DISTRICT` ใน `config/loot.js` `rollLoot(…,area)`, `LOCKS` `bestEver()` `lockOf()` ใน `core/profile.js`, `.jobrow` |
 | v0.57 | `ZC.screamer` `ZC.hunter` `ZC.nest` `SCREAMER` `HUNTER` `NEST` ใน `config/zombies.js`, `systems/nests.js` `placeNests()` `updateNests()`, `nestLook()` ใน `agents.js`, `nestFrame()` ใน `animation.js`, `lit()` ใน `ai.js`, `G.huntAt` `G.nested`, `sfx.wail` `howl` `hiss` `burst` |
 | v0.56 | `POWER` `BROADCAST` `STORM` ใน `config/events.js`, `lamps` ใน `world/props.js`, `strike()` `nextCast()` ใน `systems/events.js`, `G.storm` `G.boltAt` `G.castAt` (snapshot `sm`), `strikeFx()` `updateBolt()` `strikeAt` ใน `effects.js`, `sfx.broadcast` `sfx.strike` `speak()` |
 | v0.55 | `config/craft.js` `RECIPES` `TRAP`, `systems/craft.js` `craft()` `place()` `canCraft()` `updateTraps()`, `ui/traps.js`, `ACTIONS.craft` `place`, `G.ptraps` (snapshot `pt`), `#bagCraft`, `DEF` cloth tape nails nailbomb tripwire beartrap sign_c extinguisher_c guitar_c pan_c (`stun`), `MATS` และหมวด `mat` ใน `BOX`, `BLAST.nailbomb` |
@@ -1069,6 +1070,23 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **รัง** (`ZC.nest` HP 160 `NEST`, `systems/nests.js`): เช้าวันที่ 2 (06:00) เกิด 4 รังบนจุดของนอกตึก ห่างผู้เล่น 55 ม. ขึ้นไปและห่างกันเอง 45 ม. ขึ้นไป รังเป็นตัวละครชนิด `nest` (ยิง ตี ระเบิด ไฟ และ aim assist ใช้ได้เลย ส่งออนไลน์และเซฟเหมือนซอมบี้) อยู่กับที่ ไม่ถูกดัน (`separate()`) เมื่อผู้เล่นอยู่ในระยะ 70 ม. รังจะงอกซอมบี้ทุก 45 นาทีในเกม (กลางคืนเร็วขึ้น ×0.6 มีชีวิตพร้อมกันได้ไม่เกิน 5 ตัว ลุกขึ้นช้า ๆ จากรัง) พังแล้วแตก (`sfx.burst`) ทิ้งของพลเรือน 4 ชิ้น (กระสุน ยา ของขว้าง เศษวัสดุ) ภาพเป็นก้อนเนื้อหายใจช้า ๆ (`nestLook()` `nestFrame()`) ไม่มีโมเดลตัวละคร
 - **PLACEHOLDER:** ค่าทั้งหมดของ `ZC.screamer` `ZC.hunter` `ZC.nest` `SCREAMER` `HUNTER` `NEST`
 - **ยังไม่ได้ทำ:** ท่ากรีดร้องของ Screamer (ตอนนี้ยืนนิ่ง) และหน้าตาเฉพาะของ Hunter (ใช้โมเดลซอมบี้เดิม สีผิวต่างกัน), Crawler ยังไม่ได้ทำ
+
+## อาชีพ เป้หล่น ของตามย่าน ชุดที่ปลดล็อก (v0.58)
+
+จากรายการไอเดีย #18 #31 #37 #38 (อ้างอิง Project Zomboid, DayZ, State of Decay)
+
+- **อาชีพ** (`config/jobs.js` `JOBS`): เลือกในหน้าแต่งตัวแถว อาชีพ (`.jobrow`) เก็บใน `profile.job` ส่งไปห้องออนไลน์ใน 'hi' และ host ตรวจด้วย `cleanJob()` เกมใหม่ได้ของเริ่มต้น `giveKit(p)` ครั้งเดียวต่อเกม (`p.kitGot` เซฟไว้ เพื่อนที่เข้าห้องใหม่ก็ได้)
+  - พลเรือน: ไม่มีอะไร
+  - ทหารผ่านศึก: Pistol + 9mm 18 นัด รีโหลดเร็วขึ้น ×0.75
+  - แพทย์: Bandage 2 Painkiller 1 ช่วยเพื่อนลุก / ชุบเร็วขึ้น ×0.55 แผลเลือดไหลช้าลง ×0.6
+  - ช่าง: Duct Tape 2 Nails 3 Cloth 2 อาวุธประชิดสึกครึ่งเดียว รถกินน้ำมัน ×0.6
+  - นักวิ่ง: Bandage 1 เดิน / วิ่งเร็วขึ้น ×1.08
+  ไม่มีอาชีพไหนแตะค่าที่ทีมยืนยัน (HP ซอมบี้ ดาเมจ อัตรายิง % ฟื้นของยา)
+- **เป้หล่นตอนตาย** (`dropPack(p)` ใน `combat.js`): เล่นหลายคนแล้วมีคนตายแต่เพื่อนยังยืนอยู่ ของในกระเป๋าประเภท `PACK_KINDS` (กระสุน ยา ของขว้าง เศษวัสดุ กับดัก) หล่นรอบจุดที่ตาย อาวุธที่ถือยังอยู่กับตัว ชุบด้วย Resurrection Kit แล้วกลับมาพร้อมอาวุธ ไม่ใช้ในโหมด PvP (PvP หล่นครึ่งหนึ่งเฉพาะกระสุนเหมือนเดิม)
+- **ของตามย่าน** (`DISTRICT` ใน `config/loot.js`): ตัวคูณน้ำหนักหมวดของบนพื้นตามพื้นที่ (`areaAt()` เก็บไว้ที่จุด `s.area`) ชานเมือง ยา ×1.7 เป้ ×1.6 อาวุธ ×0.7 · ฟาร์ม อาวุธ ×1.3 ของขว้าง ×1.6 · ฝั่งแม่น้ำ กระสุน ×1.3 · ปั๊มน้ำมัน ของขว้าง ×2.2 · ทางหลวง กระสุน ×1.4 ของขว้าง ×1.6 · สุสาน อาวุธ ×1.4 ใจกลางเมืองและร้านค้าเหมือนเดิม เกรด Police / Military ยังเป็นของกลางคืน
+- **ชุดที่ปลดล็อก** (`LOCKS` `lockOf()` `bestEver()` ใน `core/profile.js` จากสถิติดีสุดใน `ordinary-day.best` ทุกระดับความยาก): SWAT / ทหาร ต้องถึงค่ายทหาร (ชนะ) · พังก์ ฆ่า 120 ตัวในเกมเดียว · สูท รอด 2 คืน · นักเดินทาง รอด 1 คืน หน้าแต่งตัวยังเลือกดูได้ (ขึ้น 🔒 และเงื่อนไข) แต่กดเสร็จแล้วชิ้นที่ล็อกกลับเป็นชุดแรก สุ่มเลือกเฉพาะชุดที่ปลดแล้ว ชุดเริ่มต้นเปลี่ยนเป็นชุดแรก (ลำลอง) ชุดที่เคยเลือกก่อน v0.58 ยังใส่ได้
+- **PLACEHOLDER:** `JOBS` (ของ ตัวคูณ) `PACK_KINDS` `DISTRICT` `LOCKS`
+- **ยังไม่ได้ทำ:** ไอคอนอาชีพเหนือหัว, ตัวคูณของในตู้ตามย่าน (ตอนนี้เฉพาะของบนพื้น)
 
 ## ระบบ loot
 

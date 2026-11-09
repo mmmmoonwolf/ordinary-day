@@ -1,3 +1,4 @@
+import {jobOf} from '../config/jobs.js';
 import {G,isPvp} from '../core/state.js';
 import {OFF} from '../config/world.js';
 import {DEF,STACKS} from '../config/items.js';
@@ -87,7 +88,7 @@ export function updatePlayer(p,dt){
     if(p.vault){updateVault(p,dt);return;}
   }
   if(p.trapT>0){p.trapT-=dt;p.moving=0;}   // v0.26 caught in a bear trap
-  else if(mag>.08){moveAgent(p,I.mx,I.mz,(p.sneak?SNEAK.speed:(I.run?5.8:3.4)*Math.max(.45,mag))*heavy*(p.zed?PVP.infect.speed:1)*(limping(p)?WOUND.limp:1),dt,I.aim||p.aimT>0||p.ads);
+  else if(mag>.08){moveAgent(p,I.mx,I.mz,(p.sneak?SNEAK.speed:(I.run?5.8:3.4)*Math.max(.45,mag))*heavy*(p.zed?PVP.infect.speed:1)*(limping(p)?WOUND.limp:1)*(jobOf(p).speed||1),dt,I.aim||p.aimT>0||p.ads);
     if(I.run&&G.phase==='night'){p.runNoise-=dt;if(p.runNoise<=0){p.runNoise=.5;makeNoise(p.pos.x,p.pos.z,5);}}}
   else p.moving=0;
   if(p.cool>0)p.cool-=dt;
@@ -137,8 +138,9 @@ function keepHelping(p,dt){
   const q=p.helping,I=p.input;
   if(!(isDown(q)||q.state==='dead'&&hasKit(p))||I.mag>.08||I.fire||I.fireQ>0||Math.hypot(q.pos.x-p.pos.x,q.pos.z-p.pos.z)>REVIVE_RANGE+.3)return false;
   p.face=Math.atan2(q.pos.x-p.pos.x,q.pos.z-p.pos.z);
-  p.helpT+=dt;q.reviveT=p.helpT/REVIVE_SECONDS;
-  if(p.helpT<REVIVE_SECONDS)return true;
+  const need=REVIVE_SECONDS*(jobOf(p).revive||1);   // v0.58 a medic is quicker
+  p.helpT+=dt;q.reviveT=p.helpT/need;
+  if(p.helpT<need)return true;
   q.reviveT=0;
   if(!q.alive){resurrect(p,q);return false;}
   q.bleed=0;q.hp=REVIVE_HP;q.inv=2;q.lastHit=performance.now()/1000;

@@ -196,6 +196,8 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
 .partrow{display:grid;grid-template-columns:76px 32px 1fr 32px;align-items:center;gap:4px}
 .partrow span,.swatches span{font:600 13px var(--f-ui);color:var(--ink);opacity:.8}
 .partrow b{font:700 14px var(--f-ui);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.partrow.locked b{opacity:.55;font-weight:600}
+.jobrow b{font-size:12px;white-space:normal;line-height:1.25}
 .partrow button{height:32px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:13px;cursor:pointer}
 .swatches{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 .swatches span{flex:0 0 76px}
@@ -459,6 +461,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
         <div class="partrow" data-part="bd"><span>เสื้อ</span><button class="prev" aria-label="ก่อนหน้า">◀</button><b></b><button class="next" aria-label="ถัดไป">▶</button></div>
         <div class="partrow" data-part="lg"><span>กางเกง</span><button class="prev" aria-label="ก่อนหน้า">◀</button><b></b><button class="next" aria-label="ถัดไป">▶</button></div>
         <div class="partrow" data-part="ft"><span>รองเท้า</span><button class="prev" aria-label="ก่อนหน้า">◀</button><b></b><button class="next" aria-label="ถัดไป">▶</button></div>
+        <div class="partrow jobrow"><span>อาชีพ</span><button class="prev" aria-label="ก่อนหน้า">◀</button><b></b><button class="next" aria-label="ถัดไป">▶</button></div>
         <div class="swatches" data-col="shirt"><span>สีเสื้อ</span></div>
         <div class="swatches" data-col="pants"><span>สีกางเกง</span></div>
         <div class="swatches" data-col="hair"><span>สีผม / หมวก</span></div>

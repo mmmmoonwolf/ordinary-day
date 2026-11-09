@@ -7,6 +7,8 @@ import {runAction} from '../systems/actions.js';
 import {say,feed} from '../ui/hud.js';
 import {hostRoom,newCode} from './link.js';
 import {cleanName,cleanLook} from '../core/profile.js';
+import {cleanJob} from '../config/jobs.js';
+import {giveKit} from '../systems/game.js';
 import {encodeWorld,freshSent} from './snapshot.js';
 
 // ---------- hosting a room (v0.12) ----------
@@ -57,7 +59,7 @@ function onMsg(c,m){
     c.token=String(m.token||'').slice(0,40);
     for(const o of room.conns.slice())if(o.token===c.token){o.link.close();gone(o);}   // the same device again: drop its old link
     if(!bind(c)){c.link.send({t:'no',why:'ห้องเต็มแล้ว (สูงสุด '+MAX_PLAYERS+' คน)'});return;}
-    c.p.name=cleanName(m.name)||'ผู้เล่น '+(c.p.id+1);c.p.wear=cleanLook(m.look);   // v0.41 their name and clothes
+    c.p.name=cleanName(m.name)||'ผู้เล่น '+(c.p.id+1);c.p.wear=cleanLook(m.look);c.p.job=cleanJob(m.job);if(!c.p.kitGot)giveKit(c.p);   // v0.41 their name and clothes · v0.58 their job and its kit
     room.conns.push(c);
     if(G.paused)G.paused=false;   // with a friend in, the bag or menu no longer stops the world (Q13)
     c.link.send({t:'w',id:c.p.id,code:room.code});c.link.send(encodeWorld(c.sent,c.p));
