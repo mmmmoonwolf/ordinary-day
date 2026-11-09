@@ -1,10 +1,11 @@
 import {rnd,pick,wpick} from '../core/util.js';
 import {scene} from '../core/renderer.js';
-import {G} from '../core/state.js';
+import {G,isPvp} from '../core/state.js';
 import {RC,LIM,RIVER} from '../config/world.js';
 import {GOAL_NIGHTS} from '../config/goal.js';
 import {POOLS,MED_W,THROW_W} from '../config/loot.js';
 import {EVENT_CHANCE,AIRDROP_ITEMS,HORDE,DAILY} from '../config/events.js';
+import {MEGA} from '../config/director.js';
 import {breakables} from '../world/props.js';
 import {rooms,boxes,roomAt} from '../world/interiors.js';
 import {lootSpots} from '../world/city.js';
@@ -33,6 +34,7 @@ export function planEvents(){
     else if(Math.random()<EVENT_CHANCE.blackout)plan.push({kind:'blackout',at:base+19*60});
     if(plan.length===n)plan.push({kind:'airdrop',at:base+Math.round(rnd(10*60,15*60))});   // never an empty day
   }
+  plan.push({kind:'mega',at:(MEGA.day-1)*1440+MEGA.at});   // v0.52 the mega horde, one afternoon
   G.plan=plan.sort((a,b)=>a.at-b.at).map(e=>Object.assign(e,{done:false,warned:false}));
 }
 // ---------- airdrop ----------
@@ -119,7 +121,7 @@ const DAILY_RUN={
     for(let i=drops.length-1;i>=0;i--){const d=drops[i];if(!d.mine&&roomAt(d.x,d.z)===k)removeDrop(d);}
   },
 };
-const RUN={airdrop:()=>airdrop(),horde:()=>horde(),blackout(){G.blackout=true;},...DAILY_RUN};
+const RUN={airdrop:()=>airdrop(),horde:()=>horde(),mega:()=>{if(!isPvp()){horde(MEGA.size,MEGA.cap);sfx.roar(0,0,2.4);}},blackout(){G.blackout=true;},...DAILY_RUN};
 export function updateEvents(now){
   for(const e of G.plan||[]){
     if(e.warn&&!e.warned&&G.min>=e.warn&&G.min<e.at){e.warned=true;sfx.radio();}

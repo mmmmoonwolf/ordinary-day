@@ -9,6 +9,8 @@ import {diffOf} from '../config/difficulty.js';
 import {BLEED_SECONDS,BLEED_PER_DMG} from '../config/party.js';
 import {PVP} from '../config/pvp.js';
 import {rayWall} from '../world/collision.js';
+import {breakables} from '../world/props.js';
+import {DAILY} from '../config/events.js';
 import {walledOff} from '../world/interiors.js';
 import {agents} from '../entities/agents.js';
 import {players} from '../entities/player.js';
@@ -98,6 +100,11 @@ export function finishReload(p){const w=p.reloadFor,def=DEF[w.id];if(w!==curWeap
 // how far a shot may stray (rad, either side): the gun's spread, tighter aiming down the sights and crouched or prone,
 // wider after a burst (v0.29)
 export function spreadOf(p,def){return def.spread*(p.ads?ADS.spread:1)*(p.sneak?SNEAK.spread:1)*(1+(p.bloom||0));}
+// v0.52 the alarm of a parked car the shot ends in (the daily-event alarm of systems/events.js: zombies come for 40 min)
+function carAlarm(ox,oz,dx,dz,end){
+  for(const b of breakables){if(!b.car||b.broken||b.car.burned)continue;const rx=b.x-ox,rz=b.z-oz,t=rx*dx+rz*dz;
+    if(t<0||t>end+1.6||Math.abs(rx*dz-rz*dx)>1.3)continue;G.alarm={x:b.x,z:b.z,until:G.min+DAILY.last.alarm,next:G.min};return;}
+}
 export function fireGun(p,w,def){
   const U=uiFor(p);
   if(w.mag<=0){p.cool=.3;sfxFor(p).empty();if(countAmmo(p,def.ammo)>0)startReload(p);else U.feedOnce('noammo','กระสุนหมด','warn');return;}
@@ -114,6 +121,7 @@ export function fireGun(p,w,def){
     const n=Math.min(hits.length,def.pierce||1);let end=n?hits[n-1][0]:wall,armor=false;
     for(let k=0;k<n;k++){const [t,z]=hits[k];if(z.state==='player'){hitFoe(p,z,def.falloff?pd*(1-t/def.range*.6):pd,dx,dz,false);continue;}if(hurtZombie(z,def.falloff?pd*(1-t/def.range*.6):pd,dx,dz,def.pellets?.12:.25,true,false,p))armor=true;}
     tracer(ox,oz,ox+dx*end,oz+dz*end,armor?'#a9d4ff':null);
+    if(!G.alarm&&!n)carAlarm(ox,oz,dx,dz,end);   // v0.52 a stray bullet into a parked car sets its alarm off
     if(tank&&hits.length<(def.pierce||1))blowTank(tank[1],p);
   }
   p.bloom=Math.min(BLOOM.max,(p.bloom||0)+BLOOM.add);   // v0.29 each shot scatters the next a little more

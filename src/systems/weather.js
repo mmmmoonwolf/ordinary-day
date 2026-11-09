@@ -28,6 +28,7 @@ const SKY=[
   [1215,'#0b0e15','#6a7590',.28,'#262d3c',.2],     // night
   [1440,'#0a0d12','#6a7590',.28,'#262d3c',.2],
 ].map(r=>[r[0],new THREE.Color(r[1]),new THREE.Color(r[2]),r[3],new THREE.Color(r[4]),r[5]]);
+const BLOODSKY=new THREE.Color('#4a0d0a'),BLOODMOON=new THREE.Color('#ff3a24');
 const L={sky:new THREE.Color(),sun:new THREE.Color(),hemi:new THREE.Color(),sunI:0,hemiI:0};
 export function light(tod){
   let i=0;while(i<SKY.length-2&&SKY[i+1][0]<=tod)i++;
@@ -47,7 +48,8 @@ export function updateSky(dt,now){
   const tod=G.min%1440,a=(tod-360)/780*Math.PI,sunH=Math.sin(a);
   const day=clamp(sunH*2.2+.12,0,1);G.night=1-day;
   G.rain+=(G.rainTarget-G.rain)*Math.min(1,dt*.35);G.wet=clamp(G.wet+(G.rain>.3?.12:-.015)*dt,0,1);
-  const lt=light(tod);tmpC.copy(lt.sky).lerp(C.rain,G.rain*.55*day);
+  const lt=light(tod);if(G.blood){lt.sky.lerp(BLOODSKY,.55*G.night);lt.hemi.lerp(BLOODSKY,.6*G.night);lt.sun.lerp(BLOODMOON,.7*G.night);}   // v0.52 the blood night
+  tmpC.copy(lt.sky).lerp(C.rain,G.rain*.55*day);
   scene.background.copy(tmpC);scene.fog.color.copy(tmpC);
   const haze=tod>300&&tod<600?clamp(1-Math.abs(tod-420)/180,0,1):0;const thick=G.fog>G.min?clamp((G.fog-G.min)/30,0,1):0;scene.fog.near=118-haze*22-G.rain*10-thick*48;scene.fog.far=235-haze*45-G.rain*25-thick*85;
   if(view.fps){scene.fog.near*=.25;scene.fog.far*=.5;}   // v0.28 at eye level the town fades out within ~120 m (and the camera draws no further)   // morning haze, rain, a fog event (v0.18)

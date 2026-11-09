@@ -40,6 +40,7 @@ import {initSettings,tickFps} from './ui/settings.js';
 import {bus} from './core/bus.js';
 import {hostFrame} from './net/host.js';
 import {updatePvp} from './systems/pvp.js';
+import {updateDirector} from './systems/director.js';
 import {clientStep} from './net/client.js';
 import {initOnline} from './ui/online.js';
 import {updateFps} from './ui/fps.js';
@@ -93,7 +94,7 @@ function simStep(dt,now){
     else updateDead(a,dt);
     if(a.gone||(a.state==='dead'&&a.deadT>25)){removeAgent(a);agents.splice(i,1);}
   }
-  separate();updateThrows(dt);updateLures(dt);updateFires(dt);if(G.running){updateCamp(dt);updateCars(dt);updateArmy(dt);updatePvp(dt);}
+  separate();updateThrows(dt);updateLures(dt);updateFires(dt);if(G.running){updateCamp(dt);updateCars(dt);updateArmy(dt);updatePvp(dt);updateDirector(dt);}
 }
 reset();
 // character models load in the background; until then everyone is blocky (v0.13)

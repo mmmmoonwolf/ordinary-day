@@ -15,6 +15,8 @@ import {addBlood} from './effects.js';
 import {campGuards} from './camp.js';
 import {diffOf} from '../config/difficulty.js';
 import {updateEvents} from './events.js';
+import {BLOOD} from '../config/director.js';
+import {isBlood} from './director.js';
 
 // ---------- story + phases ----------
 // v0.32 the outbreak is seen happening: a person about 14 m from a player staggers, screams, falls and gets up as a
@@ -48,6 +50,7 @@ function onNight(){
   G.armorNight=Math.random()<.6;G.armorNext=G.min+30;G.armorAnnounced=false;G.armorCount=0;
   G.tyrantPending=Math.random()<.4;G.tyrantAt=G.min-(G.min%1440)+1440;
   G.nightSpawnNext=G.min+15;
+  if(isBlood()){const mid=G.min-(G.min%1440)+1440;G.bloodHordes=BLOOD.hordes.map(m=>mid+m);sfx.roar(0,0,2);}   // v0.52 the last night: hordes at set times
   fillNight(Math.min(1,REFILL.night*refillScale(Math.floor(G.min/1440)+1)*partyOf(partySize(),'loot')));
 }
 function onDay(){
@@ -71,7 +74,8 @@ export function runEvents(now){
   if(ph!==G.phase){if(ph==='night')onNight();else onDay();}
   if(ph==='day'&&tod>=DUSK_WARN&&G.duskDay!==day){G.duskDay=day;sfx.alarm();}
   if(ph==='night'&&G.outbreak){
-    if(G.min>=G.nightSpawnNext){G.nightSpawnNext+=45;const n=Math.max(1,Math.min(4,2+Math.floor((day-1)/2))+diffOf(G).spawn+partyOf(partySize(),'spawn'));const mix=nightMix();for(let k=0;k<n;k++)spawnEdge(wpick(mix));}
+    // v0.52 the blood night: more often, more of them
+    if(G.min>=G.nightSpawnNext){const blood=isBlood();G.nightSpawnNext+=blood?BLOOD.spawnEvery:45;const n=Math.max(1,Math.min(4,2+Math.floor((day-1)/2))+diffOf(G).spawn+partyOf(partySize(),'spawn')+(blood?BLOOD.extra:0));const mix=nightMix();for(let k=0;k<n;k++)spawnEdge(wpick(mix));}
     if(G.armorNight&&G.min>=G.armorNext&&!(tod>=300&&tod<DAY_START)){G.armorNext+=60;
       if(G.armorCount<6){const a=spawnEdge('armor');if(a){G.armorCount++;if(!G.armorAnnounced){G.armorAnnounced=true;}}}}   // Q05: at most 6 per night
     if(G.tyrantPending&&G.min>=G.tyrantAt){G.tyrantPending=false;const t=spawnEdge('tyrant');if(t)sfx.roar(t.pos.x,t.pos.z);}
