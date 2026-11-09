@@ -15,3 +15,6 @@ export const CAR={
   fuel:[.25,.6],fuelUse:.00045,refuel:.12,pumpR:4.5,   // v0.53 a tank goes `1/fuelUse` m; at a pump, standing still, it fills `refuel` a second; cars start part full
   hornNoise:38,              // how close to the car's middle a player has to be to get in
 };
+
+// v0.61 each drivable car has a boot: `slots` stacks or items, starting with `start` civilian things (PLACEHOLDERS)
+export const TRUNK={slots:8,start:[1,3],reach:3.5};

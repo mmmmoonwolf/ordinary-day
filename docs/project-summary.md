@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.61 | `TRUNK` ใน `config/vehicles.js`, `G.cars[i].trunk`, `trunkOf()` `trunkPut()` `trunkTake()` ใน `systems/vehicles.js` (`ACTIONS.trunkPut` `trunkTake`), `#bagTrunk`, snapshot `cars` ช่องที่ 6 |
 | v0.60 | `config/dog.js` `DOG`, `systems/dog.js` `placeDog()` `updateDog(dt)`, `ui/dog.js` `drawDog(now)`, `G.dog` (snapshot `dg`), `sfx.bark` `whine` `growl2` |
 | v0.59 | `BARR` ใน `config/shelter.js`, `st.bar` ใน `G.doors`, `fixAction(k,p)` 'barricade', gamepad `padButtons()` `padAim()` `padOn()` ใน `ui/input.js`, `manifest.webmanifest` `sw.js` `assets/icons/`, ค่าเริ่ม `settings.quality` |
 | v0.58 | `config/jobs.js` `JOBS` `jobOf()` `cleanJob()`, `giveKit(p)` ใน `systems/game.js`, `p.job` `p.kitGot` (เซฟ ส่งใน 'hi'), `dropPack(p)` `PACK_KINDS` ใน `combat.js`, `DISTRICT` ใน `config/loot.js` `rollLoot(…,area)`, `LOCKS` `bestEver()` `lockOf()` ใน `core/profile.js`, `.jobrow` |
@@ -1110,6 +1111,15 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **ภาพและเสียง** (`ui/dog.js`): หมากล่อง ลำตัว หัว จมูก หู ขา 4 ข้างแกว่งตามความเร็ว หางกระดิก นั่งตอนหยุด เสียงสังเคราะห์ เห่า หงิง คำราม (`sfx.bark` `whine` `growl2`) เซฟไปกับ `G` ส่งออนไลน์ใน snapshot `dg`
 - **PLACEHOLDER:** ค่าทั้งหมดใน `DOG`
 - **ยังไม่ได้ทำ:** โมเดลหมา 3D, สั่งหมา (อยู่ / ตาม / ไปดมหาของ), หมาหลายตัว
+
+## ท้ายรถ (v0.61)
+
+จากรายการไอเดีย #8 (ส่วนที่เหลือจาก v0.53 อ้างอิง DayZ, State of Decay)
+
+- **ท้ายรถ** (`G.cars[i].trunk` เซฟไปกับ `G.cars` ส่งออนไลน์ในแถว `cars` ช่องที่ 6): เก็บได้ `TRUNK.slots` 8 ช่อง ของที่ซ้อนได้ (`STACKS`) รวมเป็นช่องเดียว รถแต่ละคันเริ่มเกมด้วยของพลเรือน 1–3 อย่าง (`rollLoot('day','city')` ไม่มีเป้)
+- **ใช้งาน** (`trunkOf(p)` รถที่นั่งอยู่หรือรถที่ยืนใกล้ `p.nearCar`): เปิดกระเป๋าแล้วมีส่วน ท้ายรถ n/8 กดของเพื่อเอาออก (เข้ากระเป๋าถ้ามีที่) ในกระเป๋าเลือกของแล้วมีปุ่ม ใส่ท้ายรถ ผ่าน `ACTIONS.trunkPut` / `trunkTake` เพื่อนออนไลน์จึงใช้ได้ด้วย รถพังแล้วเปิดท้ายไม่ได้
+- **PLACEHOLDER:** `TRUNK`
+- **ยังไม่ได้ทำ:** มอเตอร์ไซค์ (#8), ของในท้ายรถหล่นเมื่อรถพัง
 
 ## ระบบ loot
 

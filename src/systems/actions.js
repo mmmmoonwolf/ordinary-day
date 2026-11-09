@@ -1,3 +1,4 @@
+import {trunkPut,trunkTake} from './vehicles.js';
 import {bus} from '../core/bus.js';
 import {player,startHelp} from '../entities/player.js';
 import {pickup,useHeal,switchTo,useItemAt,equipFromBag,holdSlot,unequip,dropFromBag,dropEquipped} from './inventory.js';
@@ -22,7 +23,8 @@ export const ACTIONS={
   ping:(p,x,z)=>ping(p,+x,+z),   // v0.53 a marker for the team
   craft:(p,id)=>craft(p,String(id)),place:(p,id)=>place(p,String(id)),   // v0.55 making things, putting down traps   // v0.50 the flashlight on / off (T, 🔦)
   reload:p=>startReload(p),heal:p=>useHeal(p),throw:p=>throwBottle(p),pickThrow:(p,id)=>pickThrow(p,id),
-  slot:(p,s)=>{if(['primary','secondary','melee'].includes(s))switchTo(p,s);},equip:equipFromBag,hold:holdSlot,unequip,useAt:useItemAt,dropBag:dropFromBag,dropEq:dropEquipped,
+  slot:(p,s)=>{if(['primary','secondary','melee'].includes(s))switchTo(p,s);},equip:equipFromBag,hold:holdSlot,unequip,useAt:useItemAt,trunkPut:(p,i)=>trunkPut(p,i),trunkTake:(p,j)=>trunkTake(p,j),   // v0.61 the car boot
+  dropBag:dropFromBag,dropEq:dropEquipped,
 };
 export function act(name,...args){
   if(!Object.prototype.hasOwnProperty.call(ACTIONS,name))return;
