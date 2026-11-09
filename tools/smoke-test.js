@@ -1195,7 +1195,7 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   // the storm: zombies hear less, lightning strikes near the player and starts a fire
   for (const a of T.agents) a.gone = true; step(1);
   me.pos.x = 0; me.pos.z = -60; me.room = -1; while (I.roomAt(me.pos.x, me.pos.z) >= 0) me.pos.x += 3;
-  T.G.min = 1440 + 13 * 60; T.G.phase = "day"; const z = T.makeAgent(me.pos.x + 20, me.pos.z); T.becomeZombie(z, 'zombie'); T.agents.push(z);
+  T.G.plan = []; T.G.min = 1440 + 13 * 60; T.G.phase = "day"; const z = T.makeAgent(me.pos.x + 20, me.pos.z); T.becomeZombie(z, 'zombie'); T.agents.push(z);
   T.G.storm = 0; z.heard = null; Ai.makeNoise(me.pos.x, me.pos.z, 25); const calm = !!z.heard;
   T.G.storm = T.G.min + 60; T.G.boltAt = T.G.min; z.heard = null; Ai.makeNoise(me.pos.x, me.pos.z, 25); const stormy = !!z.heard;
   if (!calm || stormy) vfail('storm hearing: calm ' + calm + ' storm ' + stormy);
@@ -1213,7 +1213,7 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   els.bAgain.fire('click'); T.G.running = true; step(2); const me = T.player; me.inv = 1e9; for (const a of T.agents) a.gone = true; step(2);
   T.G.outbreak = true; T.G.nested = false; T.G.min = Z.NEST.at + 1; step(2);
   const nests = T.agents.filter(a => a.kind === 'nest'); if (!nests.length) vfail('no nests');
-  const n = nests[0], nx = n.pos.x, nz = n.pos.z; me.pos.x = nx + 8; me.pos.z = nz; me.room = -1; n.nextBrood = T.G.min; step(2);
+  const n = nests[0], nx = n.pos.x, nz = n.pos.z; me.pos.x = nx + 8; me.pos.z = nz; me.room = -1; for (let k = 0; k < 12 && !T.agents.some(a => a.from === n.nid); k++) { n.nextBrood = T.G.min; step(2); }   // a spot beside it can be taken
   const brood = T.agents.filter(a => a.from === n.nid); if (!brood.length) vfail('the nest grew nothing');
   for (const b of brood) { b.pos.x = nx + .3; b.pos.z = nz; } step(3); if (Math.hypot(n.pos.x - nx, n.pos.z - nz) > .01) vfail('the nest was pushed');
   for (const b of brood) b.gone = true; const d0 = T.drops.length; Ai.hurtZombie(n, 999, 0, 1, 0, true, true, me); step(2);
@@ -1302,6 +1302,21 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   d.hp = 1; const z2 = T.makeAgent(d.pos.x + .3, d.pos.z); T.becomeZombie(z2, 'zombie'); T.agents.push(z2); z2.feed = 99; step(30); if (d.state !== 'dead') vfail('the dog did not die');
   for (const a of T.agents) a.gone = true; for (const p of P.players.slice(1)) p.away = true; step(2);
   console.log('v0.60: a stray dog, tamed by walking up, follows, bites a zombie (' + hp0 + ' -> ' + Math.round(z.hp) + '), is hurt by them, catches up after 60 m, dies');
+}
+
+// v0.61: the car boot
+{
+  const vfail = m => errs.push('v0.61 test: ' + m), Ac = await import('../src/systems/actions.js'), Gm = await import('../src/systems/game.js');
+  els.bAgain.fire('click'); T.G.running = true; T.G.min = 12 * 60; step(2); for (const a of T.agents) a.gone = true; step(2);
+  const c = T.G.cars[0]; if (!c.trunk || !c.trunk.length) vfail('an empty boot at the start');
+  const q = Gm.addPlayer(); q.inv = 1e9; q.pos.x = c.x + 2.2; q.pos.z = c.z; step(2);
+  if (q.nearCar !== 0) { q.pos.x = c.x; q.pos.z = c.z + 2.2; step(2); }
+  if (q.nearCar !== 0) vfail('not by the car: ' + q.nearCar);
+  q.gear.bag.push({ id: 'a9', n: 7 }); const n0 = c.trunk.length, had = c.trunk.find(e => e.id === 'a9');
+  Ac.runAction(q, 'trunkPut', [q.gear.bag.length - 1]); if (q.gear.bag.some(e => e.id === 'a9') || !c.trunk.some(e => e.id === 'a9')) vfail('not put in the boot');
+  const j = c.trunk.findIndex(e => e.id === 'a9'); Ac.runAction(q, 'trunkTake', [j]); if (!q.gear.bag.some(e => e.id === 'a9') || c.trunk.some(e => e.id === 'a9')) vfail('not taken out');
+  for (const p of P.players.slice(1)) p.away = true; step(1);
+  console.log('v0.61: a boot with ' + n0 + ' things at the start, ammo put in and taken out' + (had ? ' (merged)' : ''));
 }
 
 console.log(errs.length ? `FAILED: ${errs.length} runtime errors\n` + errs.slice(0, 3).join('\n---\n') : 'PASSED: no runtime errors');

@@ -23,7 +23,7 @@ export function freshSent(){return {seen:new Set(),doors:'',broken:-1,drops:'',g
 export function encodeWorld(c,me){
   const s={t:'s',g:{min:r2(G.min),ph:G.phase,rt:G.rainTarget,ob:G.outbreak,bo:G.blackout,ov:G.over,k:G.kills,kb:G.killsBy,df:G.diff,ec:G.endCause,fg:G.fog,st:G.site,bl:G.blown,tr:G.traps,md:G.mode,pr:G.pvpRule||'ffa',hl:G.hill||0,pe:G.pvpEnd||0,pg:(G.pings||[]).map(q=>[q.x,q.z,q.k,q.by,r2(q.life)]),pt:(G.ptraps||[]).map(t=>[t.k,t.x,t.z]),sm:G.storm||0,dg:G.dog?[r2(G.dog.pos.x),r2(G.dog.pos.z),r2(G.dog.face),Math.ceil(G.dog.hp),G.dog.state,r2(G.dog.moving),G.dog.sit?1:0]:0}};   // v0.60 the dog   // v0.56 storm   // v0.55 traps put down   // v0.53 markers   // v0.51 PvP rule, hill, round result   // v0.23 blown gas cylinders   // fog / heat / event site (v0.18)
   const dj=JSON.stringify(G.doors);if(dj!==c.doors){c.doors=dj;s.doors=G.doors;}
-  if(G.cars)s.cars=G.cars.map(k=>[r2(k.x),r2(k.z),r2(k.a),Math.ceil(k.hp),r2(k.v)]);   // v0.45 the cars that drive
+  if(G.cars)s.cars=G.cars.map(k=>[r2(k.x),r2(k.z),r2(k.a),Math.ceil(k.hp),r2(k.v),k.trunk||[]]);   // v0.45 the cars that drive
   const sj=G.searched.join();if(sj!==c.searched){c.searched=sj;s.sr=G.searched;}   // v0.15
   if(G.broken.length!==c.broken){c.broken=G.broken.length;s.broken=G.broken;}
   const dr=JSON.stringify(G.drop);if(dr!==c.drop){c.drop=dr;s.crate=G.drop||0;}
@@ -68,7 +68,7 @@ export function applyWorld(s,myId){
   if(s.sr)G.searched=s.sr.slice();
   if(s.broken){if(s.broken.length<G.broken.length){restoreObstacles();G.broken=[];}applyBroken(s.broken);G.broken=s.broken.slice();}
   if(s.crate!==undefined){G.drop=s.crate||null;applyEvents();}
-  if(s.cars){G.cars=s.cars.map(([x,z,a,hp,v])=>({x,z,a,hp,v}));applyCars();}
+  if(s.cars){G.cars=s.cars.map(([x,z,a,hp,v,trunk])=>({x,z,a,hp,v,trunk:Array.isArray(trunk)?trunk.filter(it=>it&&DEF[it.id]):[]}));applyCars();}
   // players: the same ids as on the host; this device's one is `myId`
   const ids=new Set();
   for(const r of s.pl){

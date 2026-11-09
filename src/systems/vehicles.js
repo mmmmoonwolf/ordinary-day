@@ -1,6 +1,9 @@
 import {jobOf} from '../config/jobs.js';
 import {G,isPvp} from '../core/state.js';
-import {CAR} from '../config/vehicles.js';
+import {CAR,TRUNK} from '../config/vehicles.js';
+import {DEF,STACKS} from '../config/items.js';
+import {rollLoot} from './drops.js';
+import {addStack,tidyBag} from './inventory.js';
 import {inWorld} from '../config/world.js';
 import {solids} from '../world/collision.js';
 import {rides,placeRide,CAR_HALF} from '../world/vehicles.js';
@@ -20,7 +23,7 @@ import {uiFor} from '../ui/hud.js';
 // wreck). The engine is loud: zombies around it come. All of it runs on the host, in simStep (numbers in
 // config/vehicles.js, PLACEHOLDER).
 const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
-export function freshCars(){return rides.map(r=>({x:r.x,z:r.z,a:r.a,v:0,hp:CAR.hp,fuel:CAR.fuel[0]+Math.random()*(CAR.fuel[1]-CAR.fuel[0])}));}   // v0.53 part full
+export function freshCars(){return rides.map(r=>({x:r.x,z:r.z,a:r.a,v:0,hp:CAR.hp,fuel:CAR.fuel[0]+Math.random()*(CAR.fuel[1]-CAR.fuel[0]),trunk:bootLoot()}));}   // v0.61 a few things in the boot   // v0.53 part full
 // the look and collision of every car from G.cars (after a reset, a load, or a snapshot on a friend's device)
 export function applyCars(){for(let i=0;i<rides.length;i++){const c=G.cars&&G.cars[i];if(c)placeRide(rides[i],c.x,c.z,c.a,c.hp);}}
 export const driverOf=i=>players.find(p=>p.car===i)||null;
@@ -118,4 +121,24 @@ export function shieldDriver(p,n){
   if(!(p.car>=0))return false;const c=G.cars[p.car];if(!c||c.hp<=0)return false;
   c.hp-=n;placeRide(rides[p.car],c.x,c.z,c.a,c.hp);if(c.hp<=0){c.hp=0;c.v=0;sfx.crack();uiFor(p).feed('รถพังแล้ว','warn');leaveCar(p);}
   return true;
+}
+
+// ---------- the boot (v0.61) ----------
+// G.cars[i].trunk: what is kept in it, like the bag (stacks merge). Reached from the bag while in the car or standing by
+// it (p.nearCar); the commands go through ACTIONS (trunkPut / trunkTake) so a friend online can use it too.
+function bootLoot(){const out=[],n=Math.round(TRUNK.start[0]+Math.random()*(TRUNK.start[1]-TRUNK.start[0]));
+  for(let k=0;k<n;k++){const it=rollLoot('day','city');if(it.id==='backpack')continue;const e=out.find(x=>x.id===it.id&&STACKS.has(DEF[it.id].kind));if(e)e.n+=it.n||1;else out.push(it);}
+  return out;}
+export const trunkOf=p=>{const i=p.car>=0?p.car:p.nearCar;const c=i>=0&&G.cars&&G.cars[i];return c&&c.hp>0?c:null;};
+export function trunkPut(p,i){
+  const c=trunkOf(p),g=p.gear,it=g.bag[i|0];if(!c||!it)return;if(!c.trunk)c.trunk=[];
+  const stack=STACKS.has(DEF[it.id].kind),e=stack&&c.trunk.find(x=>x.id===it.id);
+  if(e)e.n+=it.n;else{if(c.trunk.length>=TRUNK.slots){uiFor(p).feed('ท้ายรถเต็ม','warn');return;}c.trunk.push(it);}
+  g.bag.splice(i|0,1);sfxFor(p).pickup();uiFor(p).updateLoadout(true);
+}
+export function trunkTake(p,j){
+  const c=trunkOf(p);if(!c||!c.trunk)return;const it=c.trunk[j|0];if(!it)return;const g=p.gear;
+  if(STACKS.has(DEF[it.id].kind)){const left=addStack(p,it.id,it.n);if(left>=it.n){uiFor(p).feed('กระเป๋าเต็ม','warn');return;}if(left>0)it.n=left;else c.trunk.splice(j|0,1);}
+  else{if(g.bag.length>=g.cap){uiFor(p).feed('กระเป๋าเต็ม','warn');return;}g.bag.push(it);c.trunk.splice(j|0,1);tidyBag(g);}
+  sfxFor(p).pickup();uiFor(p).updateLoadout(true);
 }

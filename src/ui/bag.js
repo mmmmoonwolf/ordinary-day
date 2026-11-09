@@ -1,3 +1,5 @@
+import {trunkOf} from '../systems/vehicles.js';
+import {TRUNK} from '../config/vehicles.js';
 import {$} from '../core/util.js';
 import {G} from '../core/state.js';
 import {ctl,joy} from '../core/controls.js';
@@ -48,6 +50,10 @@ export function renderBag(){
   const cr=$('bagCraft');if(cr){cr.innerHTML='';for(const id in RECIPES){if(!canCraft(player,id))continue;const r=RECIPES[id],b=document.createElement('button');
     b.innerHTML=r.name+' <small>'+Object.entries(r.need).map(([k,n])=>DEF[k].name+' ×'+n).join(' · ')+'</small>';b.onclick=()=>{act('craft',id);updateLoadout(true);renderBag();};cr.appendChild(b);}
     $('bagCraftL').hidden=!cr.children.length;}
+  // v0.61 the boot of the car they are in or standing by
+  const tr=$('bagTrunk');if(tr){tr.innerHTML='';const c=trunkOf(player);$('bagTrunkL').hidden=!c;
+    if(c){const T=c.trunk||[];$('bagTrunkL').textContent='ท้ายรถ '+T.length+'/'+TRUNK.slots;
+      T.forEach((it,j)=>{const b=document.createElement('button');b.innerHTML=DEF[it.id].name+(it.n>1?' ×'+it.n:'')+' <small>เอาออก</small>';b.onclick=()=>{act('trunkTake',j);updateLoadout(true);renderBag();};tr.appendChild(b);});}}
   const det=$('bagDetail');det.innerHTML='';det.style.removeProperty('--cat');
   const it=sel?(sel.where==='bag'?inv.bag[sel.i]:inv.eq[sel.slot]):null;
   if(!it){sel=null;det.innerHTML='';return;}
@@ -61,6 +67,7 @@ export function renderBag(){
     if(d.kind==='throw')btn(throwPick(inv)===it.id?'ขว้างอันนี้อยู่':'ใช้ปุ่มขว้างกับอันนี้',()=>act('pickThrow',it.id),true,throwPick(inv)===it.id);   // v0.23
     if(d.kind==='heal')btn('ใช้',()=>{act('useAt',sel.i);if(inv.bag[sel.i]!==it)sel=null;},true,player.hp>=player.maxHp&&!(d.cure&&player.infect>0)&&!(player.bleedW>0)&&!(player.sick>0));   // v0.54 a wound or illness too
     if(d.kind==='trap')btn('วางตรงนี้',()=>{act('place',it.id);if(inv.bag[sel.i]!==it)sel=null;},true);   // v0.55
+    if(trunkOf(player))btn('ใส่ท้ายรถ',()=>{act('trunkPut',sel.i);sel=null;});   // v0.61
     btn('ทิ้ง',()=>{act('dropBag',sel.i);sel=null;});
   } else {
     if(inv.active!==sel.slot)btn('ถือ',()=>act('hold',sel.slot),true);
