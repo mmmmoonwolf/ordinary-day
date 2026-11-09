@@ -138,7 +138,7 @@ export function backstab(p,z){
   const dx=p.pos.x-z.pos.x,dz=p.pos.z-z.pos.z,d=Math.hypot(dx,dz)||1;
   return (dx*Math.sin(z.face)+dz*Math.cos(z.face))/d<-BACKSTAB.arc;
 }
-function blow(p,z,def,dx,dz){if(backstab(p,z)){hurtZombie(z,z.hp+1,dx,dz,.1,false,true,p);p.stabs=(p.stabs||0)+1;}else hurtZombie(z,def.dmg,dx,dz,def.kb,false,false,p);}
+function blow(p,z,def,dx,dz){if(backstab(p,z)){hurtZombie(z,z.hp+1,dx,dz,.1,false,true,p);p.stabs=(p.stabs||0)+1;}else{hurtZombie(z,def.dmg,dx,dz,def.kb,false,false,p);if(def.stun&&z.state==='zombie')z.feed=Math.max(z.feed||0,def.stun);}}   // v0.55 stun: the extinguisher
 export function meleeHit(p,def){
   const fx=Math.sin(p.face),fz=Math.cos(p.face);let best=null,bd=1e9;
   for(const z of agents){if(z.state!=='zombie')continue;const dx=z.pos.x-p.pos.x,dz=z.pos.z-p.pos.z,d=Math.hypot(dx,dz);

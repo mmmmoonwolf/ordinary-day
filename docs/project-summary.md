@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.55 | `config/craft.js` `RECIPES` `TRAP`, `systems/craft.js` `craft()` `place()` `canCraft()` `updateTraps()`, `ui/traps.js`, `ACTIONS.craft` `place`, `G.ptraps` (snapshot `pt`), `#bagCraft`, `DEF` cloth tape nails nailbomb tripwire beartrap sign_c extinguisher_c guitar_c pan_c (`stun`), `MATS` และหมวด `mat` ใน `BOX`, `BLAST.nailbomb` |
 | v0.54 | `systems/body.js` `updateBody()` `wound()` `limping()`, `WOUND` `ILL` `PANIC` ใน `config/health.js`, `p.bleedW` `p.wet` `p.sick` `p.panic` (เซฟ, snapshot `me.pn` `bw` `sk`), `#panic`, `sfx.sneeze`, `spreadOf()` คูณความตื่นตระหนก |
 | v0.53 | `systems/pings.js` `ping()` `updatePings()`, `ui/pings.js` `#pings` `.ping`, `ACTIONS.ping`, `PING` ใน `config/party.js`, `G.pings` (snapshot `pg`), ปุ่ม `#bPing` คีย์ G `pingHere()`, `CAR.fuel` `fuelUse` `refuel` `pumpR` `hornNoise`, `c.fuel`, `pumpSpots` ใน `world/highway.js`, `sfx.horn` `sfx.ping` |
 | v0.52 | `systems/director.js` `updateDirector()` `wave()` `isBlood()`, `config/director.js` `DIRECTOR` `BLOOD` `MEGA`, `G.calm` `G.blood` `G.bloodHordes`, ฝูง `mega` ใน `G.plan`, `carAlarm()` ใน `combat.js`, ฟ้าแดงใน `updateSky()` |
@@ -1035,6 +1036,17 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **ป่วย:** อยู่นอกตึกนอกรถตอนฝนหนัก (`G.rain` > 0.4) ตัวเปียกขึ้นจนเต็มใน ~80 วินาที แห้งเมื่อหลบ เปียกเต็มแล้วมีโอกาสป่วย 240 วินาที จามทุก 16–34 วินาที (เสียงที่ทุกคนได้ยิน และเสียงดังเรียกซอมบี้ 16 ม.) ขอบจอติดสีเขียวเล็กน้อย Painkiller รักษา
 - **ตื่นตระหนก:** ซอมบี้ 4 ตัวขึ้นไปในระยะ 8 ม. ความตื่นตระหนกขึ้น 0.4/วินาที ลด 0.12/วินาที เพื่อนตายในระยะ 18 ม. +0.5 กระสุนกระจายกว้างขึ้นสูงสุด ×1.7 ขอบจอมืดแดงตามระดับ
 - **PLACEHOLDER:** `WOUND` `ILL` `PANIC`
+
+## ประดิษฐ์ อาวุธแปลก กับดัก (v0.55)
+
+จากรายการไอเดีย #32 #34 #36 (อ้างอิง The Last of Us, Dead Rising, 7 Days to Die)
+
+- **เศษวัสดุ:** Cloth, Duct Tape, Nails (`kind:'mat'` ซ้อนในช่องเดียว) เจอในตู้ครัว ลิ้นชัก ฟาร์ม ชั้นเครื่องมือ รถ (หมวด `mat` ใน `BOX`, `MATS`)
+- **ประดิษฐ์** (`RECIPES`, ส่วน `#bagCraft` ในกระเป๋า แสดงเฉพาะสูตรที่มีของพอ, `ACTIONS.craft`): Bandage ← ผ้า 2 · Nail Bomb ← ตะปู 3 เทป 1 (ขว้างได้ เหมือนระเบิดมือแต่เล็กกว่า `BLAST.nailbomb`) · Tripwire ← เทป 1 ตะปู 1 · Bear Trap ← ตะปู 4 เทป 2 · ซ่อมอาวุธประชิดที่ติดตัวให้ความทนเต็ม ← เทป 2
+- **กับดัก:** เลือกในกระเป๋าแล้วกด วางตรงนี้ (`ACTIONS.place`) เก็บใน `G.ptraps` (เซฟ ส่งออนไลน์ สูงสุด 12 อัน) ลวดสะดุด: ซอมบี้หรือผู้เล่นฝ่ายอื่นใน PvP เดินเข้าใน 0.9 ม. กระป๋องดัง เสียงดังเรียกซอมบี้ 30 ม. ข้อความถึงเจ้าของ · กับดักหมี: ซอมบี้ทำดาเมจ 40 แล้วติด 4 วินาที ใช้แล้วหาย
+- **อาวุธแปลก:** Stop Sign (ยาว ตีกวาด ทน 14 ครั้ง) · Fire Extinguisher (ตีแล้วซอมบี้มึน 1.4 วินาที `stun`) · Guitar (ทน 6 ครั้ง) · Frying Pan เพิ่มใน `POOLS.civ.melee` ตอนนี้ใช้โมเดลไม้ / ท่อ / ประแจเดิม
+- **PLACEHOLDER:** `RECIPES` `TRAP` `MATS` น้ำหนัก `mat` ค่าอาวุธใหม่ `BLAST.nailbomb`
+- **ยังไม่ได้ทำ:** โมเดลเฉพาะของอาวุธใหม่
 
 ## ระบบ loot
 

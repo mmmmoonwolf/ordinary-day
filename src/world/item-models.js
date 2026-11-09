@@ -77,6 +77,13 @@ export function itemModel(id){
   else if(id==='molotov'){g.add(part(cm('#6e8a52'),.1,.24,.1,0,.12,0));g.add(part(cm('#d8c9a8'),.04,.1,.04,0,.29,0));}   // v0.23
   else if(id==='flare'){g.add(part(cm('#d84a3a'),.08,.08,.3,0,.05,0));g.add(part(cm('#2b2d30'),.06,.14,.06,0,.06,-.1));}   // v0.26
   else if(id==='grenade'){g.add(part(cm('#4f5a36'),.11,.13,.11,0,.07,0));g.add(part(pipeMat,.03,.05,.05,0,.16,0));}
+  // v0.55 scraps and what they make
+  else if(id==='cloth'){g.add(part(cm('#d8d2c0'),.34,.05,.26,0,.025,0));}
+  else if(id==='tape'){g.add(part(cm('#9aa0a6'),.18,.07,.18,0,.035,0));}
+  else if(id==='nails'){g.add(part(cm('#6b6e72'),.2,.1,.14,0,.05,0));}
+  else if(id==='nailbomb'){g.add(part(cm('#8a8f78'),.13,.18,.13,0,.09,0));g.add(part(cm('#9aa0a6'),.14,.04,.14,0,.12,0));}
+  else if(id==='tripwire'){g.add(part(cm('#a9a28c'),.12,.16,.12,-.1,.08,0));g.add(part(cm('#a9a28c'),.12,.16,.12,.1,.08,0));}
+  else if(id==='beartrap'){g.add(part(cm('#4a4640'),.4,.06,.4,0,.03,0));}
   else if(id==='backpack'){g.add(part(cm('#4f5a3a'),.46,.56,.3,0,.28,0));g.add(part(woodMat,.36,.24,.1,0,.2,.19));}
   return g;
 }

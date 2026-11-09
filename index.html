@@ -85,6 +85,8 @@ body.fps #bView{border-color:rgba(226,166,74,.75);background:rgba(226,166,74,.25
 /* v0.54 panic darkens and reddens the edges; illness a sickly tint */
 #panic{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 50% 50%,transparent 45%,rgba(90,8,6,.8) 100%)}
 #panic.sick{background:radial-gradient(ellipse at 50% 50%,rgba(120,140,40,.08) 40%,rgba(90,8,6,.75) 100%)}
+/* v0.55 making things in the bag */
+.craft{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}.craft button{padding:7px 10px;border:1px solid var(--line);background:rgba(127,174,138,.15);font-weight:700;font-size:13px}.craft small{display:block;font-weight:400;font-size:10px;color:var(--ink-dim)}
 /* v0.53 markers */
 #pings{position:absolute;inset:0;pointer-events:none}.ping{position:absolute;left:0;top:0;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:16px;font-weight:700;color:#111;background:var(--c);box-shadow:0 0 12px var(--c)}
 /* v0.29 scope (sniper rifle aimed in first person), sneak tag (v0.44), touch button for aiming */
@@ -423,6 +425,8 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
     <div class="eq" id="bagEq"></div>
     <div class="label" id="bagLabel">ช่องเก็บของ</div>
     <div class="grid" id="bagGrid"></div>
+    <div class="label" id="bagCraftL" hidden>ประดิษฐ์</div>
+    <div class="craft" id="bagCraft"></div>
     <div class="detail" id="bagDetail"></div>
   </div>
 </div>
