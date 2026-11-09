@@ -8,6 +8,7 @@ import {rooms,roomAt,navStep,doorDist,walledOff} from '../world/interiors.js';
 import {HEAR_WALL,INDOOR_NOISE} from '../config/shelter.js';
 import {SNEAK} from '../config/handling.js';
 import {LIGHT} from '../config/stealth.js';
+import {STORM} from '../config/events.js';
 import {nearestNode} from '../world/sidewalk.js';
 import {agents,becomeZombie} from './agents.js';
 import {lerpAng,moveAgent,wander,d2} from './movement.js';
@@ -70,7 +71,7 @@ export function updateZombie(a,dt){
   // the nearest player this zombie can notice (v0.9: any of the players)
   const reachP=.95+(a.rad-.34);let walled=false;
   for(const p of targets()){
-    const lk=G.phase==='night'?(p.light!==false?LIGHT.on:LIGHT.off):1,dP=d2(a,p)/(lk*lk),w=walledOff(a.pos.x,a.pos.z,p.pos.x,p.pos.z);   // v0.50 a flashlight at night is seen from further
+    const lk=(G.phase==='night'?(p.light!==false?LIGHT.on:LIGHT.off):1)*(G.storm>G.min?STORM.sight:1),dP=d2(a,p)/(lk*lk),w=walledOff(a.pos.x,a.pos.z,p.pos.x,p.pos.z);   // v0.50 a flashlight at night is seen from further
     if(day){if(dP<reachP*reachP&&!w&&dP<td){tgt=p;td=dP;walled=false;}}    // Walkers never chase the player, but hit when adjacent
     else if(dP<td&&(!w||dP<HEAR_WALL*HEAR_WALL)&&(!p.sneak||a.seenP===p||dP<C.sense*C.sense*SNEAK.sense**2)){tgt=p;td=dP;walled=w;}   // walls block sight, but not a player right behind them; a sneaking player is noticed closer (v0.7)
   }
@@ -115,7 +116,8 @@ function bashDoor(a,k,C){
   if(a.kind==='tyrant'){sfx.roar(a.pos.x,a.pos.z,.8);damageDoor(k,1e9);a.feed=.9;}else damageDoor(k,C.dmg);   // door damage = zombie damage (PLACEHOLDER)
 }
 export function updateDead(a,dt){a.deadT+=dt;const k=Math.min(1,a.deadT*2.2);a.b.body.rotation.x=-k*Math.PI/2;a.b.body.position.y=k*.16;a.moving=0;}
-export function makeNoise(x,z,r){if(G.phase==='night')r*=1.5;const k=roomAt(x,z);if(k>=0&&G.doors[k]&&!G.doors[k].open)r*=INDOOR_NOISE;for(const a of agents){if(a.state!=='zombie'||a.kind==='walker')continue;const dx=a.pos.x-x,dz=a.pos.z-z;if(dx*dx+dz*dz<r*r)a.heard={x:x+rnd(-2,2),z:z+rnd(-2,2),t:8};}}
+export function makeNoise(x,z,r){if(G.phase==='night')r*=1.5;if(G.storm>G.min)r*=STORM.hear;   // v0.56 the storm covers sounds
+  const k=roomAt(x,z);if(k>=0&&G.doors[k]&&!G.doors[k].open)r*=INDOOR_NOISE;for(const a of agents){if(a.state!=='zombie'||a.kind==='walker')continue;const dx=a.pos.x-x,dz=a.pos.z-z;if(dx*dx+dz*dz<r*r)a.heard={x:x+rnd(-2,2),z:z+rnd(-2,2),t:8};}}
 // `by` is the player who hit it: unless silent, the zombie turns toward where they stand
 export function hurtZombie(z,dmg,dx,dz,kb,isGun,silent,by){
   let armored=false;

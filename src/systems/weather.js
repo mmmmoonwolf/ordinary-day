@@ -2,7 +2,9 @@ import {isTouch,rnd,clamp} from '../core/util.js';
 import {scene,sun,hemi,flash,camTarget,view} from '../core/renderer.js';
 import {G} from '../core/state.js';
 import {roadMat,puddleMat,lampHeadMat,glowMat,wallMats} from '../world/materials.js';
-import {sirenR,sirenB,flickers} from '../world/props.js';
+import {sirenR,sirenB,lamps} from '../world/props.js';
+import {POWER} from '../config/events.js';
+import {strikeAt} from './effects.js';
 import {player} from '../entities/player.js';
 import {playLocal} from './audio.js';
 
@@ -51,20 +53,26 @@ export function updateSky(dt,now){
   const lt=light(tod);if(G.blood){lt.sky.lerp(BLOODSKY,.55*G.night);lt.hemi.lerp(BLOODSKY,.6*G.night);lt.sun.lerp(BLOODMOON,.7*G.night);}   // v0.52 the blood night
   tmpC.copy(lt.sky).lerp(C.rain,G.rain*.55*day);
   scene.background.copy(tmpC);scene.fog.color.copy(tmpC);
-  const haze=tod>300&&tod<600?clamp(1-Math.abs(tod-420)/180,0,1):0;const thick=G.fog>G.min?clamp((G.fog-G.min)/30,0,1):0;scene.fog.near=118-haze*22-G.rain*10-thick*48;scene.fog.far=235-haze*45-G.rain*25-thick*85;
+  const haze=tod>300&&tod<600?clamp(1-Math.abs(tod-420)/180,0,1):0;const thick=Math.max(G.fog>G.min?clamp((G.fog-G.min)/30,0,1):0,G.storm>G.min?.55:0);scene.fog.near=118-haze*22-G.rain*10-thick*48;scene.fog.far=235-haze*45-G.rain*25-thick*85;
   if(view.fps){scene.fog.near*=.25;scene.fog.far*=.5;}   // v0.28 at eye level the town fades out within ~120 m (and the camera draws no further)   // morning haze, rain, a fog event (v0.18)
   sunDir.set(Math.cos(a)*.85,Math.max(sunH,.1)+.12,.45).normalize().lerp(moonDir,G.night).normalize();
   sun.position.copy(camTarget).addScaledVector(sunDir,110);sun.target.position.copy(camTarget);
   sun.intensity=lt.sunI*(1-day*(G.rain*.58+haze*.18));sun.color.copy(lt.sun);
   hemi.intensity=lt.hemiI-day*G.rain*.1;hemi.color.copy(lt.hemi);
   // v0.19 lightning in heavy rain: a double flash of the sky light, thunder after it (later and duller when far)
-  if(G.rain>.7){if(!nextBolt)nextBolt=now+rnd(6e3,2e4);else if(now>=nextBolt){bolt=now;nextBolt=now+rnd(14e3,4e4);playLocal('thunder',rnd(.2,2.4));}}else nextBolt=0;   // PLACEHOLDER: real ms between strikes
+  if(G.rain>.7){if(!nextBolt)nextBolt=now+rnd(6e3,2e4);else if(now>=nextBolt){bolt=now;nextBolt=now+(G.storm>G.min?rnd(3e3,9e3):rnd(14e3,4e4));playLocal('thunder',rnd(.2,2.4));}}else nextBolt=0;   // PLACEHOLDER: real ms between strikes
+  if(strikeAt.t>bolt)bolt=strikeAt.t;   // v0.56 a lightning strike on the ground lights the sky too
   const bt=now-bolt;if(bt<380){const k=bt<90?1:bt<170?.15:bt<260?.75:.3*(1-(bt-260)/120);hemi.intensity+=k*(1.4+G.night*1.6);}
   const lampsOn=G.blackout?0:clamp((G.night-.3)/.3,0,1);   // blackout night (v0.8): no street lights or windows
-  for(const m of wallMats)m.emissiveIntensity=G.night*(G.blackout?.08:1.15);
+  // v0.56 the power fails a little more each day (POWER): whole buildings go dark, then street lights, in a fixed order
+  const d=Math.max(0,Math.floor(G.min/1440)),winOn=POWER.windows[Math.min(d,POWER.windows.length-1)],lampOn=POWER.lamps[Math.min(d,POWER.lamps.length-1)];
+  wallMats.forEach((m,i)=>{m.emissiveIntensity=G.night*(G.blackout?.08:(i*.6180339887)%1<winOn?1.15:.08);});
   lampHeadMat.emissiveIntensity=lampsOn*2.2;glowMat.opacity=lampsOn*.6;
-  // failing street lights (v0.16): mostly on, with bursts of stutter and short blackouts
-  for(const f of flickers){const t=now/1000+f.ph,burst=Math.sin(t*.7)>.55,k=burst?(Math.sin(t*37)*Math.sin(t*11.3)>0?1:.08):(t%9<.35?.1:1);f.head.emissiveIntensity=lampHeadMat.emissiveIntensity*k;f.glow.opacity=glowMat.opacity*k;}
+  // failing street lights (v0.16): mostly on, with bursts of stutter and short blackouts; v0.56 the next to fail stutter too
+  for(const f of lamps){
+    let k=1;if(f.rank>=lampOn)k=0;
+    else if(f.flicker||f.rank>lampOn-POWER.stutter){const t=now/1000+f.ph,burst=Math.sin(t*.7)>.55;k=burst?(Math.sin(t*37)*Math.sin(t*11.3)>0?1:.08):(t%9<.35?.1:1);}
+    f.head.emissiveIntensity=lampHeadMat.emissiveIntensity*k;f.glow.opacity=glowMat.opacity*k;}
   const sir=G.phase==='night'?1:0,blinkA=Math.sin(now/180)>0;sirenR.emissiveIntensity=sir*(blinkA?2.4:.2);sirenB.emissiveIntensity=sir*(blinkA?.2:2.4);
   flash.intensity=(player&&player.alive&&player.light!==false)?(G.blackout?clamp((G.night-.3)/.3,0,1):lampsOn)*2.6:0;
   roadMat.roughness=.92-G.wet*.55;roadMat.metalness=G.wet*.15;roadMat.color.copy(roadBase).lerp(roadWet,G.wet);
