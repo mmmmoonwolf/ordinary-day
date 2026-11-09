@@ -35,7 +35,7 @@ export const freshInput=()=>({mx:0,mz:0,mag:0,run:false,sneak:false,slow:false,a
 export function makePlayer(i=0){
   const p=makeAgent(OFF+i*1.3,OFF,LOOKS[i%LOOKS.length]);
   Object.assign(p,{state:'player',id:i,name:'ผู้เล่น '+(i+1),local:false,away:false,token:null,hp:100,maxHp:100,alive:true,swing:0,swingDur:.4,hitDone:true,lastHit:-99,face:Math.PI*1.25,cool:0,reloadT:0,recoil:0,aimT:0,held:null,heldId:'fist',down:0,inv:0,
-    infect:0,infWarn:0,room:-1,nearDoor:-1,bleed:0,reviveT:0,helping:null,helpT:0,nearDown:null,fixDoor:-1,nearBox:-1,searching:-1,searchT:0,searchHit:0,near:null,full:null,sneak:false,ads:false,car:-1,nearCar:-1,bloom:0,vault:null,hop:0,airH:0,runNoise:0,stay:null,endCause:null,gear:freshGear(),input:freshInput()});
+    infect:0,infWarn:0,room:-1,nearDoor:-1,bleed:0,reviveT:0,helping:null,helpT:0,nearDown:null,fixDoor:-1,nearBox:-1,searching:-1,searchT:0,searchHit:0,near:null,full:null,sneak:false,light:true,ads:false,car:-1,nearCar:-1,bloom:0,vault:null,hop:0,airH:0,runNoise:0,stay:null,endCause:null,gear:freshGear(),input:freshInput()});
   return p;
 }
 // players that zombies can go after (v0.12: not one whose device has dropped out of the game, p.away)

@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.50 | ย่องฆ่า `backstab()` `blow()` ใน `combat.js`, `BACKSTAB` `LISTEN` `LIGHT` ใน `config/stealth.js`, `ui/listen.js` `updateListen()` `#listen`, `p.light` `ACTIONS.light` ปุ่ม `#bLight` คีย์ T, ระยะเห็นกลางคืนใน `updateZombie()`, snapshot แถวผู้เล่นมี light |
 | v0.49 | รถไม่ค้าง (`hits()` / `blocked(i,c,x,z)` ข้ามของที่ชนอยู่แล้ว, `CAR.grip0` `backAt` `hitP`, `c.bump`, PvP ชนผู้เล่น `p.carT`), PvP รอบ (`PVP.round`, `G.pvpT`, `leaders()` `endRound()` `nextRound()`, `pvpOver()` ใน `hud.js`, `#pOver.pvp`), กล่องเสบียง (`airdrop(loot)` ใน `events.js`, `PVP.drop`, `G.pvpDrop`), `PVP.killHeal` `dropAmmo` `regen`, `p.shield`, ฝูงตามจำนวนคน `horde.perPlayer`, ไม่มี Kit, ปุ่ม `#bPvpNew` |
 | v0.48 | เล็งศูนย์: `#cross` เป็นจุดแดงตอน `body.fps.ads` / `body.scoped` (เดิม `display:none`), `KICK.ads` `KICK.punch` `KICK.arms` ใน `config/handling.js`, `punch` (fov) ใน `updateFps()`, `viewArms(v,dt,scoped,ads)`, แรงถีบปืนกล่องหลังเลื่อนขึ้นศูนย์, `#scope` เลื่อนตาม `recoil` |
 | v0.47.1 | แก้เล่นออนไลน์: `jumpQ` ส่งครั้งเดียวแล้วล้างเหมือน `fireQ` (`clientStep()`), ค่าที่เครื่องเพื่อนนับถอยหลังเอง (`recoil` `swing` `reloadT`) รับจาก host เฉพาะตอนเริ่มใหม่ (`fresh()` ใน `snapshot.js`), snapshot มี `el` (วินาทีจาก snapshot ก่อน) ให้เครื่องเพื่อนเดินตำแหน่งต่อด้วยความเร็วล่าสุดไม่เกิน 0.12 วินาที (`vx` `vz` `ahead`), ผู้เล่นในเครื่องหันตาม `input.face` ทันที |
@@ -976,6 +977,15 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **เปิดจากหน้าแรก:** ปุ่ม "สร้างห้อง PvP" ข้างเริ่มวันใหม่ (ไม่แตะเซฟเกมเอาชีวิตรอด)
 - **PLACEHOLDER:** ค่าใหม่ทั้งหมดใน `PVP` และ `CAR.grip0` `backAt` `hitP`
 - **ยังไม่ได้ทำ:** ทีม · เสียงเท้าของคนอื่นให้ฟังทิศ · ตัวนับคะแนนบนจอระหว่างเล่น (ดูได้ในเมนูหยุดเกมและข้อความฆ่า)
+
+## ย่องฆ่า ยืนฟัง ไฟฉาย (v0.50)
+
+จากรายการไอเดีย #2 #3 #33 (อ้างอิง Project Zomboid, The Last of Us)
+
+- **ย่องฆ่าจากด้านหลัง:** ตีประชิด (มือเปล่าก็ได้) ใส่ Walker / Zombie / Sprinter จากด้านหลัง (ห่างจากหน้ามันเกิน `BACKSTAB.arc`) ขณะย่อง หรือตอนที่มันยังไม่เห็นเรา ตายทันทีและเงียบ (ไม่หันหาเรา) Boomer Armor Walker Tyrant ไม่ได้ HP ทุกคลาสไม่เปลี่ยน
+- **ยืนฟัง:** ไม่ขยับ ไม่ยิง ไม่ได้ขับรถ `LISTEN.after` 1.2 วินาที ขอบจอค่อย ๆ มืด ซอมบี้ที่เดินหรือกำลังตีในระยะ 24 ม. เป็นแสงแดงมองทะลุผนัง (`ui/listen.js` ภาพในเครื่องอย่างเดียว) ขยับแล้วหาย ใช้ได้ทั้งคอมและมือถือโดยไม่ต้องมีปุ่ม
+- **ไฟฉาย:** T หรือปุ่ม 🔦 บนแถบบน (`ACTIONS.light`, `p.light` ส่งออนไลน์) กลางคืนเปิดไว้ซอมบี้สังเกตเห็นได้ไกลขึ้น ×1.25 ปิดไว้ ×0.8 แต่ไม่มีแสงไฟฉาย ปุ่มจางและขีดฆ่าตอนปิด
+- **PLACEHOLDER:** `BACKSTAB` `LISTEN` `LIGHT`
 
 ## ระบบ loot
 
