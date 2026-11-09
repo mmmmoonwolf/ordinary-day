@@ -15,4 +15,7 @@ export const PARTY={
   loot:[1,1,1.3,1.55,1.8],   // daily / nightly loot refill multiplier
   airdrop:[0,0,2,3,4],       // extra airdrop items
 };
+// v0.53 markers (G / 📍): last `life` s; aimed at a zombie within `danger` m of the point -> danger, at loot within
+// `item` m -> loot, otherwise a place to go; one marker per player (PLACEHOLDERS)
+export const PING={life:7,danger:4,item:2.5,ahead:14};
 export const partyOf=(n,key)=>PARTY[key][Math.max(1,Math.min(4,n))];

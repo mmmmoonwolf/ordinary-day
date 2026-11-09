@@ -6,6 +6,7 @@ import {toggleDoor,fixDoor} from './doors.js';
 import {throwBottle,pickThrow} from './throw.js';
 import {startSearch} from './search.js';
 import {enterCar,leaveCar} from './vehicles.js';
+import {ping} from './pings.js';
 
 // ---------- player actions (v0.12) ----------
 // Everything a player does besides moving and attacking (that is p.input). The player's own device calls act():
@@ -16,7 +17,8 @@ export const ACTIONS={
   use(p){if(p.zed){if(p.nearDoor>=0)toggleDoor(p,p.nearDoor);return;}   // v0.51 a zombie player only works doors
     if(p.car>=0)leaveCar(p);else if(p.nearDown)startHelp(p,p.nearDown);else if(p.near)pickup(p,p.near);else if(p.nearDoor>=0)toggleDoor(p,p.nearDoor);else if(p.nearBox>=0)startSearch(p,p.nearBox);else if(p.nearCar>=0)enterCar(p,p.nearCar);},
   fix(p){if(p.fixDoor>=0)fixDoor(p,p.fixDoor);},
-  light:p=>{p.light=!p.light;},   // v0.50 the flashlight on / off (T, 🔦)
+  light:p=>{p.light=!p.light;},
+  ping:(p,x,z)=>ping(p,+x,+z),   // v0.53 a marker for the team   // v0.50 the flashlight on / off (T, 🔦)
   reload:p=>startReload(p),heal:p=>useHeal(p),throw:p=>throwBottle(p),pickThrow:(p,id)=>pickThrow(p,id),
   slot:(p,s)=>{if(['primary','secondary','melee'].includes(s))switchTo(p,s);},equip:equipFromBag,hold:holdSlot,unequip,useAt:useItemAt,dropBag:dropFromBag,dropEq:dropEquipped,
 };

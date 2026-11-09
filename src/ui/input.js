@@ -5,6 +5,7 @@ import {keys,ctl,mouse,joy} from '../core/controls.js';
 import {player} from '../entities/player.js';
 import {act} from '../systems/actions.js';
 import {DIFFS} from '../config/difficulty.js';
+import {PING} from '../config/party.js';
 import {reset} from '../systems/game.js';
 import {readSave,loadGame,clearSave} from '../systems/save.js';
 import {chipEls} from './hud.js';
@@ -22,6 +23,13 @@ export function showContinue(){
   $('bContinue').hidden=!has;$('bStart').classList.toggle('alt',has);
 }
 // E / the pick button: open the bag when only a full-bag item is in reach, otherwise the 'use' action (systems/actions.js)
+// v0.53 a marker: where the mouse points (from above), where the view looks (first person), or straight ahead
+function pingHere(ahead){
+  const p=player;if(!p||!p.alive)return;let x,z;
+  if(!ahead&&!view.fps&&mouse.active){mray.setFromCamera(mouse.ndc,camera);if(mray.ray.intersectPlane(groundPlane,mouse.world)){x=mouse.world.x;z=mouse.world.z;}}
+  if(x===undefined){const a=view.fps?view.yaw:p.face;x=p.pos.x+Math.sin(a)*PING.ahead;z=p.pos.z+Math.cos(a)*PING.ahead;}
+  act('ping',Math.round(x*10)/10,Math.round(z*10)/10);
+}
 function usePick(){if(player.full&&!player.near&&!player.nearDown)openBag();else act('use');}
 // keyboard / mouse / stick -> the local player's input, once per simulation step (v0.9: the player reads only p.input)
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),mray=new THREE.Raycaster();
@@ -75,6 +83,7 @@ export function initInput(){
     if(e.code==='KeyE'||e.code==='KeyF')usePick();
     if(e.code==='KeyB')act('fix');
     if(e.code==='KeyT'&&!e.repeat)act('light');   // v0.50 the flashlight
+    if(e.code==='KeyG'&&!e.repeat)pingHere();   // v0.53 a marker
     if(e.code==='KeyQ'&&!e.repeat)act('throw');
   });
   addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Space')ctl.fireHeld=false;});
@@ -113,6 +122,7 @@ export function initInput(){
   addEventListener('click',e=>{if(slid){slid=false;e.stopPropagation();e.preventDefault();}},true);
   $('bView').addEventListener('click',toggleFps);
   $('bLight').addEventListener('click',()=>act('light'));   // v0.50
+  $('bPing').addEventListener('click',()=>pingHere(true));   // v0.53
   $('bAds').addEventListener('click',()=>{ctl.adsTouch=!ctl.adsTouch;});   // v0.29 touch: aim down the sights on / off
   $('bZin').addEventListener('click',()=>zoom(1/1.2));$('bZout').addEventListener('click',()=>zoom(1.2));
   $('bBag').addEventListener('click',()=>{$('bag').hidden?openBag():closeBag();});

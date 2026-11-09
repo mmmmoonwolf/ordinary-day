@@ -11,5 +11,7 @@ export const CAR={
   hitMin:3.5,hitDmg:70,hitCost:3,   // running a zombie down: from this speed, damage at top speed (less when slower), what it costs the car
   hitP:80,                // v0.49 PvP: damage to a player run down at top speed
   noise:24,noiseEvery:1.2,          // the engine calls zombies within noise m, every noiseEvery s while it runs
-  reach:3.2,              // how close to the car's middle a player has to be to get in
+  reach:3.2,
+  fuel:[.25,.6],fuelUse:.00045,refuel:.12,pumpR:4.5,   // v0.53 a tank goes `1/fuelUse` m; at a pump, standing still, it fills `refuel` a second; cars start part full
+  hornNoise:38,              // how close to the car's middle a player has to be to get in
 };

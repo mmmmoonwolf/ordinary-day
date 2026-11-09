@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.53 | `systems/pings.js` `ping()` `updatePings()`, `ui/pings.js` `#pings` `.ping`, `ACTIONS.ping`, `PING` ใน `config/party.js`, `G.pings` (snapshot `pg`), ปุ่ม `#bPing` คีย์ G `pingHere()`, `CAR.fuel` `fuelUse` `refuel` `pumpR` `hornNoise`, `c.fuel`, `pumpSpots` ใน `world/highway.js`, `sfx.horn` `sfx.ping` |
 | v0.52 | `systems/director.js` `updateDirector()` `wave()` `isBlood()`, `config/director.js` `DIRECTOR` `BLOOD` `MEGA`, `G.calm` `G.blood` `G.bloodHordes`, ฝูง `mega` ใน `G.plan`, `carAlarm()` ใน `combat.js`, ฟ้าแดงใน `updateSky()` |
 | v0.51 | `RULES` `startPvp(rule)` `goalOf()` `teamScore()` `result()` `infection()` `makeZed()` `hill()` ใน `systems/pvp.js`, `pvpRule()` `sideOf()` ใน `core/state.js`, `PVP.team` `infect` `hill` `killCam` `bounty`, `DEF.claw`, `p.team` `p.zed` `p.killedBy` `p.bounty`, `G.pvpRule` `G.hill` `G.pvpEnd` (snapshot `pr` `hl` `pe`), `ui/pvpfx.js`, `select.pvprule` |
 | v0.50 | ย่องฆ่า `backstab()` `blow()` ใน `combat.js`, `BACKSTAB` `LISTEN` `LIGHT` ใน `config/stealth.js`, `ui/listen.js` `updateListen()` `#listen`, `p.light` `ACTIONS.light` ปุ่ม `#bLight` คีย์ T, ระยะเห็นกลางคืนใน `updateZombie()`, snapshot แถวผู้เล่นมี light |
@@ -1012,6 +1013,17 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **ฝูงมหึมา:** บ่ายวันที่ 2 (15:00) ฝูง 55 ตัวเดินข้ามเมืองตามถนนใหญ่ (เพดานซอมบี้ในโลก 150) เห็นเป็นจุดแดงบนแผนที่เล็กจากไกล ไม่มีใน PvP
 - **สัญญาณกันขโมย:** กระสุนที่ไม่โดนอะไรแล้วไปจบที่รถจอดอยู่ (ไม่พัง ไม่ไหม้) ทำให้สัญญาณดังเหมือนเหตุการณ์สุ่ม ซอมบี้ตามมา 40 นาทีในเกม
 - **PLACEHOLDER:** `DIRECTOR` `BLOOD` `MEGA`
+
+## ปักหมุด น้ำมันรถ แตร (v0.53)
+
+จากรายการไอเดีย #17 #8 (อ้างอิง Apex Legends ping, Project Zomboid / Days Gone รถ)
+
+- **ปักหมุด:** G บนคอม (ตรงที่เมาส์ชี้จากมุมบน หรือที่มองในมุมบุคคลที่หนึ่ง 14 ม.) ปุ่ม 📍 บนแถบบน (ข้างหน้าทิศที่หัน 14 ม.) `ACTIONS.ping` ให้เพื่อนออนไลน์ใช้ได้ host ดูว่าใกล้อะไร (`PING`): ซอมบี้ใน 4 ม. = อันตราย ⚠ แดง (หมุดย้ายไปที่ตัวมัน), ของบนพื้นใน 2.5 ม. = ของ ◆ เหลือง, นอกนั้น = ไปทางนี้ ➜ ฟ้า คนละหนึ่งหมุด 7 วินาที เสียงบี๊บถึงฝ่ายเดียวกัน วาดเป็นลำแสงในโลกและไอคอนกลม (ชิดขอบจอเมื่ออยู่นอกจอ) ไม่มีข้อความ ใน PvP เห็นเฉพาะฝ่ายตัวเอง
+- **น้ำมัน:** `c.fuel` 0–1 (เซฟและส่งตามรถ) รถเริ่ม 25–60% ถังหนึ่งวิ่งราว 2.2 กม. ใกล้หมดและหมดมีข้อความสั้น หมดแล้วเร่งไม่ได้ (ไหลไปจนหยุด) จอดใกล้หัวจ่ายที่ปั๊ม (`pumpSpots` 4.5 ม.) เกือบนิ่งแล้วเติม 12% ต่อวินาที
+- **แตร:** ปุ่มโจมตีระหว่างขับ เสียงแตรและเสียงดังเรียกซอมบี้ 38 ม. ทุก 1 วินาทีที่กดค้าง
+- **มือถือ:** แถบปุ่มบนมี 7 ปุ่มแล้ว จอแคบกว่า 640 px ขึ้นแถวที่สอง (`.tools` wrap) ไม่ทับแถบ HP
+- **ยังไม่ได้ทำ:** ท้ายรถเก็บของ · มอเตอร์ไซค์
+- **PLACEHOLDER:** `PING` `CAR.fuel` `fuelUse` `refuel` `pumpR` `hornNoise`
 
 ## ระบบ loot
 

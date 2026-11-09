@@ -21,7 +21,7 @@ const ST=['human','infected','zombie','dead'];
 const r2=v=>Math.round((v||0)*100)/100;
 export function freshSent(){return {seen:new Set(),doors:'',broken:-1,drops:'',gear:'',drop:'',searched:'',who:''};}
 export function encodeWorld(c,me){
-  const s={t:'s',g:{min:r2(G.min),ph:G.phase,rt:G.rainTarget,ob:G.outbreak,bo:G.blackout,ov:G.over,k:G.kills,kb:G.killsBy,df:G.diff,ec:G.endCause,fg:G.fog,st:G.site,bl:G.blown,tr:G.traps,md:G.mode,pr:G.pvpRule||'ffa',hl:G.hill||0,pe:G.pvpEnd||0}};   // v0.51 PvP rule, hill, round result   // v0.23 blown gas cylinders   // fog / heat / event site (v0.18)
+  const s={t:'s',g:{min:r2(G.min),ph:G.phase,rt:G.rainTarget,ob:G.outbreak,bo:G.blackout,ov:G.over,k:G.kills,kb:G.killsBy,df:G.diff,ec:G.endCause,fg:G.fog,st:G.site,bl:G.blown,tr:G.traps,md:G.mode,pr:G.pvpRule||'ffa',hl:G.hill||0,pe:G.pvpEnd||0,pg:(G.pings||[]).map(q=>[q.x,q.z,q.k,q.by,r2(q.life)])}};   // v0.53 markers   // v0.51 PvP rule, hill, round result   // v0.23 blown gas cylinders   // fog / heat / event site (v0.18)
   const dj=JSON.stringify(G.doors);if(dj!==c.doors){c.doors=dj;s.doors=G.doors;}
   if(G.cars)s.cars=G.cars.map(k=>[r2(k.x),r2(k.z),r2(k.a),Math.ceil(k.hp),r2(k.v)]);   // v0.45 the cars that drive
   const sj=G.searched.join();if(sj!==c.searched){c.searched=sj;s.sr=G.searched;}   // v0.15
@@ -61,7 +61,7 @@ const want=(a,x,z)=>{
 const fresh=(mine,host,jump)=>host>mine+jump?host:host<=0?0:mine;
 export function applyWorld(s,myId){
   el=s.el||0;
-  const g=s.g;Object.assign(G,{min:g.min,phase:g.ph,rainTarget:g.rt,outbreak:g.ob,blackout:g.bo,kills:g.k,killsBy:g.kb||{},diff:g.df,fog:g.fg||0,site:g.st||null,mode:g.md||'coop',pvpRule:g.pr||'ffa',hill:g.hl||null,pvpEnd:g.pe||null});
+  const g=s.g;Object.assign(G,{min:g.min,phase:g.ph,rainTarget:g.rt,outbreak:g.ob,blackout:g.bo,kills:g.k,killsBy:g.kb||{},diff:g.df,fog:g.fg||0,site:g.st||null,mode:g.md||'coop',pvpRule:g.pr||'ffa',hill:g.hl||null,pvpEnd:g.pe||null,pings:(g.pg||[]).map(([x,z,k,by,life])=>({x,z,k,by,life}))});
   if(g.bl&&g.bl.length!==(G.blown||[]).length){G.blown=g.bl.slice();applyTanks();}
   if(g.tr&&g.tr.length!==(G.traps||[]).length){G.traps=g.tr.slice();applyTraps();}   // v0.26
   if(s.doors)applyDoors(s.doors);
