@@ -9,7 +9,7 @@ import {setVolumes} from '../systems/audio.js';
 // Graphics quality, three volumes and an FPS counter, remembered in this browser. Opened from the pause menu and the
 // start screen; it sits on top of whatever opened it and only closes itself.
 const KEY='ordinary-day.settings';
-export const settings={quality:isTouch?'medium':'high',master:1,music:.6,sfx:1,fps:false,film:true,shake:true,sens:1};   // v0.31 camera shake, first-person mouse / finger look speed
+export const settings={quality:isTouch?((typeof navigator!=='undefined'&&navigator.hardwareConcurrency||8)<=4?'low':'medium'):'high',master:1,music:.6,sfx:1,fps:false,film:true,shake:true,sens:1};   // v0.31 camera shake, first-person mouse / finger look speed
 try{Object.assign(settings,JSON.parse(localStorage.getItem(KEY)||'{}'));}catch(_){}
 if(!QUALITY[settings.quality])settings.quality='medium';
 function store(){try{localStorage.setItem(KEY,JSON.stringify(settings));}catch(_){}}

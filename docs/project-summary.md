@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.59 | `BARR` ใน `config/shelter.js`, `st.bar` ใน `G.doors`, `fixAction(k,p)` 'barricade', gamepad `padButtons()` `padAim()` `padOn()` ใน `ui/input.js`, `manifest.webmanifest` `sw.js` `assets/icons/`, ค่าเริ่ม `settings.quality` |
 | v0.58 | `config/jobs.js` `JOBS` `jobOf()` `cleanJob()`, `giveKit(p)` ใน `systems/game.js`, `p.job` `p.kitGot` (เซฟ ส่งใน 'hi'), `dropPack(p)` `PACK_KINDS` ใน `combat.js`, `DISTRICT` ใน `config/loot.js` `rollLoot(…,area)`, `LOCKS` `bestEver()` `lockOf()` ใน `core/profile.js`, `.jobrow` |
 | v0.57 | `ZC.screamer` `ZC.hunter` `ZC.nest` `SCREAMER` `HUNTER` `NEST` ใน `config/zombies.js`, `systems/nests.js` `placeNests()` `updateNests()`, `nestLook()` ใน `agents.js`, `nestFrame()` ใน `animation.js`, `lit()` ใน `ai.js`, `G.huntAt` `G.nested`, `sfx.wail` `howl` `hiss` `burst` |
 | v0.56 | `POWER` `BROADCAST` `STORM` ใน `config/events.js`, `lamps` ใน `world/props.js`, `strike()` `nextCast()` ใน `systems/events.js`, `G.storm` `G.boltAt` `G.castAt` (snapshot `sm`), `strikeFx()` `updateBolt()` `strikeAt` ใน `effects.js`, `sfx.broadcast` `sfx.strike` `speak()` |
@@ -1087,6 +1088,17 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **ชุดที่ปลดล็อก** (`LOCKS` `lockOf()` `bestEver()` ใน `core/profile.js` จากสถิติดีสุดใน `ordinary-day.best` ทุกระดับความยาก): SWAT / ทหาร ต้องถึงค่ายทหาร (ชนะ) · พังก์ ฆ่า 120 ตัวในเกมเดียว · สูท รอด 2 คืน · นักเดินทาง รอด 1 คืน หน้าแต่งตัวยังเลือกดูได้ (ขึ้น 🔒 และเงื่อนไข) แต่กดเสร็จแล้วชิ้นที่ล็อกกลับเป็นชุดแรก สุ่มเลือกเฉพาะชุดที่ปลดแล้ว ชุดเริ่มต้นเปลี่ยนเป็นชุดแรก (ลำลอง) ชุดที่เคยเลือกก่อน v0.58 ยังใส่ได้
 - **PLACEHOLDER:** `JOBS` (ของ ตัวคูณ) `PACK_KINDS` `DISTRICT` `LOCKS`
 - **ยังไม่ได้ทำ:** ไอคอนอาชีพเหนือหัว, ตัวคูณของในตู้ตามย่าน (ตอนนี้เฉพาะของบนพื้น)
+
+## กั้นประตู จอยเกม ติดตั้งเป็นแอป (v0.59)
+
+จากรายการไอเดีย #4 #20 (อ้างอิง Project Zomboid, 7 Days to Die)
+
+- **กั้นประตูด้วยของในห้อง** (`BARR` ใน `config/shelter.js`, `G.doors[k].bar`): ผู้เล่นที่อยู่ในห้องและประตูปิดอยู่ ปุ่ม 🔨 / B ขึ้นว่า กั้นประตู (`fixAction(k,p)` คืน 'barricade' ใช้ `p.room` บน host ส่วนจอเพื่อนใช้ `p.fixDoor` ที่ host คิดให้) กดแล้วประตูทนเพิ่ม 80 (เห็นเป็นไม้ขวางแบบเดิม `cutPlanks`) เสียงลากของดัง 14 ม. คนข้างนอกเปิดไม่ได้ (`toggleDoor` บอก ประตูถูกกั้นไว้) ซอมบี้ทุบจน HP เหลือไม่เกินประตูปกติแล้วที่กั้นหลุด จากข้างในกดเปิดประตูครั้งแรกเป็นการรื้อที่กั้น (ปุ่มขึ้น รื้อที่กั้น) เซฟและส่งออนไลน์ไปกับ `G.doors`
+- **จอยเกม** (`ui/input.js` `padButtons()` `padAim()`): ใช้ Gamepad API แบบ standard mapping จะเริ่มทำงานเมื่อแตะจอยครั้งแรก คีย์บอร์ด เมาส์ และจอสัมผัสยังใช้ได้พร้อมกัน สติ๊กซ้ายเดิน (กดสติ๊กซ้าย = วิ่งจนปล่อยสติ๊ก) สติ๊กขวาหันเล็ง (มุมบุคคลที่หนึ่งหมุนกล้องผ่าน `look()`) RT ยิง LT เล็งศูนย์ A เก็บ / เปิด / ขึ้นรถ X รีโหลด B ย่อง Y กระเป๋า LB ขว้าง RB อาวุธถัดไป RS ค้อน (ซ่อม / กั้นประตู) D-pad ขึ้น ไฟฉาย ลง ปักหมุด ซ้าย ใช้ยา ขวา กระโดดข้าม View มุมบุคคลที่หนึ่ง Menu หยุดเกม เดดโซน 0.2
+- **ติดตั้งเป็นแอป** (`manifest.webmanifest`, `sw.js`, `assets/icons/` ไอคอน SVG และ PNG 180 / 192 / 512): เปิดเต็มจอ สีพื้นมืด service worker ไม่แคชอะไรเลย (ทุกไฟล์มาจากเน็ตเหมือนเดิม เวอร์ชันใหม่บน GitHub Pages จะไม่ถูกบังด้วยของเก่า) ลงทะเบียนเฉพาะ https หรือ localhost
+- **เครื่องสเปกต่ำ**: จอสัมผัสที่มี CPU 4 core หรือน้อยกว่า เริ่มต้นที่กราฟิก ต่ำ (ตั้งค่าที่เคยเลือกไว้ยังใช้ค่าเดิม)
+- **PLACEHOLDER:** `BARR` เดดโซนและความไวสติ๊กขวาของจอย
+- **ยังไม่ได้ทำ:** ใช้จอยในเมนู (กระเป๋า หน้าหยุดเกม หน้าแรก ยังต้องแตะหรือคลิก), ลากเฟอร์นิเจอร์จริงไปวาง (ตอนนี้เป็นไม้ขวางที่ประตู), client prediction (#19) ยังไม่ได้ทำ
 
 ## ระบบ loot
 

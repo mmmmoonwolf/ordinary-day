@@ -12,4 +12,7 @@ export const STUB_H=1;           // height of the cut-away walls while the playe
 // (HAMMER_NOISE m, halved behind a closed door like any indoor noise) (PLACEHOLDERS). PLANK_HP is only how many boards a
 // door boarded up in an older save shows
 export const PLANK_HP=40,REBUILT_HP=60,HAMMER_NOISE=18;
+// v0.58.1/v0.59 from inside, with the door shut, the furniture can be dragged against it (B / 🔨): the door takes `hp` more
+// (shown as boards) and cannot be opened from outside; opening it from inside pulls it away; dragging is loud (PLACEHOLDERS)
+export const BARR={hp:80,noise:14};
 export const SCENT_AFTER=90,SCENT_EVERY=45,SCENT_RANGE=40,SCENT_MAX=3;

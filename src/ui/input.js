@@ -34,26 +34,63 @@ function usePick(){if(player.full&&!player.near&&!player.nearDown)openBag();else
 // keyboard / mouse / stick -> the local player's input, once per simulation step (v0.9: the player reads only p.input)
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),mray=new THREE.Raycaster();
 export function pollInput(p){
-  const I=p.input;let ix=0,iy=0;
+  const I=p.input;let ix=0,iy=0;const gp=padButtons();   // v0.59 a gamepad
   if(!$('bag').hidden||!$('pause').hidden){Object.assign(I,{mx:0,mz:0,mag:0,run:false,fire:false,fireQ:0,face:null,ads:false});return;}   // a menu open while the world goes on (v0.11)
   if(p.car>=0&&view.fps)setFps(false);   // v0.45 driving is seen from above
   if(keys.KeyW||keys.ArrowUp)iy+=1;if(keys.KeyS||keys.ArrowDown)iy-=1;if(keys.KeyD||keys.ArrowRight)ix+=1;if(keys.KeyA||keys.ArrowLeft)ix-=1;
   if(joy.id!==null){ix+=joy.x;iy-=joy.y;}
+  if(gp){ix+=gp.lx;iy-=gp.ly;}
   let mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1;}
   // screen to ground under the isometric camera: screen right = (1,-1)/√2, screen up = (-1,-1)/√2
   I.mx=(ix-iy)/Math.SQRT2;I.mz=(-ix-iy)/Math.SQRT2;I.mag=mag;
   if(view.fps)[I.mx,I.mz]=fpsMove(ix,iy);   // v0.28 relative to where the view looks
-  I.run=!!(keys.ShiftLeft||keys.ShiftRight)||(joy.id!==null&&mag>.9);
+  I.run=!!(keys.ShiftLeft||keys.ShiftRight)||(joy.id!==null&&mag>.9)||!!(gp&&pad.run&&mag>.08);
   I.slow=false;I.sneak=joy.id!==null&&mag>.08&&mag<.45;
   // C sneaks (toggles; running ends it; v0.44 no crouch or prone), right mouse or 🎯 aims down the sights
   if(I.run&&mag>.08)ctl.sneak=false;
-  I.slow=!!ctl.sneak;I.ads=ctl.ads||ctl.adsTouch;if(ctl.jumpQ>0){I.jumpQ=ctl.jumpQ;ctl.jumpQ=0;}   // v0.30
+  I.slow=!!ctl.sneak;I.ads=ctl.ads||ctl.adsTouch||!!(gp&&gp.lt);if(ctl.jumpQ>0){I.jumpQ=ctl.jumpQ;ctl.jumpQ=0;}   // v0.30
   view.breathKey=false;if(isScoped(p)){view.breathKey=I.run;I.run=false;}   // through the scope Shift holds the breath
   I.aim=mouse.active;I.face=null;
   if(view.fps){I.face=view.yaw+view.sway;I.aim=!isTouch;I.aimDist=40;}   // v0.28 face where the view looks; on a phone aim assist still helps
   else if(mouse.active){mray.setFromCamera(mouse.ndc,camera);if(mray.ray.intersectPlane(groundPlane,mouse.world)){I.face=Math.atan2(mouse.world.x-p.pos.x,mouse.world.z-p.pos.z);I.aimDist=Math.hypot(mouse.world.x-p.pos.x,mouse.world.z-p.pos.z);}}
   I.fire=ctl.fireHeld;if(ctl.fireQ>0){I.fireQ=ctl.fireQ;ctl.fireQ=0;}
+  if(gp)padAim(p,I,gp);
 }
+// ---------- gamepad (v0.59) ----------
+// The standard mapping (Xbox / PlayStation pads in Chrome, Edge, Firefox, Safari): left stick walks (pressed in: run until
+// it is let go), right stick aims (first person: turns the view), RT fires, LT aims down the sights, A takes / opens /
+// gets in, X reloads, B sneaks, Y the bag, LB throws, RB the next weapon, RS the hammer (fix, barricade), D-pad: up the
+// flashlight, down a marker, left heals, right vaults; View the first-person view, Menu pauses. It only takes over once
+// it is touched, and keyboard, mouse and touch keep working beside it.
+const pad={on:false,run:false,prev:[],fire:false};
+const DEAD=.2,ax=(g,i)=>{const v=g.axes[i]||0;return Math.abs(v)<DEAD?0:(v-Math.sign(v)*DEAD)/(1-DEAD);};
+function padButtons(){
+  const list=navigator.getGamepads?navigator.getGamepads():null;let g=null;if(list)for(const x of list)if(x&&x.connected){g=x;break;}
+  if(!g)return null;
+  const b=i=>!!(g.buttons[i]&&(g.buttons[i].pressed||g.buttons[i].value>.5)),tap=i=>{const now=b(i),was=pad.prev[i];pad.prev[i]=now;return now&&!was;};
+  const s={lx:ax(g,0),ly:ax(g,1),rx:ax(g,2),ry:ax(g,3),lt:b(6),rt:b(7)};
+  if(!pad.on){if(!(s.lx||s.ly||s.rx||s.ry||g.buttons.some(x=>x&&x.pressed)))return null;pad.on=true;mouse.active=false;}
+  const taps=[];for(let i=0;i<16;i++)if(tap(i))taps.push(i);
+  if(taps.includes(9)){if(isSettingsOpen())closeSettings();else if(!$('bag').hidden)closeBag();else togglePause();}
+  if(taps.includes(3)&&!isPauseOpen())$('bag').hidden?openBag():closeBag();
+  if(G.paused||!$('bag').hidden||!$('pause').hidden){pad.fire=false;return s;}
+  if(taps.includes(0))usePick();if(taps.includes(2))act('reload');if(taps.includes(1))ctl.sneak=!ctl.sneak;
+  if(taps.includes(4))act('throw');if(taps.includes(11))act('fix');if(taps.includes(8))toggleFps();
+  if(taps.includes(5)){const o=['primary','secondary','melee'],g2=player.gear;act('slot',o[(o.indexOf(g2.active)+1)%3]);}
+  if(taps.includes(12))act('light');if(taps.includes(13))pingHere();if(taps.includes(14))act('heal');if(taps.includes(15))ctl.jumpQ=.25;
+  if(taps.includes(10))pad.run=true;if(!s.lx&&!s.ly)pad.run=false;
+  // the trigger fires like the mouse button: held, and a press always gets one shot out
+  if(s.rt&&!pad.fire){ctl.fireHeld=true;ctl.fireQ=.2;}else if(!s.rt&&pad.fire)ctl.fireHeld=false;pad.fire=s.rt;
+  return s;
+}
+// the right stick: the way the player faces on the ground (screen directions, like walking), or the first-person view
+function padAim(p,I,s){
+  if(view.fps){if(s.rx||s.ry)look(s.rx*12,s.ry*9);I.face=view.yaw+view.sway;return;}
+  const m=Math.hypot(s.rx,s.ry);
+  if(m>.3){const fx=(s.rx+s.ry)/Math.SQRT2,fz=(-s.rx+s.ry)/Math.SQRT2;I.face=Math.atan2(fx,fz);I.aim=true;I.aimDist=6+m*14;}
+  else if(I.mag>.08&&!mouse.active){I.face=Math.atan2(I.mx,I.mz);}
+}
+export const padOn=()=>pad.on;
 function showSound(){for(const id of ['bSound','bSound2'])$(id).textContent='เสียง: '+(isMuted()?'ปิด':'เปิด');}
 // the page must never zoom (v0.13.1): iOS Safari ignores user-scalable=no, so a pinch or double tap on the start screen
 // or a sheet zoomed the whole game in, and the game screen (touch-action:none) gave no way to pinch back out
