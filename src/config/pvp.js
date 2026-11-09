@@ -19,4 +19,10 @@ export const PVP={
   killHeal:25,            // v0.49 HP back for a kill
   dropAmmo:.5,            // v0.49 share of each ammo stack left on the ground at death (0: nothing drops)
   regen:{after:5,rate:5,cap:1},         // v0.49 healing on its own: after s untouched, HP per s, up to this share of max HP
+  // v0.51 the rules: team (two teams by player number, first team to `kills`), infection (one player starts as a
+  // zombie with claws and speed; whoever it kills joins it; people win by lasting `minutes`), hill (stand alone in a
+  // ring that moves every `move` s: a point every `every` s, first to `points`)
+  team:{kills:15},infect:{minutes:5,speed:1.3,hp:150},hill:{r:7,move:90,every:2,points:30},
+  killCam:2.5,            // v0.51 seconds the camera of a player just killed looks at their killer
+  bounty:{min:3,lead:2,worth:2},        // v0.51 the leader with at least min kills, lead ahead of the next, carries a red beacon; killing them counts worth kills
 };

@@ -13,7 +13,8 @@ import {walledOff} from '../world/interiors.js';
 // shared `inv`). Every function takes the player it acts for; messages go to that player only (uiFor).
 export const freshGear=()=>({bag:[],cap:6,eq:{primary:null,secondary:null,melee:null},active:'melee'});
 const bagOpen=p=>p.local&&!$('bag').hidden;
-export function curWeapon(p){const g=p.gear;if(g.active!=='melee'&&!g.eq[g.active])g.active='melee';return g.eq[g.active]||{id:'fist',mag:0};}
+const CLAW={id:'claw',mag:0};   // v0.51 PvP infection: a zombie player only has claws
+export function curWeapon(p){if(p.zed)return CLAW;const g=p.gear;if(g.active!=='melee'&&!g.eq[g.active])g.active='melee';return g.eq[g.active]||{id:'fist',mag:0};}
 export function countAmmo(p,t){let s=0;for(const e of p.gear.bag)if(e.id===t)s+=e.n;return s;}
 export function takeAmmo(p,t,n){const bag=p.gear.bag;let got=0;for(let i=bag.length-1;i>=0&&got<n;i--){const e=bag[i];if(e.id!==t)continue;const k=Math.min(e.n,n-got);e.n-=k;got+=k;if(e.n<=0)bag.splice(i,1);}return got;}
 // returns how many did not fit: all of them when the item is new to a full bag, otherwise none
@@ -35,7 +36,7 @@ export function switchTo(p,slot){
 }
 // returns false when it did not fit (the item stays on the ground)
 export function pickup(p,d,quiet){
-  if(cant(p))return false;
+  if(cant(p)||p.zed)return false;   // v0.51 a zombie player picks nothing up
   const it=d.item,def=DEF[it.id],gc=gradeOf(it.id)||'get',g=p.gear,U=uiFor(p);
   if(def.kind==='weapon'){
     if(!g.eq[def.slot]){g.eq[def.slot]=it;removeDrop(d);U.feed('+ '+def.name+gradeTag(it.id)+' → '+SLOTNAME[def.slot],gc);switchTo(p,def.slot);}
