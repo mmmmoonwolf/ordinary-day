@@ -30,4 +30,6 @@ export function updateListen(dt){
   }
   for(let i=n;i<pool.length;i++)pool[i].visible=false;
   const b=$('bLight');if(b&&p)b.classList.toggle('off',p.light===false);
+  // v0.54 panic (and a wound's pulse) round the edges, a sickly tint when ill
+  const pe=$('panic');if(pe&&p){const t=performance.now()/1000,o=Math.min(.9,(p.panic||0)*.7+(p.bleedW>0?.18+.12*Math.sin(t*5):0)+(p.sick>0?.15:0));const s=o.toFixed(2);if(pe.style.opacity!==s)pe.style.opacity=s;pe.classList.toggle('sick',p.sick>0);}
 }
