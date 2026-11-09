@@ -4,7 +4,10 @@ import {G,isPvp} from '../core/state.js';
 import {RC,LIM,RIVER} from '../config/world.js';
 import {GOAL_NIGHTS} from '../config/goal.js';
 import {POOLS,MED_W,THROW_W} from '../config/loot.js';
-import {EVENT_CHANCE,AIRDROP_ITEMS,HORDE,DAILY} from '../config/events.js';
+import {EVENT_CHANCE,AIRDROP_ITEMS,HORDE,DAILY,BROADCAST,STORM} from '../config/events.js';
+import {inWorld} from '../config/world.js';
+import {ignite} from './blast.js';
+import {strikeFx} from './effects.js';
 import {MEGA} from '../config/director.js';
 import {breakables} from '../world/props.js';
 import {rooms,boxes,roomAt} from '../world/interiors.js';
@@ -114,6 +117,7 @@ const DAILY_RUN={
     sfx.explode(x,z);makeNoise(x,z,40);
   },
   fog(){G.fog=G.min+DAILY.last.fog;},
+  storm(){G.storm=G.min+DAILY.last.storm;G.rainTarget=1;G.boltAt=G.min+rnd(STORM.every[0],STORM.every[1]);},   // v0.56
   raid(){
     const list=rooms.map((r,k)=>[r,k]).filter(([r,k])=>!players.some(p=>roomAt(p.pos.x,p.pos.z)===k));if(!list.length)return;
     const [r,k]=pick(list.filter(([r])=>r.place).length&&Math.random()<.7?list.filter(([r])=>r.place):list);
@@ -133,6 +137,35 @@ export function updateEvents(now){
   // v0.18: the car alarm keeps calling; the map mark of a site goes at the next 06:00
   if(G.alarm){if(G.min>=G.alarm.until)G.alarm=null;else if(G.min>=G.alarm.next){G.alarm.next=G.min+3;makeNoise(G.alarm.x,G.alarm.z,DAILY.alarmNoise);sfx.carAlarm(G.alarm.x,G.alarm.z);}}
   if(G.site&&G.min>=G.site.day*1440+6*60)G.site=null;
+  updateStorm();updateBroadcast();
+}
+// ---------- v0.56 the storm ----------
+// while it lasts the rain stays heavy (zombies hear and see less, ai.js) and now and then lightning strikes the
+// ground somewhere near a player outdoors: a flash, a crack heard far, a small fire
+function updateStorm(){
+  if(!G.storm)return;
+  if(G.min>=G.storm){G.storm=0;G.rainTarget=0;return;}
+  G.rainTarget=1;
+  if(G.min<(G.boltAt||0))return;
+  G.boltAt=G.min+rnd(STORM.every[0],STORM.every[1]);
+  const out=players.filter(p=>p.alive&&!p.away&&p.room<0);if(!out.length)return;
+  const p=pick(out);
+  for(let k=0;k<12;k++){const a=rnd(0,6.283),d=rnd(STORM.near[0],STORM.near[1]),x=p.pos.x+Math.sin(a)*d,z=p.pos.z+Math.cos(a)*d;
+    if(!inWorld(x,z,1)||roomAt(x,z)>=0)continue;
+    strike(x,z);return;}
+}
+export function strike(x,z){strikeFx(x,z);sfx.strike(x,z);ignite(x,z,STORM.fire.r,STORM.fire.sec);makeNoise(x,z,STORM.noise);}
+// ---------- v0.56 the emergency radio ----------
+// at the minutes of BROADCAST.at each day (day 1 only after the outbreak) everyone hears the day's message
+export function nextCast(min){
+  for(let d=Math.floor(min/1440);;d++)for(const m of BROADCAST.at){const t=d*1440+m;if(t>min&&!(d===0&&m<9*60+30))return t;}
+}
+function updateBroadcast(){
+  if(isPvp())return;
+  if(G.castAt==null)G.castAt=nextCast(G.min);
+  if(G.min<G.castAt)return;
+  const late=G.min-G.castAt;G.castAt=nextCast(G.min);
+  if(late<30)sfx.broadcast(Math.min(Math.floor(G.min/1440),BROADCAST.lines.length-1));
 }
 // new game / loaded game
 export function resetEvents(){clearCrate();planEvents();planDaily(1);}

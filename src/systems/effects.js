@@ -67,4 +67,17 @@ export function updateImpacts(dt){
   for(const d of DROPS){if(!d.m.visible)continue;d.t-=dt;d.vy-=9.8*dt;const p=d.m.position;p.x+=d.vx*dt;p.y+=d.vy*dt;p.z+=d.vz*dt;
     if(d.t<=0||p.y<groundY(p.x,p.z)+.02)d.m.visible=false;}
 }
-export const FX={blood:addBlood,tracer,boom,fire:fireFx,impact};
+// v0.56 lightning striking the ground (the storm, systems/events.js): a jagged white line from the sky and a flash
+const boltGeo=new THREE.BufferGeometry();boltGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(16*6),3));
+const boltLine=new THREE.LineSegments(boltGeo,new THREE.LineBasicMaterial({color:'#eef4ff',transparent:true,opacity:0,depthWrite:false}));boltLine.frustumCulled=false;scene.add(boltLine);
+let boltT=0;
+export const strikeAt={t:-1e9};   // read by weather.js for the sky flash
+export function strikeFx(x,z){
+  send('*','fx',['strike',x,z]);
+  const a=boltGeo.attributes.position.array;let px=x,pz=z,py=60;
+  for(let i=0;i<16;i++){const ny=60-(i+1)*60/16,nx=i===15?x:x+rnd(-2.2,2.2),nz=i===15?z:z+rnd(-2.2,2.2),o=i*6;a[o]=px;a[o+1]=py;a[o+2]=pz;a[o+3]=nx;a[o+4]=ny;a[o+5]=nz;px=nx;py=ny;pz=nz;}
+  boltGeo.attributes.position.needsUpdate=true;boltT=.35;boltLine.material.opacity=1;
+  boomLight.position.set(x,6,z);boomLight.intensity=Math.max(boomLight.intensity||0,9);strikeAt.t=performance.now();
+}
+export function updateBolt(dt){if(boltT>0){boltT-=dt;boltLine.material.opacity=boltT>0?(Math.sin(boltT*60)>-.3?1:.25)*Math.min(1,boltT*4):0;}}
+export const FX={blood:addBlood,tracer,boom,fire:fireFx,impact,strike:strikeFx};

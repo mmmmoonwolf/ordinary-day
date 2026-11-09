@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.56 | `POWER` `BROADCAST` `STORM` ใน `config/events.js`, `lamps` ใน `world/props.js`, `strike()` `nextCast()` ใน `systems/events.js`, `G.storm` `G.boltAt` `G.castAt` (snapshot `sm`), `strikeFx()` `updateBolt()` `strikeAt` ใน `effects.js`, `sfx.broadcast` `sfx.strike` `speak()` |
 | v0.55 | `config/craft.js` `RECIPES` `TRAP`, `systems/craft.js` `craft()` `place()` `canCraft()` `updateTraps()`, `ui/traps.js`, `ACTIONS.craft` `place`, `G.ptraps` (snapshot `pt`), `#bagCraft`, `DEF` cloth tape nails nailbomb tripwire beartrap sign_c extinguisher_c guitar_c pan_c (`stun`), `MATS` และหมวด `mat` ใน `BOX`, `BLAST.nailbomb` |
 | v0.54 | `systems/body.js` `updateBody()` `wound()` `limping()`, `WOUND` `ILL` `PANIC` ใน `config/health.js`, `p.bleedW` `p.wet` `p.sick` `p.panic` (เซฟ, snapshot `me.pn` `bw` `sk`), `#panic`, `sfx.sneeze`, `spreadOf()` คูณความตื่นตระหนก |
 | v0.53 | `systems/pings.js` `ping()` `updatePings()`, `ui/pings.js` `#pings` `.ping`, `ACTIONS.ping`, `PING` ใน `config/party.js`, `G.pings` (snapshot `pg`), ปุ่ม `#bPing` คีย์ G `pingHere()`, `CAR.fuel` `fuelUse` `refuel` `pumpR` `hornNoise`, `c.fuel`, `pumpSpots` ใน `world/highway.js`, `sfx.horn` `sfx.ping` |
@@ -1047,6 +1048,16 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **อาวุธแปลก:** Stop Sign (ยาว ตีกวาด ทน 14 ครั้ง) · Fire Extinguisher (ตีแล้วซอมบี้มึน 1.4 วินาที `stun`) · Guitar (ทน 6 ครั้ง) · Frying Pan เพิ่มใน `POOLS.civ.melee` ตอนนี้ใช้โมเดลไม้ / ท่อ / ประแจเดิม
 - **PLACEHOLDER:** `RECIPES` `TRAP` `MATS` น้ำหนัก `mat` ค่าอาวุธใหม่ `BLAST.nailbomb`
 - **ยังไม่ได้ทำ:** โมเดลเฉพาะของอาวุธใหม่
+
+## เมืองค่อย ๆ พัง วิทยุฉุกเฉิน พายุ (v0.56)
+
+จากรายการไอเดีย #10 #11 #21 #22 (อ้างอิง State of Decay, The Long Dark, 7 Days to Die)
+
+- **ไฟฟ้าดับทีละวัน** (`POWER`): สัดส่วนเสาไฟที่ยังติดในวันที่ 1, 2, 3, 4 ขึ้นไป คือ 100%, 65%, 35%, 12% และหน้าต่างตึกที่ยังสว่างคือ 100%, 70%, 40%, 15% ทุกเสาไฟมี material ของตัวเองและลำดับดับคงที่ (`lamps[].rank` ไม่ใช้ `rand()`) ดวงที่ใกล้ถึงคิวดับจะกะพริบก่อน (`POWER.stutter`) คืนไฟดับ (`G.blackout`) ยังดับหมดเหมือนเดิม
+- **วิทยุฉุกเฉิน** (`BROADCAST`, `updateBroadcast()` ใน `systems/events.js`, `sfx.broadcast(day)`): วันละ 3 ครั้ง วันแรกเฉพาะหลัง 09:30 ไม่มีในโหมด PvP เป็นเสียงสัญญาณเตือนฉุกเฉิน ตามด้วยเสียงซ่าและเสียงพูดผ่าน `speechSynthesis` ถ้าเครื่องมีเสียงไทย (ถ้าไม่มีจะเป็นเสียงพึมพำในวิทยุ) วันหลัง ๆ เสียงซ่าดังขึ้น ข้อความ: วันที่ 1 ให้อยู่ในอาคาร · วันที่ 2 จุดอพยพที่ค่ายทหารเปิดเช้าวันที่ 4 · วันที่ 3 ไฟฟ้าจะถูกตัด อย่าส่งเสียงดัง · วันที่ 4 ค่ายเปิดแล้ว เป็นเสียงในโลกเกม ไม่มีตัวหนังสือบนจอ (ตามกติกา v0.42)
+- **พายุ** (`DAILY.weights.storm` ช่วง 11:00–19:00 นาน `DAILY.last.storm` 150 นาทีในเกม): ฝนหนักตลอด หมอกหนา ลมดังขึ้น ฟ้าแลบทุก 3–9 วินาที · ทุก 3–8 นาทีในเกมฟ้าผ่าลงพื้นนอกตึกห่างผู้เล่นคนหนึ่ง 16–45 ม. (`strike()`: เส้นฟ้าผ่า แสงวาบ เสียงฟ้าผ่าที่ทุกเครื่องได้ยิน ไฟไหม้ `ignite()` เสียงดังเรียกซอมบี้) · ระหว่างพายุ เสียงที่ซอมบี้ได้ยินเหลือ ×0.6 และระยะมองเห็นผู้เล่นเหลือ ×0.8
+- **PLACEHOLDER:** `POWER` `BROADCAST` (เวลาและข้อความ) `STORM` น้ำหนัก `storm` ใน `DAILY`
+- **ยังไม่ได้ทำ:** ทีวีในตึกที่ฉายประกาศ, เสียงพูดที่อัดไว้จริง (ตอนนี้ขึ้นกับเสียงไทยของเบราว์เซอร์)
 
 ## ระบบ loot
 

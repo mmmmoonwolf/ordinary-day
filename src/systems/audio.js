@@ -6,6 +6,7 @@ import {G} from '../core/state.js';
 import {breakables} from '../world/props.js';
 import {fireSpots} from './effects.js';
 import {areaAt} from '../config/world.js';
+import {BROADCAST} from '../config/events.js';
 
 // ---------- audio ----------
 // Sounds are synthesized with WebAudio, except screams, rain and thunder (v0.19, recordings in assets/sounds/). Browsers
@@ -147,6 +148,20 @@ const S={
   radio(){play(.3,undefined,0,1,(t,d)=>noise(t,.25,{type:'bandpass',f0:2600,q:3,peak:.1,attack:.02,dest:d}));},
   horn(x,z){play(.8,x,z,60,(t,d,g)=>{tone(t,.55,{wave:'square',f0:415,peak:.09*g,attack:.01,dest:d});tone(t,.55,{wave:'square',f0:523,peak:.07*g,attack:.01,dest:d});});},   // v0.53 a car horn
   sneeze(x,z){play(.6,x,z,25,(t,d,g)=>{noise(t,.07,{type:'bandpass',f0:900,q:2,peak:.25*g,dest:d});noise(t+.12,.22,{type:'bandpass',f0:2600,f1:900,q:1.5,peak:.5*g,dest:d});});},   // v0.54
+  // v0.56 lightning striking the ground near the players: a crack, then thunder right away
+  strike(x,z){play(3,x,z,220,(t,d,g)=>{noise(t,.18,{type:'highpass',f0:1800,peak:.7*g,attack:.003,dest:d});if(bufs.thunder)sample('thunder',t+.06,d,.95*g,{rate:1.08,cut:4000+g*8000});});},
+  // v0.56 the emergency radio (systems/events.js): the alert tones, static, then the day's message read by the
+  // browser's Thai voice under the static (or a murmur of voice-like static where there is none)
+  broadcast(day){
+    const B=BROADCAST,st=B.static[day]||1,text=B.lines[day]||'',len=Math.min(14,1.5+text.length*.07);
+    play(len+2,undefined,0,1,(t,d)=>{
+      for(let k=0;k<3;k++){tone(t+k*.42,.34,{f0:853,peak:.05,dest:d});tone(t+k*.42,.34,{f0:960,peak:.05,dest:d});}
+      noise(t+1.3,len,{type:'bandpass',f0:1900,q:.7,peak:.018*st,attack:.1,dest:d});
+      for(let k=0;k<Math.round(6*st);k++)noise(t+1.3+Math.random()*len,.05+Math.random()*.12,{type:'bandpass',f0:2600,q:2,peak:.06*st,dest:d});
+      const say=speak(text,st);
+      if(!say)for(let s=t+1.5;s<t+1.3+len;s+=.11+Math.random()*.12)noise(s,.09+Math.random()*.08,{type:'bandpass',f0:380+Math.random()*700,q:5,peak:.05/st,dest:d});
+    });
+  },
   ping(){play(.4,undefined,0,1,(t,d)=>{tone(t,.09,{f0:1320,peak:.12,dest:d});tone(t+.1,.12,{f0:1760,peak:.09,dest:d});});},   // v0.53 a team mate's marker
   carAlarm(x,z){play(1.4,x,z,60,(t,d,g)=>{for(let i=0;i<6;i++)tone(t+i*.22,.18,{wave:'square',f0:i%2?880:660,peak:.1*g,attack:.01,dest:d});});},   // v0.18
   alarm(){if(bufs.siren_dusk){play(9.2,undefined,0,1,(t,d)=>sample('siren_dusk',t,d,.45,{cut:3500}));return;}   // v0.21 the town's air-raid siren before dark
@@ -179,6 +194,13 @@ const S={
 // Sounds of the world are played here and sent to every other device (v0.11, core/bus.js); the rotor is driven by
 // each device's own frame loop. A sound for one player only (their reload click, a pickup) goes through sfxFor(p):
 // played here when that player is on this device, otherwise sent to theirs.
+try{if(typeof window!=='undefined'&&window.speechSynthesis)window.speechSynthesis.getVoices();}catch(e){}   // the voice list loads late in some browsers
+// v0.56 the browser's speech, for the radio: a Thai voice when it has one, quieter under heavier static
+function speak(text,st){
+  const S=typeof window!=='undefined'&&window.speechSynthesis;if(!S||!text||muted)return false;
+  const v=(S.getVoices()||[]).find(v=>/^th/i.test(v.lang));if(!v)return false;
+  try{S.cancel();const u=new SpeechSynthesisUtterance(text);u.voice=v;u.lang=v.lang;u.rate=1.02;u.pitch=.85;u.volume=Math.min(1,masterLevel()/.55*vol.sfx*.85/st);setTimeout(()=>S.speak(u),1300);return true;}catch(e){return false;}
+}
 export const sfx={};for(const k in S)sfx[k]=k==='rotor'||k==='thunder'?S[k]:(...a)=>{S[k](...a);send('*','sfx',[k,...a]);};
 const away={};
 export function sfxFor(p){
@@ -244,7 +266,7 @@ export function updateAmbience(m){
   if(!ctx||ctx.state!=='running')return;
   const t=ctx.currentTime;
   if(!wind||!wind.rec&&bufs.wind){if(wind){const o=wind;o.g.gain.setTargetAtTime(0,t,.5);setTimeout(()=>o.src.stop(),2000);}wind=makeWind();}   // the recording replaces the synth once loaded
-  wind.g.gain.setTargetAtTime(muted||!m.on?0:(wind.rec?.16:.09)*(1+.6*m.night+.5*m.rain)*(m.inside?.45:1),t,1.2);   // PLACEHOLDER wind level
+  wind.g.gain.setTargetAtTime(muted||!m.on?0:(wind.rec?.16:.09)*(1+.6*m.night+.5*m.rain+1.1*(m.storm||0))*(m.inside?.45:1),t,1.2);   // PLACEHOLDER wind level
   wind.lp.frequency.setTargetAtTime(m.inside?450:4000,t,.4);
   if(t>=nextGust){const k=Math.random();wind.gust.gain.setTargetAtTime(.25+k*.9,t,.8+Math.random()*1.5);if(wind.rush){wind.rush.frequency.setTargetAtTime(260+k*380,t,1.2);wind.whistle.frequency.setTargetAtTime(650+k*500,t,1.5);}nextGust=t+1.5+Math.random()*3.5;}
   // v0.21 police cars wail at night and burned cars (and a crashed police car) still crackle: one loop each, from the nearest

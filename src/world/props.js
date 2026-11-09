@@ -26,16 +26,19 @@ const poleGeo=new THREE.CylinderGeometry(.07,.09,5.2,6);poleGeo.translate(0,2.6,
 // v0.16: nobody maintains the street lights any more. Every sixth one is dead and another sixth flickers (weather.js);
 // picked by count, not rand(), so the city stays the same
 export const flickers=[];let nLamps=0;
+// v0.56 every working lamp, with its place in the order the power fails (weather.js, POWER in config/events.js)
+export const lamps=[];
 const deadHead=S({color:'#8d8a82',roughness:.8});
 export function lamp(x,z,ux,uz){
   const k=nLamps++,dead=k%6===4,flicker=k%6===1;
   const g=new THREE.Group();g.position.set(x,0.18,z);g.rotation.y=Math.atan2(ux,uz);
   const p=new THREE.Mesh(poleGeo,darkMetal);p.castShadow=true;g.add(p);
   const a=new THREE.Mesh(unitBox,darkMetal);a.scale.set(.08,.08,1.7);a.position.set(0,5.15,.85);g.add(a);
-  const hm=dead?deadHead:flicker?lampHeadMat.clone():lampHeadMat,gm=flicker?glowMat.clone():glowMat;
+  const hm=dead?deadHead:lampHeadMat.clone(),gm=glowMat.clone();   // v0.56 each lamp its own, so each can go dark
   const h=new THREE.Mesh(unitBox,hm);h.scale.set(.32,.14,.6);h.position.set(0,5.08,1.65);g.add(h);scene.add(g);
   if(!dead){const gl=new THREE.Mesh(new THREE.PlaneGeometry(11,11),gm);gl.rotation.x=-Math.PI/2;gl.position.set(x+ux*1.7,0.06,z+uz*1.7);scene.add(gl);}
   if(flicker)flickers.push({head:hm,glow:gm,ph:k*1.7});
+  if(!dead)lamps.push({head:hm,glow:gm,ph:k*1.7,flicker,rank:(k*.6180339887)%1});
   solid(x,z,.18,.18);
 }
 const carCols=['#6c7a84','#8a3a30','#c8c2b4','#2f3a46','#5a6448','#9a8a62','#3b3b3b'];

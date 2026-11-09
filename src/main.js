@@ -19,7 +19,7 @@ import {agents,removeAgent} from './entities/agents.js';
 import {updateHuman,updateZombie,updateDead} from './entities/ai.js';
 import {player,players,updatePlayer,syncHeld,isSolo,viewed} from './entities/player.js';
 import {animate,separate} from './entities/animation.js';
-import {ring,alertRing,blast,tracers,updateFireFx,updateImpacts} from './systems/effects.js';
+import {ring,alertRing,blast,tracers,updateFireFx,updateImpacts,updateBolt} from './systems/effects.js';
 import {drops,ringMats,glowMats,refreshItems} from './systems/drops.js';
 import {runEvents} from './systems/phases.js';
 import {updateSky} from './systems/weather.js';
@@ -114,7 +114,7 @@ function loop(now){
     if(!frozen){acc+=real;let n=0;while(acc>=STEP&&n<MAX_STEPS){simStep(STEP,now);acc-=STEP;n++;}if(n===MAX_STEPS)acc=0;}   // a long stall is dropped, not replayed
     const adt=frozen?0:dt;beginSkins();for(const a of agents)animate(a,adt);
     for(const p of players){syncHeld(p);animate(p,adt);}
-    updateImpacts(dt);
+    updateImpacts(dt);updateBolt(dt);
     for(const tr of tracers){if(tr.t>0){tr.t-=dt;tr.l.material.opacity=Math.max(0,tr.t/.07)*.95;}}
     muzzle.intensity=Math.max(0,muzzle.intensity-dt*60);boomLight.intensity=Math.max(0,boomLight.intensity-dt*20);
     if(blast.userData.t>0){blast.userData.t-=dt;const k=1-blast.userData.t/.4;blast.scale.setScalar(.5+k*4);blast.material.opacity=Math.max(0,.75*(1-k));}else blast.material.opacity=0;
@@ -130,7 +130,7 @@ function loop(now){
   const view=viewed();   // the player on this device, or the teammate they watch once dead (v0.11)
   let chasing=0;if(G.running&&view.alive)for(const a of agents)if(a.state==='zombie'&&a.seenP===view&&!a.retreat)chasing++;
   const low=G.running&&view.alive&&view.hp<35?.25+.75*(35-view.hp)/35:0;   // v0.20 the heart also races when hurt badly
-  updateMusic({night:G.night||0,outbreak:G.outbreak,danger:Math.max(low,Math.min(1,chasing/4))});
+  updateMusic({night:G.night||0,storm:G.running&&G.storm>G.min?1:0,outbreak:G.outbreak,danger:Math.max(low,Math.min(1,chasing/4))});
   updateAmbience({on:G.running&&!G.over,rain:G.running?G.rain||0:0,night:G.night||0,outbreak:G.running&&G.outbreak&&!G.over,alive:view.alive,inside:roomAt(view.pos.x,view.pos.z)>=0});   // v0.19 rain, distant screams · v0.20 wind, moaning
   camTarget.x+=(view.pos.x-camTarget.x)*Math.min(1,dt*5);camTarget.z+=(view.pos.z-camTarget.z)*Math.min(1,dt*5);
   camera.position.copy(camTarget).add(camOffset);camera.lookAt(camTarget);
