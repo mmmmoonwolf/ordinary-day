@@ -1,7 +1,9 @@
 import {wpick,rnd} from '../core/util.js';
 import {G} from '../core/state.js';
 import {DAY_START,DUSK_WARN,isNightTod} from '../config/time.js';
-import {isSpecial,RISE} from '../config/zombies.js';
+import {isSpecial,RISE,SCREAMER,HUNTER} from '../config/zombies.js';
+import {isPvp} from '../core/state.js';
+import {fireFx} from './effects.js';
 import {agents,becomeZombie,setKind,zombies,spawnEdge} from '../entities/agents.js';
 import {d2} from '../entities/movement.js';
 import {players,nearestPlayerDist,partySize} from '../entities/player.js';
@@ -50,6 +52,7 @@ function onNight(){
   G.armorNight=Math.random()<.6;G.armorNext=G.min+30;G.armorAnnounced=false;G.armorCount=0;
   G.tyrantPending=Math.random()<.4;G.tyrantAt=G.min-(G.min%1440)+1440;
   G.nightSpawnNext=G.min+15;
+  G.huntAt=!isPvp()&&Math.floor(G.min/1440)+1>=HUNTER.from?G.min+HUNTER.after:0;   // v0.57 the Hunters come later in the night
   if(isBlood()){const mid=G.min-(G.min%1440)+1440;G.bloodHordes=BLOOD.hordes.map(m=>mid+m);sfx.roar(0,0,2);}   // v0.52 the last night: hordes at set times
   fillNight(Math.min(1,REFILL.night*refillScale(Math.floor(G.min/1440)+1)*partyOf(partySize(),'loot')));
 }
@@ -60,13 +63,16 @@ function onDay(){
   for(const z of zs){if(z.kind==='zombie')setKind(z,'walker');else if(isSpecial(z.kind))z.retreat=true;}
   const walkers=zs.filter(z=>z.kind==='walker').sort((a,b)=>nearestPlayerDist(b.pos.x,b.pos.z)-nearestPlayerDist(a.pos.x,a.pos.z));
   for(let i=0;i<walkers.length-18;i++)walkers[i].retreat=true;
-  G.armorNight=false;G.tyrantPending=false;G.nightSpawnNext=1e9;
+  G.armorNight=false;G.tyrantPending=false;G.nightSpawnNext=1e9;G.huntAt=0;
+  // v0.57 the Hunters burn away in the first light; Screamers are about by day from day SCREAMER.from
+  for(const z of zs)if(z.kind==='hunter'){z.gone=true;fireFx(z.pos.x,z.pos.z,.8,2.5);}
+  if(G.outbreak&&!isPvp()&&day>=SCREAMER.from)for(let k=0;k<SCREAMER.day;k++)spawnEdge('screamer');
   restockBoxes();   // v0.15
   planDaily(day);   // v0.18 random events for the day
   takeByOthers(players);
   fillDay(Math.min(1,REFILL.day*refillScale(day)*partyOf(partySize(),'loot')));
 }
-function nightMix(){const day=Math.floor(G.min/1440)+1;return {zombie:Math.max(40,65-(day-1)*5),sprinter:20+(day-1)*3,boomer:15+(day-1)*2};}
+function nightMix(){const day=Math.floor(G.min/1440)+1;return {zombie:Math.max(40,65-(day-1)*5),sprinter:20+(day-1)*3,boomer:15+(day-1)*2,screamer:day>=SCREAMER.from?SCREAMER.night:0};}   // v0.57 Screamers
 export function runEvents(now){
   for(const e of EVENTS){if(!e.done&&G.min>=e.t){e.done=true;if(e.fn)e.fn();}}
   const tod=G.min%1440,day=Math.floor(G.min/1440)+1;
@@ -78,6 +84,9 @@ export function runEvents(now){
     if(G.min>=G.nightSpawnNext){const blood=isBlood();G.nightSpawnNext+=blood?BLOOD.spawnEvery:45;const n=Math.max(1,Math.min(4,2+Math.floor((day-1)/2))+diffOf(G).spawn+partyOf(partySize(),'spawn')+(blood?BLOOD.extra:0));const mix=nightMix();for(let k=0;k<n;k++)spawnEdge(wpick(mix));}
     if(G.armorNight&&G.min>=G.armorNext&&!(tod>=300&&tod<DAY_START)){G.armorNext+=60;
       if(G.armorCount<6){const a=spawnEdge('armor');if(a){G.armorCount++;if(!G.armorAnnounced){G.armorAnnounced=true;}}}}   // Q05: at most 6 per night
+    if(G.huntAt&&G.min>=G.huntAt){G.huntAt=0;const n=Math.round(rnd(HUNTER.count[0]-.49,HUNTER.count[1]+.49));   // v0.57 the Hunters: they know where the players are
+      for(let k=0;k<n;k++){const h=spawnEdge('hunter');if(!h)continue;let q=null,qd=1e9;for(const p of players)if(p.alive&&!p.away){const d=Math.hypot(p.pos.x-h.pos.x,p.pos.z-h.pos.z);if(d<qd){qd=d;q=p;}}
+        if(q)h.heard={x:q.pos.x,z:q.pos.z,t:60};if(k===0)sfx.howl(h.pos.x,h.pos.z);}}
     if(G.tyrantPending&&G.min>=G.tyrantAt){G.tyrantPending=false;const t=spawnEdge('tyrant');if(t)sfx.roar(t.pos.x,t.pos.z);}
   }
   if(G.min>=G.nextWeather){G.nextWeather+=90;if(Math.random()<.35)G.rainTarget=G.rainTarget?0:1;}

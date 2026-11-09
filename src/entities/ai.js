@@ -9,6 +9,7 @@ import {HEAR_WALL,INDOOR_NOISE} from '../config/shelter.js';
 import {SNEAK} from '../config/handling.js';
 import {LIGHT} from '../config/stealth.js';
 import {STORM} from '../config/events.js';
+import {SCREAMER,HUNTER} from '../config/zombies.js';
 import {nearestNode} from '../world/sidewalk.js';
 import {agents,becomeZombie} from './agents.js';
 import {lerpAng,moveAgent,wander,d2} from './movement.js';
@@ -55,6 +56,7 @@ function slam(a){
 export function updateZombie(a,dt){
   const C=ZC[a.kind];
   if(a.hitT>0){a.hitT-=dt;a.b.mats[0].emissive.setRGB(Math.max(0,a.hitT)*4,0,0);}
+  if(!C.speed){a.moving=0;return;}   // v0.57 a nest stays put (its brood: systems/nests.js)
   if(a.trapT>0){a.trapT-=dt;a.moving=0;return;}   // v0.26 caught in a bear trap
   if(a.rise>0){a.rise-=dt;a.moving=0;return;}   // v0.27 just turned, still getting up
   if(a.retreat){let near=null,nd=1e9;for(const p of players){const d=Math.hypot(a.pos.x-p.pos.x,a.pos.z-p.pos.z);if(d<nd){nd=d;near=p;}}   // walk away from the nearest player
@@ -62,6 +64,7 @@ export function updateZombie(a,dt){
     if(d>36||!inWorld(a.pos.x,a.pos.z,.5)){a.gone=true;}return;}
   if(a.kind==='boomer'&&a.fuse>0){a.fuse-=dt;const k=1.2-a.fuse;a.b.body.scale.setScalar(1+k*.22);a.b.mats[0].emissive.setRGB(.6*(.5+.5*Math.sin(k*30)),.1,.7*(.5+.5*Math.sin(k*30)));a.moving=0;if(a.fuse<=0)explode(a);return;}
   if(a.kind==='tyrant'&&a.wind>0){a.wind-=dt;warnRing.position.set(a.pos.x,a.y+.05,a.pos.z);const k=1-a.wind/.85;warnRing.scale.setScalar(3.2*k+.2);warnRing.material.opacity=.4+.5*k;a.moving=0;if(a.wind<=0)slam(a);return;}
+  if(a.kind==='hunter'&&G.phase==='night')lit(a);   // v0.57 a flashlight held on a Hunter drives it back
   if(a.feed>0){a.feed-=dt;a.moving=0;return;}
   a.atk-=dt;
   if(a.lost>0){a.lost-=dt;wander(a,.8,dt);return;}
@@ -79,6 +82,7 @@ export function updateZombie(a,dt){
   // lost sight of the player it was chasing behind a wall or a shut door: go where they were last seen
   if(isP){if(a.seenP!==tgt&&a.kind!=='sprinter'&&!(a.growlAt>G.min-20))sfx.growl(a.pos.x,a.pos.z);a.growlAt=G.min;a.seenP=tgt;}else if(a.seenP){const p=a.seenP;a.seenP=null;if(!day&&p.alive&&walledOff(a.pos.x,a.pos.z,p.pos.x,p.pos.z))a.heard={x:p.pos.x,z:p.pos.z,t:20};}   // PLACEHOLDER memory (s)
   if(isP&&a.kind==='sprinter'&&!a.shrieked){a.shrieked=true;sfx.shriek(a.pos.x,a.pos.z);}   // warn before it closes in
+  if(a.kind==='screamer'){a.screamT=(a.screamT||0)-dt;if(isP&&a.screamT<=0){a.screamT=SCREAMER.every;a.feed=1.2;a.face=Math.atan2(tgt.pos.x-a.pos.x,tgt.pos.z-a.pos.z);makeNoise(a.pos.x,a.pos.z,SCREAMER.noise);sfx.wail(a.pos.x,a.pos.z);return;}}   // v0.57 it wails and the rest come
   const sp=C.speed*a.spd;
   if(!tgt){
     if(!day&&a.heard&&a.heard.t>0){a.heard.t-=dt;const dx=a.heard.x-a.pos.x,dz=a.heard.z-a.pos.z;if(Math.hypot(dx,dz)<1.5)a.heard.t=0;else approach(a,a.heard.x,a.heard.z,sp*.85,dt,C);return;}
@@ -135,4 +139,15 @@ export function hurtZombie(z,dmg,dx,dz,kb,isGun,silent,by){
     else if(Math.random()<.25){const ph=G.phase;const it=Math.random()<.6?makeItem(pick(ph==='day'?POOLS.civ.ammo:POOLS.pol.ammo)):makeItem(wpick(MED_W[ph]));spawnDrop(it,z.pos.x+rnd(-.4,.4),z.pos.z+rnd(-.4,.4));}
   }
   return armored;
+}
+
+// v0.57 a Hunter caught in a flashlight beam (a player facing it, light on, within HUNTER.lightR, no wall between)
+// flinches and is pushed back a step
+function lit(a){
+  if(a.feed>0)return;
+  for(const p of targets()){
+    if(p.light===false||!p.alive)continue;const dx=a.pos.x-p.pos.x,dz=a.pos.z-p.pos.z,d=Math.hypot(dx,dz);if(d>HUNTER.lightR||d<.2)continue;
+    let da=Math.atan2(dx,dz)-p.face;da=Math.atan2(Math.sin(da),Math.cos(da));if(Math.abs(da)>HUNTER.arc||walledOff(a.pos.x,a.pos.z,p.pos.x,p.pos.z))continue;
+    a.feed=HUNTER.flinch;a.pos.x+=dx/d*.6;a.pos.z+=dz/d*.6;collide(a.pos,a.rad);a.face=Math.atan2(-dx,-dz);if(!(a.hissAt>G.min-6)){a.hissAt=G.min;sfx.hiss(a.pos.x,a.pos.z);}return;
+  }
 }

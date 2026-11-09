@@ -9,6 +9,7 @@ import {skins,dress,undress,skinFrame,skinId} from './skins.js';
 // ---------- animation ----------
 export function animate(a,dt){
   const p=a.b;
+  if(a.kind==='nest'){nestFrame(a,dt);return;}   // v0.57 a nest: a pulsing heap, no body or model
   // with the character models loaded (v0.13) the model plays clips from the agent's state; the blocky body stays hidden
   if(a.sk&&a.state==='player'&&a.sk.id!==skinId(a))undress(a);   // v0.41 a player changed clothes (here or online)
   if(!a.sk&&skins.ready&&skins.on)dress(a);
@@ -56,5 +57,11 @@ function tip(a,p){
 }
 export function separate(){
   const L=agents.filter(a=>a.state!=='dead');for(const p of players)if(p.alive&&!p.vault)L.push(p);   // v0.30 not mid-vault
-  for(let i=0;i<L.length;i++)for(let j=i+1;j<L.length;j++){const a=L[i],b=L[j];const need=(a.rad||.34)+(b.rad||.34);const dx=b.pos.x-a.pos.x,dz=b.pos.z-a.pos.z,dd=dx*dx+dz*dz;if(dd>need*need||dd<1e-6)continue;const d=Math.sqrt(dd),push=(need-d)/2;a.pos.x-=dx/d*push;a.pos.z-=dz/d*push;b.pos.x+=dx/d*push;b.pos.z+=dz/d*push;collide(a.pos,a.rad||.34);collide(b.pos,b.rad||.34);}   // never push anyone through a thin wall
+  for(let i=0;i<L.length;i++)for(let j=i+1;j<L.length;j++){const a=L[i],b=L[j];const need=(a.rad||.34)+(b.rad||.34);const dx=b.pos.x-a.pos.x,dz=b.pos.z-a.pos.z,dd=dx*dx+dz*dz;if(dd>need*need||dd<1e-6)continue;const fa=a.kind==='nest'?0:1,fb=b.kind==='nest'?0:1;if(!fa&&!fb)continue;const d=Math.sqrt(dd),push=(need-d)/(fa+fb);a.pos.x-=dx/d*push*fa;a.pos.z-=dz/d*push*fa;b.pos.x+=dx/d*push*fb;b.pos.z+=dz/d*push*fb;collide(a.pos,a.rad||.34);collide(b.pos,b.rad||.34);}   // never push anyone through a thin wall
+}
+
+// v0.57 a nest breathes slowly and shrinks away once destroyed
+function nestFrame(a,dt){
+  const p=a.b;a.phase+=dt*1.6;p.root.position.set(a.pos.x,groundY(a.pos.x,a.pos.z),a.pos.z);p.root.rotation.y=a.face;
+  if(p.nest)p.nest.scale.setScalar(a.state==='dead'?Math.max(.01,1-a.deadT*.4):1+Math.sin(a.phase)*.05);
 }

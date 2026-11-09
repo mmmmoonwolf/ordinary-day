@@ -148,6 +148,12 @@ const S={
   radio(){play(.3,undefined,0,1,(t,d)=>noise(t,.25,{type:'bandpass',f0:2600,q:3,peak:.1,attack:.02,dest:d}));},
   horn(x,z){play(.8,x,z,60,(t,d,g)=>{tone(t,.55,{wave:'square',f0:415,peak:.09*g,attack:.01,dest:d});tone(t,.55,{wave:'square',f0:523,peak:.07*g,attack:.01,dest:d});});},   // v0.53 a car horn
   sneeze(x,z){play(.6,x,z,25,(t,d,g)=>{noise(t,.07,{type:'bandpass',f0:900,q:2,peak:.25*g,dest:d});noise(t+.12,.22,{type:'bandpass',f0:2600,f1:900,q:1.5,peak:.5*g,dest:d});});},   // v0.54
+  // v0.57 the Screamer's wail (heard far), the night Hunter's howl as they come, its hiss in a flashlight beam
+  wail(x,z){play(2,x,z,90,(t,d,g)=>{tone(t,1.5,{wave:'sawtooth',f0:520,f1:1500,peak:.05*g,attack:.12,dest:d});tone(t+.05,1.4,{wave:'square',f0:780,f1:1900,peak:.025*g,attack:.15,dest:d});noise(t,1.3,{type:'bandpass',f0:2400,q:2,peak:.12*g,attack:.1,dest:d});if(bufs.zscream)sample('zscream',t,d,.7*g,{rate:1.45,cut:3000+g*12000});});},
+  howl(x,z){play(3,x,z,160,(t,d,g)=>{tone(t,1.1,{wave:'sawtooth',f0:160,f1:430,peak:.06*g,attack:.2,dest:d});tone(t+1.1,1.2,{wave:'sawtooth',f0:430,f1:210,peak:.05*g,attack:.02,dest:d});noise(t,2.2,{type:'bandpass',f0:700,q:3,peak:.06*g,attack:.3,dest:d});});},
+  hiss(x,z){play(.8,x,z,30,(t,d,g)=>noise(t,.55,{type:'bandpass',f0:3400,f1:1800,q:1.5,peak:.3*g,attack:.02,dest:d}));},
+  // v0.57 a nest bursting
+  burst(x,z){play(1.2,x,z,60,(t,d,g)=>{noise(t,.5,{type:'lowpass',f0:900,f1:150,peak:.6*g,attack:.005,dest:d});noise(t+.05,.3,{type:'bandpass',f0:1800,q:1,peak:.25*g,dest:d});});},
   // v0.56 lightning striking the ground near the players: a crack, then thunder right away
   strike(x,z){play(3,x,z,220,(t,d,g)=>{noise(t,.18,{type:'highpass',f0:1800,peak:.7*g,attack:.003,dest:d});if(bufs.thunder)sample('thunder',t+.06,d,.95*g,{rate:1.08,cut:4000+g*8000});});},
   // v0.56 the emergency radio (systems/events.js): the alert tones, static, then the day's message read by the

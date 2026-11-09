@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.57 | `ZC.screamer` `ZC.hunter` `ZC.nest` `SCREAMER` `HUNTER` `NEST` ใน `config/zombies.js`, `systems/nests.js` `placeNests()` `updateNests()`, `nestLook()` ใน `agents.js`, `nestFrame()` ใน `animation.js`, `lit()` ใน `ai.js`, `G.huntAt` `G.nested`, `sfx.wail` `howl` `hiss` `burst` |
 | v0.56 | `POWER` `BROADCAST` `STORM` ใน `config/events.js`, `lamps` ใน `world/props.js`, `strike()` `nextCast()` ใน `systems/events.js`, `G.storm` `G.boltAt` `G.castAt` (snapshot `sm`), `strikeFx()` `updateBolt()` `strikeAt` ใน `effects.js`, `sfx.broadcast` `sfx.strike` `speak()` |
 | v0.55 | `config/craft.js` `RECIPES` `TRAP`, `systems/craft.js` `craft()` `place()` `canCraft()` `updateTraps()`, `ui/traps.js`, `ACTIONS.craft` `place`, `G.ptraps` (snapshot `pt`), `#bagCraft`, `DEF` cloth tape nails nailbomb tripwire beartrap sign_c extinguisher_c guitar_c pan_c (`stun`), `MATS` และหมวด `mat` ใน `BOX`, `BLAST.nailbomb` |
 | v0.54 | `systems/body.js` `updateBody()` `wound()` `limping()`, `WOUND` `ILL` `PANIC` ใน `config/health.js`, `p.bleedW` `p.wet` `p.sick` `p.panic` (เซฟ, snapshot `me.pn` `bw` `sk`), `#panic`, `sfx.sneeze`, `spreadOf()` คูณความตื่นตระหนก |
@@ -1058,6 +1059,16 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **พายุ** (`DAILY.weights.storm` ช่วง 11:00–19:00 นาน `DAILY.last.storm` 150 นาทีในเกม): ฝนหนักตลอด หมอกหนา ลมดังขึ้น ฟ้าแลบทุก 3–9 วินาที · ทุก 3–8 นาทีในเกมฟ้าผ่าลงพื้นนอกตึกห่างผู้เล่นคนหนึ่ง 16–45 ม. (`strike()`: เส้นฟ้าผ่า แสงวาบ เสียงฟ้าผ่าที่ทุกเครื่องได้ยิน ไฟไหม้ `ignite()` เสียงดังเรียกซอมบี้) · ระหว่างพายุ เสียงที่ซอมบี้ได้ยินเหลือ ×0.6 และระยะมองเห็นผู้เล่นเหลือ ×0.8
 - **PLACEHOLDER:** `POWER` `BROADCAST` (เวลาและข้อความ) `STORM` น้ำหนัก `storm` ใน `DAILY`
 - **ยังไม่ได้ทำ:** ทีวีในตึกที่ฉายประกาศ, เสียงพูดที่อัดไว้จริง (ตอนนี้ขึ้นกับเสียงไทยของเบราว์เซอร์)
+
+## ซอมบี้ใหม่ นักล่ากลางคืน รัง (v0.57)
+
+จากรายการไอเดีย #7 #25 #28 (อ้างอิง Left 4 Dead, Dying Light, State of Decay) คลาสใหม่เป็น `[PROPOSED]` ค่าทุกตัวเป็น PLACEHOLDER และไม่ได้แตะค่าของคลาสที่ทีมยืนยันแล้ว
+
+- **Screamer** (`ZC.screamer` HP 40 ช้า ดาเมจน้อย `SCREAMER`): ตั้งแต่วันที่ 2 อยู่ในส่วนผสมซอมบี้กลางคืน (`nightMix()` น้ำหนัก 10) และเกิดตอนเช้าวันละ 2 ตัว เห็นผู้เล่นแล้วหยุดหันหน้ามากรีดร้อง (`sfx.wail`) ทุก 7 วินาที เป็นเสียงดังรัศมี 48 ม. (`makeNoise`) ซอมบี้ที่ได้ยินจะเดินมา รุ่งเช้าถอยออกไปเหมือนคลาสพิเศษ (`isSpecial`)
+- **Hunter** (`ZC.hunter` HP 90 เร็ว 6.6 ดาเมจ 20 `HUNTER`): ตั้งแต่คืนที่ 2 มา 2–3 ตัวหลังมืด 60 นาทีในเกม (`G.huntAt`) พร้อมเสียงหอน (`sfx.howl`) และรู้ตำแหน่งผู้เล่นที่ใกล้ที่สุด ผู้เล่นที่เปิดไฟฉายและหันหน้าใส่ในระยะ 11 ม. (ไม่มีผนังกั้น) ทำให้มันสะดุ้ง ถอยครึ่งก้าว และขู่ (`lit()` ใน `ai.js`) รุ่งเช้าไหม้หายไป ไม่มีในโหมด PvP
+- **รัง** (`ZC.nest` HP 160 `NEST`, `systems/nests.js`): เช้าวันที่ 2 (06:00) เกิด 4 รังบนจุดของนอกตึก ห่างผู้เล่น 55 ม. ขึ้นไปและห่างกันเอง 45 ม. ขึ้นไป รังเป็นตัวละครชนิด `nest` (ยิง ตี ระเบิด ไฟ และ aim assist ใช้ได้เลย ส่งออนไลน์และเซฟเหมือนซอมบี้) อยู่กับที่ ไม่ถูกดัน (`separate()`) เมื่อผู้เล่นอยู่ในระยะ 70 ม. รังจะงอกซอมบี้ทุก 45 นาทีในเกม (กลางคืนเร็วขึ้น ×0.6 มีชีวิตพร้อมกันได้ไม่เกิน 5 ตัว ลุกขึ้นช้า ๆ จากรัง) พังแล้วแตก (`sfx.burst`) ทิ้งของพลเรือน 4 ชิ้น (กระสุน ยา ของขว้าง เศษวัสดุ) ภาพเป็นก้อนเนื้อหายใจช้า ๆ (`nestLook()` `nestFrame()`) ไม่มีโมเดลตัวละคร
+- **PLACEHOLDER:** ค่าทั้งหมดของ `ZC.screamer` `ZC.hunter` `ZC.nest` `SCREAMER` `HUNTER` `NEST`
+- **ยังไม่ได้ทำ:** ท่ากรีดร้องของ Screamer (ตอนนี้ยืนนิ่ง) และหน้าตาเฉพาะของ Hunter (ใช้โมเดลซอมบี้เดิม สีผิวต่างกัน), Crawler ยังไม่ได้ทำ
 
 ## ระบบ loot
 
