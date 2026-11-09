@@ -28,7 +28,7 @@ import {uiFor,gameOver} from '../ui/hud.js';
 export const RULES={ffa:'ทุกคนฆ่ากัน',team:'ทีม',infect:'ติดเชื้อ',hill:'ยึดพื้นที่'};   // v0.51
 export function startPvp(rule){
   const r=RULES[rule]?rule:RULES[G.pvpRule]?G.pvpRule:'ffa';
-  reset();G.mode='pvp';G.pvpRule=r;G.min=PVP.start;G.pvpHorde=PVP.horde.first;G.pvpDrop=PVP.drop.first;G.pvpT=0;G.hill=null;G.hillMove=0;G.pvpEnd=null;
+  reset();G.mode='pvp';G.dog=null;G.pvpRule=r;G.min=PVP.start;G.pvpHorde=PVP.horde.first;G.pvpDrop=PVP.drop.first;G.pvpT=0;G.hill=null;G.hillMove=0;G.pvpEnd=null;
   for(const e of EVENTS)if(e.t<G.min)e.done=true;   // no bleeding runner or far scream: it starts at the outbreak
   for(const d of drops.slice())if(d.item.id==='resurrect')removeDrop(d);   // v0.49 no Resurrection Kit: dying costs nothing to undo
 }

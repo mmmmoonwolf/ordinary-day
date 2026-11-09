@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.60 | `config/dog.js` `DOG`, `systems/dog.js` `placeDog()` `updateDog(dt)`, `ui/dog.js` `drawDog(now)`, `G.dog` (snapshot `dg`), `sfx.bark` `whine` `growl2` |
 | v0.59 | `BARR` ใน `config/shelter.js`, `st.bar` ใน `G.doors`, `fixAction(k,p)` 'barricade', gamepad `padButtons()` `padAim()` `padOn()` ใน `ui/input.js`, `manifest.webmanifest` `sw.js` `assets/icons/`, ค่าเริ่ม `settings.quality` |
 | v0.58 | `config/jobs.js` `JOBS` `jobOf()` `cleanJob()`, `giveKit(p)` ใน `systems/game.js`, `p.job` `p.kitGot` (เซฟ ส่งใน 'hi'), `dropPack(p)` `PACK_KINDS` ใน `combat.js`, `DISTRICT` ใน `config/loot.js` `rollLoot(…,area)`, `LOCKS` `bestEver()` `lockOf()` ใน `core/profile.js`, `.jobrow` |
 | v0.57 | `ZC.screamer` `ZC.hunter` `ZC.nest` `SCREAMER` `HUNTER` `NEST` ใน `config/zombies.js`, `systems/nests.js` `placeNests()` `updateNests()`, `nestLook()` ใน `agents.js`, `nestFrame()` ใน `animation.js`, `lit()` ใน `ai.js`, `G.huntAt` `G.nested`, `sfx.wail` `howl` `hiss` `burst` |
@@ -1099,6 +1100,16 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **เครื่องสเปกต่ำ**: จอสัมผัสที่มี CPU 4 core หรือน้อยกว่า เริ่มต้นที่กราฟิก ต่ำ (ตั้งค่าที่เคยเลือกไว้ยังใช้ค่าเดิม)
 - **PLACEHOLDER:** `BARR` เดดโซนและความไวสติ๊กขวาของจอย
 - **ยังไม่ได้ทำ:** ใช้จอยในเมนู (กระเป๋า หน้าหยุดเกม หน้าแรก ยังต้องแตะหรือคลิก), ลากเฟอร์นิเจอร์จริงไปวาง (ตอนนี้เป็นไม้ขวางที่ประตู), client prediction (#19) ยังไม่ได้ทำ
+
+## หมาคู่หู (v0.60)
+
+จากรายการไอเดีย #6 (อ้างอิง Fallout, Days Gone)
+
+- **หมาจร** (`placeDog()` ท้าย `reset()`): จุดของในเมืองนอกตึก ห่างผู้เล่นคนแรก 30–60 ม. นั่งกระดิกหาง ผู้เล่นคนแรกที่เข้าใกล้ 2.6 ม. เป็นเจ้าของ (`G.dog.owner` = id ผู้เล่น) ไม่มีในโหมด PvP
+- **พฤติกรรม** (`updateDog(dt)` ใน `simStep()` บน host, `DOG` PLACEHOLDER): เดินตามห่าง 2.4 ม. (ห่างเกิน 8 ม. วิ่ง) เห็นซอมบี้ในระยะ 14 ม. (ไม่มีผนังกั้น) แล้วเห่าทุก 4 วินาที (เสียงดัง 12 ม. ไม่เห่าตอนเจ้าของย่อง) ซอมบี้ที่อยู่ในระยะ 9 ม. จากเจ้าของ หมาวิ่งไปกัด ดาเมจ 12 ทุก 0.8 วินาที (นับเป็นของเจ้าของ ซอมบี้ชะงัก) ซอมบี้ที่อยู่ติดตัวทำให้หมาเสีย HP 7 ต่อวินาทีต่อตัว HP ต่ำกว่า 30% เลิกกัดกลับมาข้างเจ้าของ ฟื้น 1.2 ต่อวินาทีเมื่อไม่มีซอมบี้ใกล้ ตายแล้วนอนตะแคงอยู่ตรงนั้น เจ้าของขึ้นรถ / ตาย / ออกจากห้อง หมานั่งรอ ห่างเกิน 40 ม. (ลงจากรถ) วาร์ปมาข้างเจ้าของ เดินด้วย `moveAgent()` จึงชนผนังและอ้อมของได้เหมือนคน
+- **ภาพและเสียง** (`ui/dog.js`): หมากล่อง ลำตัว หัว จมูก หู ขา 4 ข้างแกว่งตามความเร็ว หางกระดิก นั่งตอนหยุด เสียงสังเคราะห์ เห่า หงิง คำราม (`sfx.bark` `whine` `growl2`) เซฟไปกับ `G` ส่งออนไลน์ใน snapshot `dg`
+- **PLACEHOLDER:** ค่าทั้งหมดใน `DOG`
+- **ยังไม่ได้ทำ:** โมเดลหมา 3D, สั่งหมา (อยู่ / ตาม / ไปดมหาของ), หมาหลายตัว
 
 ## ระบบ loot
 

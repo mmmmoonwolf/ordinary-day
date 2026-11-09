@@ -18,6 +18,7 @@ import {clearFireFx} from './effects.js';
 import {resetEvents} from './events.js';
 import {applyProfile} from '../core/profile.js';
 import {jobOf} from '../config/jobs.js';
+import {placeDog} from './dog.js';
 import {DEF} from '../config/items.js';
 import {addStack} from './inventory.js';
 import {uiFor} from '../ui/hud.js';
@@ -45,6 +46,7 @@ export function reset(){
   if(far.length){const s=pick(far);spawnDrop(makeItem('backpack'),s.x,s.z,s);}
   for(const s of lootSpots)if(s.zone==='ambulance')spawnDrop(makeItem('resurrect'),s.x,s.z,s);
   fillDay(REFILL.start);
+  placeDog();   // v0.60 a stray somewhere in town
   $('hurt').style.opacity=0;$('boss').hidden=true;updateLoadout(true);
 }
 
