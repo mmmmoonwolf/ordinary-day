@@ -24,6 +24,7 @@ export const highway={wrecks:0,trees:0,graves:0};
 const lin=c=>new THREE.Color(c).convertSRGBToLinear();
 // a plane with its own copy of a texture, repeated per `tile` m so it does not stretch over the long road
 function tiled(make,x0,x1,z0,z1,y,tile,o={}){const t=make();t.repeat.set((x1-x0)/tile,(z1-z0)/tile);return ground(S(Object.assign({map:t,roughness:.95},o)),x0,x1,z0,z1,y);}
+export const pumpSpots=[];   // v0.53 where a car refuels (systems/vehicles.js)
 export function buildHighway(){
   const d0=decor.length;
   const rng=mulberry32(4545),R=(a,b)=>a+rng()*(b-a),pickR=a=>a[Math.floor(rng()*a.length)];
@@ -85,7 +86,7 @@ function gasStation(rng,R){
   const rm=merge(roof,roofMat),bm=merge(band,bandMat);scene.add(rm,bm,merge(posts,metal));
   {const b={mats:[roofMat,bandMat],faded:false,cx,cz:-13,w:24,d:9,h:5,meshes:[rm,bm],farm:true,canopy:true};rm.userData.b=bm.userData.b=b;occluders.push(rm,bm);buildings.push(b);}   // fades like a building when it hides the player
   const pumps=[],screens=[];
-  for(const x of [cx-6,cx,cx+6]){pumps.push([unitBox,M(x,.12,-13,1.3,.24,4)]);solids.push({x0:x-.65,x1:x+.65,z0:-15,z1:-11});
+  for(const x of [cx-6,cx,cx+6]){pumpSpots.push({x,z:-13});pumps.push([unitBox,M(x,.12,-13,1.3,.24,4)]);solids.push({x0:x-.65,x1:x+.65,z0:-15,z1:-11});
     for(const z of [-14.2,-11.8]){pumps.push([unitBox,M(x,.95,z,.7,1.6,.55)]);screens.push([unitBox,M(x,1.35,z+(z<-13?-.28:.28),.5,.3,.02)]);}}
   scene.add(merge(pumps,red));scene.add(merge(screens,S({color:lin('#20262a'),roughness:.3})));
   // the shop behind (enterable: a place, its shelves hold what a roadside shop has, config/search.js BOX.gas)

@@ -3,6 +3,7 @@ import {CAR} from '../config/vehicles.js';
 import {inWorld} from '../config/world.js';
 import {solids} from '../world/collision.js';
 import {rides,placeRide,CAR_HALF} from '../world/vehicles.js';
+import {pumpSpots} from '../world/highway.js';
 import {agents} from '../entities/agents.js';
 import {players} from '../entities/player.js';
 import {hurtZombie,makeNoise} from '../entities/ai.js';
@@ -18,7 +19,7 @@ import {uiFor} from '../ui/hud.js';
 // wreck). The engine is loud: zombies around it come. All of it runs on the host, in simStep (numbers in
 // config/vehicles.js, PLACEHOLDER).
 const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
-export function freshCars(){return rides.map(r=>({x:r.x,z:r.z,a:r.a,v:0,hp:CAR.hp}));}
+export function freshCars(){return rides.map(r=>({x:r.x,z:r.z,a:r.a,v:0,hp:CAR.hp,fuel:CAR.fuel[0]+Math.random()*(CAR.fuel[1]-CAR.fuel[0])}));}   // v0.53 part full
 // the look and collision of every car from G.cars (after a reset, a load, or a snapshot on a friend's device)
 export function applyCars(){for(let i=0;i<rides.length;i++){const c=G.cars&&G.cars[i];if(c)placeRide(rides[i],c.x,c.z,c.a,c.hp);}}
 export const driverOf=i=>players.find(p=>p.car===i)||null;
@@ -60,7 +61,12 @@ function blocked(i,c,x,z){const now=hits(i,c.x,c.z,c.a);for(const h of hits(i,x,
 export function driveStep(p,dt){
   const i=p.car,c=G.cars[i];if(!c||c.hp<=0){leaveCar(p);return;}
   const I=p.input;let target=0;
-  if(I.mag>.1){
+  // v0.53 the horn (attack while driving): loud, zombies come
+  p.hornT=(p.hornT||0)-dt;if((I.fire||I.fireQ>0)&&p.hornT<=0){p.hornT=1;sfx.horn(c.x,c.z);makeNoise(c.x,c.z,CAR.hornNoise);}
+  // v0.53 fuel: none left, no power; at a pump and nearly still, it fills
+  if(c.fuel===undefined)c.fuel=CAR.fuel[1];
+  if(Math.abs(c.v)<.5&&pumpSpots.some(s=>Math.hypot(s.x-c.x,s.z-c.z)<CAR.pumpR)&&c.fuel<1){c.fuel=Math.min(1,c.fuel+CAR.refuel*dt);if(c.fuel>=1)uiFor(p).feed('เติมน้ำมันเต็มถัง');}
+  if(I.mag>.1&&c.fuel>0){
     // pulling against the car backs it up (v0.49 only nearly straight back, and not while backing into something)
     const want=Math.atan2(I.mx,I.mz),d=wrap(want-c.a),back=Math.abs(d)>CAR.backAt&&!(c.bump>0);
     const turn=back?wrap(want-(c.a+Math.PI)):d,grip=Math.max(CAR.grip0,Math.min(1,Math.abs(c.v)/3));   // v0.49 it turns a little from standstill too
@@ -81,7 +87,8 @@ function move(i,c,dt,driver){
     const hit=Math.abs(c.v);if(hit>4){c.hp-=hit*CAR.crash;sfx.clamp(c.x,c.z);if(driver)uiFor(driver).hurt();}   // a crash
     if(c.v<0)c.bump=.8;   // v0.49 backed into something: pulling back now drives forward and turns instead
     c.v*=-.25;
-  }else{c.x=nx;c.z=nz;}
+  }else{if(c.fuel!==undefined){const was=c.fuel;c.fuel=Math.max(0,c.fuel-Math.hypot(nx-c.x,nz-c.z)*CAR.fuelUse);if(driver&&was>.15&&c.fuel<=.15)uiFor(driver).feed('น้ำมันใกล้หมด','warn');if(driver&&was>0&&c.fuel<=0)uiFor(driver).feed('น้ำมันหมด','warn');}
+    c.x=nx;c.z=nz;}
   // running zombies down (from the front or the back, whichever way it goes)
   if(Math.abs(c.v)>CAR.hitMin){const s=Math.sin(c.a),co=Math.cos(c.a),dir=Math.sign(c.v);
     for(const z of agents){if(z.state!=='zombie'||z.carT>0)continue;const dx=z.pos.x-c.x,dz=z.pos.z-c.z,along=dx*s+dz*co,lat=dx*co-dz*s;

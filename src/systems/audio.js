@@ -145,6 +145,8 @@ const S={
   // thunder after a lightning flash (systems/weather.js); each device has its own storm, so it is not sent
   thunder(delay){if(ctx&&!muted&&bufs.thunder)sample('thunder',ctx.currentTime+delay,sfxBus,.75,{rate:.9+Math.random()*.2,cut:delay>1.2?2500:9000});},
   radio(){play(.3,undefined,0,1,(t,d)=>noise(t,.25,{type:'bandpass',f0:2600,q:3,peak:.1,attack:.02,dest:d}));},
+  horn(x,z){play(.8,x,z,60,(t,d,g)=>{tone(t,.55,{wave:'square',f0:415,peak:.09*g,attack:.01,dest:d});tone(t,.55,{wave:'square',f0:523,peak:.07*g,attack:.01,dest:d});});},   // v0.53 a car horn
+  ping(){play(.4,undefined,0,1,(t,d)=>{tone(t,.09,{f0:1320,peak:.12,dest:d});tone(t+.1,.12,{f0:1760,peak:.09,dest:d});});},   // v0.53 a team mate's marker
   carAlarm(x,z){play(1.4,x,z,60,(t,d,g)=>{for(let i=0;i<6;i++)tone(t+i*.22,.18,{wave:'square',f0:i%2?880:660,peak:.1*g,attack:.01,dest:d});});},   // v0.18
   alarm(){if(bufs.siren_dusk){play(9.2,undefined,0,1,(t,d)=>sample('siren_dusk',t,d,.45,{cut:3500}));return;}   // v0.21 the town's air-raid siren before dark
     play(1.6,undefined,0,1,(t,d)=>{for(let i=0;i<4;i++)tone(t+i*.36,.3,{wave:'square',f0:i%2?330:440,peak:.07,attack:.02,dest:d});});},
