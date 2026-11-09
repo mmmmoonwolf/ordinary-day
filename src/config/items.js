@@ -18,6 +18,11 @@ gun('smg_c','SMG','civ','primary',2,7,Object.assign({},SMG));
 melee('bat_c','Baseball Bat','civ',4,{dur:70,range:2.0,cd:.58,kb:1.5,arc:.2,cleave:true,model:'bat'});
 melee('knife_c','Knife','civ',3,{dur:60,range:1.6,cd:.3,kb:.3,arc:.5,verb:'แทง',model:'knife'});
 melee('pipe_c','Steel Pipe','civ',3,{dur:90,range:1.9,cd:.52,kb:1.0,arc:.35,cleave:true,model:'pipe'});
+// v0.55 odd things from the town (Dead Rising): they break quickly; the extinguisher's blow leaves a zombie stunned (PLACEHOLDER)
+melee('sign_c','Stop Sign','civ',4,{dur:14,range:2.3,cd:.7,kb:1.8,arc:.15,cleave:true,model:'pipe'});
+melee('extinguisher_c','Fire Extinguisher','civ',3,{dur:10,range:1.6,cd:.65,kb:1.4,arc:.35,stun:1.4,model:'bat'});
+melee('guitar_c','Guitar','civ',3,{dur:6,range:1.9,cd:.55,kb:1.6,arc:.25,cleave:true,model:'bat'});
+melee('pan_c','Frying Pan','civ',2,{dur:40,range:1.5,cd:.4,kb:.9,arc:.4,model:'wrench'});
 gun('pistol_p','Pistol','pol','secondary',4,7,Object.assign({mag:15},PISTOL));
 gun('shotgun_p','Pump Action Shotgun','pol','primary',7,4,Object.assign({mag:7},PUMP));
 gun('smg_p','SMG','pol','primary',4,7,Object.assign({},SMG));
@@ -70,6 +75,10 @@ Object.assign(DEF,{
   grenade:{name:'Hand Grenade',kind:'throw',color:'#6b7a46',blast:true},
   // v0.26 a flare fired from the camp's flare gun: burns red where it lands and keeps calling zombies to it for a while
   flare:{name:'Flare',kind:'throw',color:'#d84a3a',lure:true},
+  // v0.55 scraps to make things from (config/craft.js) and what they make
+  cloth:{name:'Cloth',kind:'mat',color:'#d8d2c0'},tape:{name:'Duct Tape',kind:'mat',color:'#9aa0a6'},nails:{name:'Nails',kind:'mat',color:'#6b6e72'},
+  nailbomb:{name:'Nail Bomb',kind:'throw',color:'#8a8f78',blast:true},
+  tripwire:{name:'Tripwire',kind:'trap',color:'#c9b27a'},beartrap:{name:'Bear Trap',kind:'trap',color:'#5a5248'},
 });
 export const SLOTNAME={primary:'อาวุธหลัก',secondary:'อาวุธรอง',melee:'อาวุธประชิด'};
 export function gradeOf(id){return DEF[id].grade||null;}
@@ -81,5 +90,5 @@ export const RING={weapon:'#ff5a3c',bag:'#c77dff',med:'#3fe07a',ammo:'#ffe23a',o
 export function ringColor(id){const d=DEF[id];return RING[d.kind==='weapon'?'weapon':d.kind==='ammo'?'ammo':d.kind==='heal'||d.kind==='revive'?'med':id==='backpack'?'bag':'other'];}
 // melee wear left, 0..1; items from before v0.5 have no dur and count as new
 // kinds that stack (n) and are picked up by walking over them; since v0.14.1 one stack per item, with no limit
-export const STACKS=new Set(['ammo','heal','revive','throw']);
+export const STACKS=new Set(['ammo','heal','revive','throw','mat','trap']);   // v0.55 scraps and traps stack too
 export function durPct(it){const m=DEF[it.id].dur;return m?Math.max(0,(it.dur??m)/m):1;}

@@ -5,6 +5,8 @@ import {DEF,STACKS,GRADES,SLOTNAME,itemColor,durPct} from '../config/items.js';
 import {player,isSolo} from '../entities/player.js';
 import {act} from '../systems/actions.js';
 import {throwPick} from '../systems/throw.js';
+import {RECIPES} from '../config/craft.js';
+import {canCraft} from '../systems/craft.js';
 import {updateLoadout} from './hud.js';
 
 // ---------- bag UI ----------
@@ -42,6 +44,10 @@ export function renderBag(){
   }
   const cap=$('bagCap');cap.textContent=inv.bag.length+'/'+inv.cap;cap.classList.toggle('full',inv.bag.length>=inv.cap);
   $('bagLabel').textContent=inv.cap>6?'กระเป๋าเป้':'กระเป๋ากางเกง';   // v0.42 no hints
+  // v0.55 making things: every recipe the bag holds enough scraps for (and fixing the melee weapon in hand)
+  const cr=$('bagCraft');if(cr){cr.innerHTML='';for(const id in RECIPES){if(!canCraft(player,id))continue;const r=RECIPES[id],b=document.createElement('button');
+    b.innerHTML=r.name+' <small>'+Object.entries(r.need).map(([k,n])=>DEF[k].name+' ×'+n).join(' · ')+'</small>';b.onclick=()=>{act('craft',id);updateLoadout(true);renderBag();};cr.appendChild(b);}
+    $('bagCraftL').hidden=!cr.children.length;}
   const det=$('bagDetail');det.innerHTML='';det.style.removeProperty('--cat');
   const it=sel?(sel.where==='bag'?inv.bag[sel.i]:inv.eq[sel.slot]):null;
   if(!it){sel=null;det.innerHTML='';return;}
@@ -53,7 +59,8 @@ export function renderBag(){
     // each button is an action (v0.12): run here, or sent to the host when playing in someone else's game
     if(d.kind==='weapon')btn(inv.eq[d.slot]?'สลับกับ '+DEF[inv.eq[d.slot].id].name:'ติดตั้ง',()=>{act('equip',sel.i);sel={where:'eq',slot:d.slot};},true);
     if(d.kind==='throw')btn(throwPick(inv)===it.id?'ขว้างอันนี้อยู่':'ใช้ปุ่มขว้างกับอันนี้',()=>act('pickThrow',it.id),true,throwPick(inv)===it.id);   // v0.23
-    if(d.kind==='heal')btn('ใช้',()=>{act('useAt',sel.i);if(inv.bag[sel.i]!==it)sel=null;},true,player.hp>=player.maxHp&&!(d.cure&&player.infect>0));
+    if(d.kind==='heal')btn('ใช้',()=>{act('useAt',sel.i);if(inv.bag[sel.i]!==it)sel=null;},true,player.hp>=player.maxHp&&!(d.cure&&player.infect>0)&&!(player.bleedW>0)&&!(player.sick>0));   // v0.54 a wound or illness too
+    if(d.kind==='trap')btn('วางตรงนี้',()=>{act('place',it.id);if(inv.bag[sel.i]!==it)sel=null;},true);   // v0.55
     btn('ทิ้ง',()=>{act('dropBag',sel.i);sel=null;});
   } else {
     if(inv.active!==sel.slot)btn('ถือ',()=>act('hold',sel.slot),true);

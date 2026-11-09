@@ -42,7 +42,9 @@ import {hostFrame} from './net/host.js';
 import {updatePvp} from './systems/pvp.js';
 import {updateDirector} from './systems/director.js';
 import {updatePings as tickPings} from './systems/pings.js';
+import {updateTraps} from './systems/craft.js';
 import {updatePings} from './ui/pings.js';
+import {updateTraps as drawTraps} from './ui/traps.js';
 import {clientStep} from './net/client.js';
 import {initOnline} from './ui/online.js';
 import {updateFps} from './ui/fps.js';
@@ -96,7 +98,7 @@ function simStep(dt,now){
     else updateDead(a,dt);
     if(a.gone||(a.state==='dead'&&a.deadT>25)){removeAgent(a);agents.splice(i,1);}
   }
-  separate();updateThrows(dt);updateLures(dt);updateFires(dt);if(G.running){updateCamp(dt);updateCars(dt);updateArmy(dt);updatePvp(dt);updateDirector(dt);tickPings(dt);}
+  separate();updateThrows(dt);updateLures(dt);updateFires(dt);if(G.running){updateCamp(dt);updateCars(dt);updateArmy(dt);updatePvp(dt);updateDirector(dt);tickPings(dt);updateTraps(dt);}
 }
 reset();
 // character models load in the background; until then everyone is blocky (v0.13)
@@ -135,7 +137,7 @@ function loop(now){
   if(cam.fps)updateFps(view,dt);   // v0.28 first-person view
   updateFeel(dt);   // v0.31 camera shake, hit marker
   updateTags();   // v0.40 names over heads, lights at the feet
-  updatePvpFx(now);updatePings();   // v0.53 markers   // v0.51 the hill ring, zombie players
+  updatePvpFx(now);updatePings();drawTraps();   // v0.53 markers, v0.55 traps   // v0.51 the hill ring, zombie players
   updateListen(real);   // v0.50 standing still: hearing zombies through walls (real time: a slow frame rate does not stretch it)
   ring.position.set(player.pos.x,player.y+.03,player.pos.z);ring.visible=player.alive&&!cam.fps;
   if(G.alertT>0&&G.alertA){G.alertT-=dt;alertRing.position.set(G.alertA.pos.x,G.alertA.y+.04,G.alertA.pos.z);alertRing.material.opacity=Math.min(1,G.alertT)*(.5+.5*Math.sin(now/120));alertRing.scale.setScalar(1+.25*Math.sin(now/200));}else alertRing.material.opacity=0;

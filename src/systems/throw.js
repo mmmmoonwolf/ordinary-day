@@ -18,7 +18,7 @@ import {uiFor} from '../ui/hud.js';
 // flies in an arc and lands where aimed or at the first wall (v0.42 no bottles any more). A flare's light and noise draw zombies; a Molotov
 // sets the ground on fire there; a grenade blows up a moment later (systems/blast.js). The player picks which one in the
 // bag (p.gear.throwId); with none picked, or none of it left, the first they have of flare, Molotov, grenade.
-export const THROWS=['flare','molotov','grenade'];   // v0.42 no bottles
+export const THROWS=['flare','molotov','grenade','nailbomb'];   // v0.42 no bottles; v0.55 a nail bomb
 export function throwPick(g){const has=id=>g.bag.some(e=>e.id===id&&e.n>0);return g.throwId&&has(g.throwId)?g.throwId:THROWS.find(has)||null;}
 const flying=[];
 export function throwBottle(p){
@@ -38,11 +38,11 @@ export function pickThrow(p,id){if(DEF[id]&&DEF[id].kind==='throw'){p.gear.throw
 export function updateThrows(dt){
   for(let i=flying.length-1;i>=0;i--){
     const f=flying[i];
-    if(f.fuse>=0){f.fuse-=dt;if(f.fuse<0){scene.remove(f.m);flying.splice(i,1);blast(f.x1,f.z1,BLAST.grenade,f.by);}continue;}   // a grenade on the ground
+    if(f.fuse>=0){f.fuse-=dt;if(f.fuse<0){scene.remove(f.m);flying.splice(i,1);blast(f.x1,f.z1,BLAST[f.id]||BLAST.grenade,f.by);}continue;}   // a grenade (v0.55 or a nail bomb) on the ground
     f.t+=dt;const k=Math.min(1,f.t/f.T),x=f.x0+(f.x1-f.x0)*k,z=f.z0+(f.z1-f.z0)*k;
     f.m.position.set(x,groundY(x,z)+1.2*(1-k)+3*k*(1-k),z);f.m.rotation.x+=dt*14;
     if(k<1)continue;
-    if(f.id==='grenade'){f.fuse=GRENADE_FUSE;f.m.rotation.set(0,0,Math.PI/2);f.m.position.y=groundY(x,z)+.06;sfx.thud(x,z);continue;}
+    if(f.id==='grenade'||f.id==='nailbomb'){f.fuse=GRENADE_FUSE;f.m.rotation.set(0,0,Math.PI/2);f.m.position.y=groundY(x,z)+.06;sfx.thud(x,z);continue;}
     scene.remove(f.m);flying.splice(i,1);sfx.glass(x,z);
     if(f.id==='molotov')ignite(x,z,FIRE.molotov[0],FIRE.molotov[1]);
     else if(f.id==='flare'){lures.push({x,z,t:FLARE.secs,next:0});fireFx(x,z,.25,FLARE.secs);}   // v0.26

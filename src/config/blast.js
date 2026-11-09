@@ -7,6 +7,7 @@ export const BLAST={
   propane:{r:5,zdmg:110,pdmg:55,door:90,noise:45},
   gas:{r:3.5,zdmg:70,pdmg:35,door:50,noise:35,fire:[2.4,8]},
   grenade:{r:4.5,zdmg:120,pdmg:60,door:90,noise:45},
+  nailbomb:{r:3.6,zdmg:90,pdmg:45,door:50,noise:40},   // v0.55 made from nails and tape
 };
 export const GRENADE_FUSE=.9;   // seconds from landing to the blast
 // burning ground: damage per second to zombies and players standing in it, a Molotov's fire, how long a cylinder sits
