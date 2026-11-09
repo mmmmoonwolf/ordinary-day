@@ -44,6 +44,7 @@ import {clientStep} from './net/client.js';
 import {initOnline} from './ui/online.js';
 import {updateFps} from './ui/fps.js';
 import {updateTags} from './ui/tags.js';
+import {updateListen} from './ui/listen.js';
 import {initCreator} from './ui/creator.js';
 import {updateGlow} from './world/glow.js';
 import {feel,updateFeel,initFeel} from './ui/feel.js';
@@ -130,6 +131,7 @@ function loop(now){
   if(cam.fps)updateFps(view,dt);   // v0.28 first-person view
   updateFeel(dt);   // v0.31 camera shake, hit marker
   updateTags();   // v0.40 names over heads, lights at the feet
+  updateListen(real);   // v0.50 standing still: hearing zombies through walls (real time: a slow frame rate does not stretch it)
   ring.position.set(player.pos.x,player.y+.03,player.pos.z);ring.visible=player.alive&&!cam.fps;
   if(G.alertT>0&&G.alertA){G.alertT-=dt;alertRing.position.set(G.alertA.pos.x,G.alertA.y+.04,G.alertA.pos.z);alertRing.material.opacity=Math.min(1,G.alertT)*(.5+.5*Math.sin(now/120));alertRing.scale.setScalar(1+.25*Math.sin(now/200));}else alertRing.material.opacity=0;
   const fx=Math.sin(view.face),fz=Math.cos(view.face);

@@ -74,6 +74,7 @@ export function initInput(){
     if(e.code==='KeyR')act('reload');if(e.code==='KeyH')act('heal');
     if(e.code==='KeyE'||e.code==='KeyF')usePick();
     if(e.code==='KeyB')act('fix');
+    if(e.code==='KeyT'&&!e.repeat)act('light');   // v0.50 the flashlight
     if(e.code==='KeyQ'&&!e.repeat)act('throw');
   });
   addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Space')ctl.fireHeld=false;});
@@ -111,6 +112,7 @@ export function initInput(){
   for(const ev of ['pointerup','pointercancel'])addEventListener(ev,e=>{if(e.pointerId===slideId)slideId=null;},true);
   addEventListener('click',e=>{if(slid){slid=false;e.stopPropagation();e.preventDefault();}},true);
   $('bView').addEventListener('click',toggleFps);
+  $('bLight').addEventListener('click',()=>act('light'));   // v0.50
   $('bAds').addEventListener('click',()=>{ctl.adsTouch=!ctl.adsTouch;});   // v0.29 touch: aim down the sights on / off
   $('bZin').addEventListener('click',()=>zoom(1/1.2));$('bZout').addEventListener('click',()=>zoom(1.2));
   $('bBag').addEventListener('click',()=>{$('bag').hidden?openBag():closeBag();});

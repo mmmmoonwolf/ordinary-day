@@ -79,6 +79,9 @@ body.fps #cross{display:block}
 body.fps #bZin,body.fps #bZout{display:none}
 body.fps .loadout{pointer-events:none}body.fps .loadout button{pointer-events:auto}   /* v0.35 a finger turning the view can start on the weapon panel */
 body.fps #bView{border-color:rgba(226,166,74,.75);background:rgba(226,166,74,.25)}
+/* v0.50 listening (standing still): the edges darken; the flashlight button dims when it is off */
+#listen{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 50% 50%,transparent 38%,rgba(8,10,14,.75) 100%)}
+#bLight.off{opacity:.45;text-decoration:line-through}
 /* v0.29 scope (sniper rifle aimed in first person), sneak tag (v0.44), touch button for aiming */
 #scope{display:none;position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 50%,transparent 0,transparent 31vmin,rgba(0,0,0,.92) 31.6vmin,#000 34vmin)}
 #scope i{position:absolute;left:50%;top:50%;width:62vmin;height:62vmin;margin:-31vmin 0 0 -31vmin;border-radius:50%;
@@ -324,11 +327,13 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
     <button id="bPause" title="หยุดเกม (P หรือ Esc)" aria-label="หยุดเกม">❚❚</button>
     <button id="bBag" title="กระเป๋า (Tab)">กระเป๋า</button>
     <button id="bView" title="มุมมองบุคคลที่หนึ่ง (V) ทดลอง" aria-label="สลับมุมมอง">👁</button>
+    <button id="bLight" title="ไฟฉาย (T)" aria-label="ไฟฉาย">🔦</button>
     <button id="bZin" title="ซูมเข้า">+</button>
     <button id="bZout" title="ซูมออก">−</button>
   </div>
   <div id="feed"></div>
   <div id="cross" aria-hidden="true"></div>
+  <div id="listen" aria-hidden="true"></div>
   <div id="hitmark" hidden aria-hidden="true"></div>
   <div id="stanceTag" hidden></div>
   <button id="bAds" hidden aria-label="เล็งศูนย์">🎯</button>

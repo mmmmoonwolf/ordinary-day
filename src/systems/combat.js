@@ -4,6 +4,7 @@ import {G,isPvp} from '../core/state.js';
 import {ctl} from '../core/controls.js';
 import {DEF,durPct} from '../config/items.js';
 import {ADS,BLOOM,SNEAK} from '../config/handling.js';
+import {BACKSTAB} from '../config/stealth.js';
 import {diffOf} from '../config/difficulty.js';
 import {BLEED_SECONDS,BLEED_PER_DMG} from '../config/party.js';
 import {PVP} from '../config/pvp.js';
@@ -117,15 +118,22 @@ export function fireGun(p,w,def){
   U.updateLoadout();
 }
 const BLADE=new Set(['knife','machete','katana','sickle','axe','pitchfork','pickaxe','cleaver','dagger']);   // v0.43 what a blow sounds like
+// v0.50 a quiet kill: an ordinary zombie hit from behind, by someone sneaking or that it has not noticed
+export function backstab(p,z){
+  if(!BACKSTAB.kinds.includes(z.kind)||!(p.sneak||z.seenP!==p))return false;
+  const dx=p.pos.x-z.pos.x,dz=p.pos.z-z.pos.z,d=Math.hypot(dx,dz)||1;
+  return (dx*Math.sin(z.face)+dz*Math.cos(z.face))/d<-BACKSTAB.arc;
+}
+function blow(p,z,def,dx,dz){if(backstab(p,z)){hurtZombie(z,z.hp+1,dx,dz,.1,false,true,p);p.stabs=(p.stabs||0)+1;}else hurtZombie(z,def.dmg,dx,dz,def.kb,false,false,p);}
 export function meleeHit(p,def){
   const fx=Math.sin(p.face),fz=Math.cos(p.face);let best=null,bd=1e9;
   for(const z of agents){if(z.state!=='zombie')continue;const dx=z.pos.x-p.pos.x,dz=z.pos.z-p.pos.z,d=Math.hypot(dx,dz);
     if(d-(z.rad-.34)>def.range||d<1e-3)continue;if((dx*fx+dz*fz)/d<def.arc)continue;if(walledOff(p.pos.x,p.pos.z,z.pos.x,z.pos.z))continue;   // no hitting through a wall
-    if(def.cleave){hurtZombie(z,def.dmg,dx/d,dz/d,def.kb,false,false,p);best=best||z;}else if(d<bd){bd=d;best=z;}}
+    if(def.cleave){blow(p,z,def,dx/d,dz/d);best=best||z;}else if(d<bd){bd=d;best=z;}}
   for(const q of foesOf(p)){const dx=q.pos.x-p.pos.x,dz=q.pos.z-p.pos.z,d=Math.hypot(dx,dz);   // v0.47 PvP
     if(d>def.range||d<1e-3)continue;if((dx*fx+dz*fz)/d<def.arc)continue;if(walledOff(p.pos.x,p.pos.z,q.pos.x,q.pos.z))continue;
     if(def.cleave){hitFoe(p,q,def.dmg,dx/d,dz/d,true);best=best||q;}else if(d<bd){bd=d;best=q;}}
-  if(best&&!def.cleave){const dx=best.pos.x-p.pos.x,dz=best.pos.z-p.pos.z,d=Math.hypot(dx,dz);if(best.state==='player')hitFoe(p,best,def.dmg,dx/d,dz/d,true);else hurtZombie(best,def.dmg,dx/d,dz/d,def.kb,false,false,p);}
+  if(best&&!def.cleave){const dx=best.pos.x-p.pos.x,dz=best.pos.z-p.pos.z,d=Math.hypot(dx,dz);if(best.state==='player')hitFoe(p,best,def.dmg,dx/d,dz/d,true);else blow(p,best,def,dx/d,dz/d);}
   if(best){
     const front=best.kind==='armor'&&(p.pos.x-best.pos.x)*Math.sin(best.face)+(p.pos.z-best.pos.z)*Math.cos(best.face)>0;   // v0.43 sound only: the blow rings on its armour
     sfx.hit(best.pos.x,best.pos.z,front?'metal':def===DEF.fist?'fist':BLADE.has(def.model)?'blade':'blunt');wearMelee(p,def);}
