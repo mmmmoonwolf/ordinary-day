@@ -82,6 +82,9 @@ body.fps #bView{border-color:rgba(226,166,74,.75);background:rgba(226,166,74,.25
 /* v0.50 listening (standing still): the edges darken; the flashlight button dims when it is off */
 #listen{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 50% 50%,transparent 38%,rgba(8,10,14,.75) 100%)}
 #bLight.off{opacity:.45;text-decoration:line-through}
+/* v0.54 panic darkens and reddens the edges; illness a sickly tint */
+#panic{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 50% 50%,transparent 45%,rgba(90,8,6,.8) 100%)}
+#panic.sick{background:radial-gradient(ellipse at 50% 50%,rgba(120,140,40,.08) 40%,rgba(90,8,6,.75) 100%)}
 /* v0.53 markers */
 #pings{position:absolute;inset:0;pointer-events:none}.ping{position:absolute;left:0;top:0;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:16px;font-weight:700;color:#111;background:var(--c);box-shadow:0 0 12px var(--c)}
 /* v0.29 scope (sniper rifle aimed in first person), sneak tag (v0.44), touch button for aiming */
@@ -341,6 +344,7 @@ button:focus-visible,.go:focus-visible{outline:2px solid var(--amber);outline-of
   <div id="cross" aria-hidden="true"></div>
   <div id="listen" aria-hidden="true"></div>
   <div id="pings" aria-hidden="true"></div>
+  <div id="panic" aria-hidden="true"></div>
   <div id="hitmark" hidden aria-hidden="true"></div>
   <div id="stanceTag" hidden></div>
   <button id="bAds" hidden aria-label="เล็งศูนย์">🎯</button>

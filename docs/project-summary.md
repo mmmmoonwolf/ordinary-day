@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.54 | `systems/body.js` `updateBody()` `wound()` `limping()`, `WOUND` `ILL` `PANIC` ใน `config/health.js`, `p.bleedW` `p.wet` `p.sick` `p.panic` (เซฟ, snapshot `me.pn` `bw` `sk`), `#panic`, `sfx.sneeze`, `spreadOf()` คูณความตื่นตระหนก |
 | v0.53 | `systems/pings.js` `ping()` `updatePings()`, `ui/pings.js` `#pings` `.ping`, `ACTIONS.ping`, `PING` ใน `config/party.js`, `G.pings` (snapshot `pg`), ปุ่ม `#bPing` คีย์ G `pingHere()`, `CAR.fuel` `fuelUse` `refuel` `pumpR` `hornNoise`, `c.fuel`, `pumpSpots` ใน `world/highway.js`, `sfx.horn` `sfx.ping` |
 | v0.52 | `systems/director.js` `updateDirector()` `wave()` `isBlood()`, `config/director.js` `DIRECTOR` `BLOOD` `MEGA`, `G.calm` `G.blood` `G.bloodHordes`, ฝูง `mega` ใน `G.plan`, `carAlarm()` ใน `combat.js`, ฟ้าแดงใน `updateSky()` |
 | v0.51 | `RULES` `startPvp(rule)` `goalOf()` `teamScore()` `result()` `infection()` `makeZed()` `hill()` ใน `systems/pvp.js`, `pvpRule()` `sideOf()` ใน `core/state.js`, `PVP.team` `infect` `hill` `killCam` `bounty`, `DEF.claw`, `p.team` `p.zed` `p.killedBy` `p.bounty`, `G.pvpRule` `G.hill` `G.pvpEnd` (snapshot `pr` `hl` `pe`), `ui/pvpfx.js`, `select.pvprule` |
@@ -1024,6 +1025,16 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **มือถือ:** แถบปุ่มบนมี 7 ปุ่มแล้ว จอแคบกว่า 640 px ขึ้นแถวที่สอง (`.tools` wrap) ไม่ทับแถบ HP
 - **ยังไม่ได้ทำ:** ท้ายรถเก็บของ · มอเตอร์ไซค์
 - **PLACEHOLDER:** `PING` `CAR.fuel` `fuelUse` `refuel` `pumpR` `hornNoise`
+
+## แผล ป่วย ตื่นตระหนก (v0.54)
+
+จากรายการไอเดีย #1 #23 #30 (อ้างอิง Project Zomboid, DayZ)
+
+- **แผลเลือดไหล:** ซอมบี้ตีโดนมีโอกาส 30% เป็นแผล (`wound()`) เลือดไหล 0.55 HP/วินาทีนาน 45 วินาที ไม่ลดต่ำกว่า 5 HP ทิ้งรอยเลือดทุก 1.3 วินาที ขอบจอแดงเต้น ไม่ฟื้นเองระหว่างนั้น ใช้ยาอะไรก็ได้ (ใช้ได้แม้ HP เต็ม) แผลปิด
+- **ขาเจ็บ:** HP ต่ำกว่า 30% เดินช้า ×0.72 และวิ่งไม่ได้ (`limping()`)
+- **ป่วย:** อยู่นอกตึกนอกรถตอนฝนหนัก (`G.rain` > 0.4) ตัวเปียกขึ้นจนเต็มใน ~80 วินาที แห้งเมื่อหลบ เปียกเต็มแล้วมีโอกาสป่วย 240 วินาที จามทุก 16–34 วินาที (เสียงที่ทุกคนได้ยิน และเสียงดังเรียกซอมบี้ 16 ม.) ขอบจอติดสีเขียวเล็กน้อย Painkiller รักษา
+- **ตื่นตระหนก:** ซอมบี้ 4 ตัวขึ้นไปในระยะ 8 ม. ความตื่นตระหนกขึ้น 0.4/วินาที ลด 0.12/วินาที เพื่อนตายในระยะ 18 ม. +0.5 กระสุนกระจายกว้างขึ้นสูงสุด ×1.7 ขอบจอมืดแดงตามระดับ
+- **PLACEHOLDER:** `WOUND` `ILL` `PANIC`
 
 ## ระบบ loot
 

@@ -5,6 +5,7 @@ import {ctl} from '../core/controls.js';
 import {DEF,durPct} from '../config/items.js';
 import {ADS,BLOOM,SNEAK} from '../config/handling.js';
 import {BACKSTAB} from '../config/stealth.js';
+import {PANIC} from '../config/health.js';
 import {diffOf} from '../config/difficulty.js';
 import {BLEED_SECONDS,BLEED_PER_DMG} from '../config/party.js';
 import {PVP} from '../config/pvp.js';
@@ -54,6 +55,7 @@ function goDown(p){
 export function die(p,by){
   leaveCar(p);p.hp=0;p.bleed=0;p.helping=null;p.alive=false;p.state='dead';p.deadT=0;p.endCause=p.endCause||'hurt';
   sfx.scream(p.pos.x,p.pos.z);   // v0.19
+  for(const q of players)if(q!==p&&q.alive&&Math.hypot(q.pos.x-p.pos.x,q.pos.z-p.pos.z)<PANIC.friendNear)q.panic=Math.min(1,(q.panic||0)+PANIC.friend);   // v0.54
   if(p.local){ctl.fireHeld=false;G.endCause=p.endCause;}
   // v0.47 PvP: back in a moment somewhere else (systems/pvp.js); the one who landed the last hit gets the kill
   if(isPvp()){p.respawnT=PVP.respawn;p.deaths=(p.deaths||0)+1;p.shield=false;
@@ -99,7 +101,7 @@ export function startReload(p){
 export function finishReload(p){const w=p.reloadFor,def=DEF[w.id];if(w!==curWeapon(p))return;w.mag+=takeAmmo(p,def.ammo,def.mag-w.mag);uiFor(p).updateLoadout(true);}
 // how far a shot may stray (rad, either side): the gun's spread, tighter aiming down the sights and crouched or prone,
 // wider after a burst (v0.29)
-export function spreadOf(p,def){return def.spread*(p.ads?ADS.spread:1)*(p.sneak?SNEAK.spread:1)*(1+(p.bloom||0));}
+export function spreadOf(p,def){return def.spread*(p.ads?ADS.spread:1)*(p.sneak?SNEAK.spread:1)*(1+(p.bloom||0))*(1+(p.panic||0)*PANIC.spread);}   // v0.54 panic shakes the hands
 // v0.52 the alarm of a parked car the shot ends in (the daily-event alarm of systems/events.js: zombies come for 40 min)
 function carAlarm(ox,oz,dx,dz,end){
   for(const b of breakables){if(!b.car||b.broken||b.car.burned)continue;const rx=b.x-ox,rz=b.z-oz,t=rx*dx+rz*dz;

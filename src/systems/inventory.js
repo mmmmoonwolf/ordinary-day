@@ -58,12 +58,13 @@ const HEAL_ORDER=['bandage','antibiotic','painkiller','firstaid'];
 export function useHeal(p){
   if(cant(p))return;const bag=p.gear.bag,U=uiFor(p);
   if(p.infect>0){const i=bag.findIndex(e=>DEF[e.id].cure);if(i>=0){useItemAt(p,i);return;}}   // infected: cure first
-  if(p.hp>=p.maxHp){U.feedOnce('fullhp','สุขภาพเต็มแล้ว');return;}
+  if(p.hp>=p.maxHp&&!(p.bleedW>0)&&!(p.sick>0)){U.feedOnce('fullhp','สุขภาพเต็มแล้ว');return;}   // v0.54 bleeding or ill: medicine still helps
   for(const id of HEAL_ORDER){const i=bag.findIndex(e=>e.id===id);if(i>=0){useItemAt(p,i);return;}}
   U.feedOnce('noheal','ไม่มียารักษา','warn');
 }
 export function useItemAt(p,i){if(cant(p)||!p.gear.bag[i])return;const e=p.gear.bag[i],def=DEF[e.id];if(def.kind!=='heal')return;const amt=Math.round(p.maxHp*def.heal);p.hp=Math.min(p.maxHp,p.hp+amt);e.n--;if(e.n<=0)p.gear.bag.splice(i,1);
   const cured=def.cure&&p.infect>0;if(cured)cureInfection(p);
+  p.bleedW=0;if(e.id==='painkiller')p.sick=0;   // v0.54 any medicine closes a wound; a Painkiller ends an illness
   const U=uiFor(p);U.feed('ใช้ '+def.name+' +'+Math.round(def.heal*100)+'%'+(cured?' · ฆ่าเชื้อแล้ว':''));sfxFor(p).heal();U.updateLoadout(true);}
 // drop in front of the player (or the nearest open side), out of auto-pickup reach; `hold` keeps it from being picked
 // straight back up until the player has walked away from it (v0.6.1: dropped ammo, meds and food used to bounce back)

@@ -15,6 +15,7 @@ import {players,targets} from './player.js';
 import {addBlood,warnRing,boom,impact} from '../systems/effects.js';
 import {makeItem,spawnDrop,dropGuaranteed} from '../systems/drops.js';
 import {hurtPlayer} from '../systems/combat.js';
+import {wound} from '../systems/body.js';
 import {infectPlayer} from '../systems/infection.js';
 import {sfx} from '../systems/audio.js';
 import {diffOf} from '../config/difficulty.js';
@@ -90,7 +91,7 @@ export function updateZombie(a,dt){
     if(isP){
       if(a.kind==='boomer'){a.fuse=1.2;sfx.swell(a.pos.x,a.pos.z);return;}
       if(a.kind==='tyrant'){if(a.atk<=0){a.atk=2.2;a.wind=.85;sfx.roar(a.pos.x,a.pos.z,.8);}return;}
-      if(a.atk<=0){a.atk=C.rate;a.swingT=.5;if(hurtPlayer(tgt,C.dmg)&&Math.random()<(C.infect||0)*diffOf(G).infect)infectPlayer(tgt);if(a.kind==='sprinter')a.feed=1.3;}
+      if(a.atk<=0){a.atk=C.rate;a.swingT=.5;if(hurtPlayer(tgt,C.dmg)){wound(tgt);if(Math.random()<(C.infect||0)*diffOf(G).infect)infectPlayer(tgt);}if(a.kind==='sprinter')a.feed=1.3;}
     } else {tgt.state='infected';tgt.turnT=rnd(6,11);tgt.panic=6;tgt.tx=tgt.pos.x-a.pos.x;tgt.tz=tgt.pos.z-a.pos.z;a.feed=1.4;addBlood(tgt.pos.x,tgt.pos.z);sfx.scream(tgt.pos.x,tgt.pos.z);}   // v0.19
     return;
   }

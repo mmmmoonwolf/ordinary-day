@@ -17,8 +17,9 @@ import {sfxFor} from '../systems/audio.js';
 import {nearDoor,nearFixDoor} from '../systems/doors.js';
 import {nearBoxOf,keepSearching} from '../systems/search.js';
 import {CRAWL_SPEED,REVIVE_SECONDS,REVIVE_RANGE,REVIVE_HP} from '../config/party.js';
-import {REGEN} from '../config/health.js';
+import {REGEN,WOUND} from '../config/health.js';
 import {PVP} from '../config/pvp.js';
+import {updateBody,limping} from '../systems/body.js';
 import {uiFor} from '../ui/hud.js';
 import {driveStep,nearCar} from '../systems/vehicles.js';
 
@@ -66,6 +67,8 @@ export function updatePlayer(p,dt){
   if(p.car>=0&&!(p.bleed>0)){driveStep(p,dt);p.near=p.full=p.nearDown=null;p.nearDoor=p.fixDoor=p.nearBox=-1;p.nearCar=p.car;p.input.fireQ=0;if(p.cool>0)p.cool-=dt;return;}   // v0.45 driving
   if(p.vault){updateVault(p,dt);if(p.cool>0)p.cool-=dt;return;}   // v0.30 going over a low obstacle
   const I=p.input,mag=I.mag;
+  updateBody(p,dt);   // v0.54 wounds, illness, panic
+  if(limping(p))I.run=false;   // v0.54 badly hurt: no running
   // sneaking (C, or a lightly pushed stick on a phone): a slow, quiet walk standing up (v0.44 no crouch or prone); running ends it
   p.sneak=!I.run&&!!(I.slow||I.sneak);
   if(I.face!==null)p.face=I.face;
@@ -84,7 +87,7 @@ export function updatePlayer(p,dt){
     if(p.vault){updateVault(p,dt);return;}
   }
   if(p.trapT>0){p.trapT-=dt;p.moving=0;}   // v0.26 caught in a bear trap
-  else if(mag>.08){moveAgent(p,I.mx,I.mz,(p.sneak?SNEAK.speed:(I.run?5.8:3.4)*Math.max(.45,mag))*heavy*(p.zed?PVP.infect.speed:1),dt,I.aim||p.aimT>0||p.ads);
+  else if(mag>.08){moveAgent(p,I.mx,I.mz,(p.sneak?SNEAK.speed:(I.run?5.8:3.4)*Math.max(.45,mag))*heavy*(p.zed?PVP.infect.speed:1)*(limping(p)?WOUND.limp:1),dt,I.aim||p.aimT>0||p.ads);
     if(I.run&&G.phase==='night'){p.runNoise-=dt;if(p.runNoise<=0){p.runNoise=.5;makeNoise(p.pos.x,p.pos.z,5);}}}
   else p.moving=0;
   if(p.cool>0)p.cool-=dt;
@@ -109,7 +112,7 @@ export function updatePlayer(p,dt){
   p.nearDoor=p.full||np?-1:nearDoor(p);p.fixDoor=nearFixDoor(p);
   p.nearBox=p.full||np||p.nearDoor>=0?-1:nearBoxOf(p);
   p.nearCar=p.full||np||p.nearDoor>=0||p.nearBox>=0?-1:nearCar(p);   // v0.45 a car that still starts
-  const R=isPvp()?PVP.regen:REGEN,cap=p.maxHp*R.cap;if(performance.now()/1000-p.lastHit>R.after&&p.hp<cap&&!(p.infect>0))p.hp=Math.min(cap,p.hp+R.rate*dt);   // v0.42 slower, up to a cap (config/health.js); v0.49 PvP faster, to full
+  const R=isPvp()?PVP.regen:REGEN,cap=p.maxHp*R.cap;if(performance.now()/1000-p.lastHit>R.after&&p.hp<cap&&!(p.infect>0)&&!(p.bleedW>0))p.hp=Math.min(cap,p.hp+R.rate*dt);   // v0.42 slower, up to a cap (config/health.js); v0.49 PvP faster, to full
   updateInfection(p,dt);
 }
 // ---------- downed and helping up (v0.10) ----------
