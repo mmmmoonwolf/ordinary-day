@@ -17,6 +17,10 @@ import {applyTraps} from './camp.js';
 import {clearFireFx} from './effects.js';
 import {resetEvents} from './events.js';
 import {applyProfile} from '../core/profile.js';
+import {jobOf} from '../config/jobs.js';
+import {DEF} from '../config/items.js';
+import {addStack} from './inventory.js';
+import {uiFor} from '../ui/hud.js';
 import {freshCars,applyCars} from './vehicles.js';
 
 // ---------- new game ----------
@@ -33,7 +37,7 @@ export function clearWorld(){
 }
 export function reset(){
   clearWorld();
-  const me=makePlayer(0);me.local=true;applyProfile(me);players.push(me);setPlayer(me);spawnPopulation();camTarget.set(player.pos.x,0,player.pos.z);   // one player on this device; more join with addPlayer() (v0.9); v0.41 wearing the name and clothes made on the start screen
+  const me=makePlayer(0);me.local=true;applyProfile(me);giveKit(me);players.push(me);setPlayer(me);spawnPopulation();camTarget.set(player.pos.x,0,player.pos.z);   // one player on this device; more join with addPlayer() (v0.9); v0.41 wearing the name and clothes made on the start screen
   let near=null,nd=1e9;for(const s of lootSpots){if(s.zone!=='city')continue;const d=Math.hypot(s.x-player.pos.x,s.z-player.pos.z);if(d>4&&d<nd){nd=d;near=s;}}
   if(near)spawnDrop(makeItem(pick(['pipe_c','knife_c','bat_c'])),near.x,near.z,near);
   // v0.37 and a backpack a little further on (config/loot.js BAG_HELP.start)
@@ -42,4 +46,13 @@ export function reset(){
   for(const s of lootSpots)if(s.zone==='ambulance')spawnDrop(makeItem('resurrect'),s.x,s.z,s);
   fillDay(REFILL.start);
   $('hurt').style.opacity=0;$('boss').hidden=true;updateLoadout(true);
+}
+
+// v0.58 what a player's job starts them with (config/jobs.js), once per game
+export function giveKit(p){
+  p.kitGot=true;const g=p.gear;
+  for(const [id,n] of jobOf(p).kit){const d=DEF[id];if(!d)continue;
+    if(d.gun){if(!g.eq.secondary&&d.slot==='secondary'){g.eq.secondary={id,mag:d.mag};g.active='secondary';}else if(!g.eq.primary&&d.slot==='primary')g.eq.primary={id,mag:d.mag};}
+    else addStack(p,id,n);}
+  uiFor(p).updateLoadout(true);
 }

@@ -1,3 +1,4 @@
+import {jobOf} from '../config/jobs.js';
 import {G,isPvp} from '../core/state.js';
 import {CAR} from '../config/vehicles.js';
 import {inWorld} from '../config/world.js';
@@ -87,7 +88,8 @@ function move(i,c,dt,driver){
     const hit=Math.abs(c.v);if(hit>4){c.hp-=hit*CAR.crash;sfx.clamp(c.x,c.z);if(driver)uiFor(driver).hurt();}   // a crash
     if(c.v<0)c.bump=.8;   // v0.49 backed into something: pulling back now drives forward and turns instead
     c.v*=-.25;
-  }else{if(c.fuel!==undefined){const was=c.fuel;c.fuel=Math.max(0,c.fuel-Math.hypot(nx-c.x,nz-c.z)*CAR.fuelUse);if(driver&&was>.15&&c.fuel<=.15)uiFor(driver).feed('น้ำมันใกล้หมด','warn');if(driver&&was>0&&c.fuel<=0)uiFor(driver).feed('น้ำมันหมด','warn');}
+  // v0.58 a mechanic drives further on the same fuel
+  }else{if(c.fuel!==undefined){const was=c.fuel;c.fuel=Math.max(0,c.fuel-Math.hypot(nx-c.x,nz-c.z)*CAR.fuelUse*(driver?jobOf(driver).fuel||1:1));if(driver&&was>.15&&c.fuel<=.15)uiFor(driver).feed('น้ำมันใกล้หมด','warn');if(driver&&was>0&&c.fuel<=0)uiFor(driver).feed('น้ำมันหมด','warn');}
     c.x=nx;c.z=nz;}
   // running zombies down (from the front or the back, whichever way it goes)
   if(Math.abs(c.v)>CAR.hitMin){const s=Math.sin(c.a),co=Math.cos(c.a),dir=Math.sign(c.v);

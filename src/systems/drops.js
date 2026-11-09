@@ -1,8 +1,8 @@
 import {rnd,pick,wpick} from '../core/util.js';
 import {scene} from '../core/renderer.js';
-import {groundY} from '../config/world.js';
+import {groundY,areaAt} from '../config/world.js';
 import {DEF,STACKS,GRADES,gradeOf,itemColor,ringColor} from '../config/items.js';
-import {POOLS,GRADE_W,MED_W,CAT_W,INDOOR_W,TAKEN,FARM_POOL,THROW_W,CAMP_GRADE,AMMO_MATCH,BAG_HELP} from '../config/loot.js';
+import {POOLS,GRADE_W,MED_W,CAT_W,INDOOR_W,TAKEN,FARM_POOL,THROW_W,CAMP_GRADE,AMMO_MATCH,BAG_HELP,DISTRICT} from '../config/loot.js';
 import {PLACE_W,PLACE_FILL} from '../config/places.js';
 import {itemModel} from '../world/item-models.js';
 import {lootSpots} from '../world/city.js';
@@ -15,8 +15,10 @@ export function makeItem(id){const d=DEF[id];if(d.kind==='weapon')return d.dur?{
 // v0.37 someone still without a backpack, with none lying near them (config/loot.js BAG_HELP); fills check it once
 export function needBag(){return players.some(p=>!p.away&&p.alive&&p.gear.cap<DEF.backpack.slots&&!drops.some(d=>d.item.id==='backpack'&&Math.hypot(d.x-p.pos.x,d.z-p.pos.z)<BAG_HELP.near));}
 let bagBoost=false;
-function catTable(zone,phase){
-  const t=(zone==='indoor'?INDOOR_W:CAT_W)[phase];if(!bagBoost)return t;
+function catTable(zone,phase,area){
+  let t=(zone==='indoor'?INDOOR_W:CAT_W)[phase];
+  const D=DISTRICT[area];if(D){t={...t};for(const k in D)if(t[k])t[k]*=D[k];}   // v0.58 the part of the map
+  if(!bagBoost)return t;
   return {...t,bag:t.bag?t.bag*BAG_HELP.mult:BAG_HELP.night};
 }
 // v0.37 an ammo pick from `pool`, more often a calibre someone's gun takes
@@ -24,8 +26,8 @@ export function pickAmmo(pool){
   if(Math.random()<AMMO_MATCH){const want=[];for(const p of players){if(p.away||!p.alive)continue;for(const w of [p.gear.eq.primary,p.gear.eq.secondary]){const a=w&&DEF[w.id].ammo;if(a&&pool.includes(a))want.push(a);}}if(want.length)return pick(want);}
   return pick(pool);
 }
-export function rollLoot(phase,zone,forceGrade){
-  const c=forceGrade?(Math.random()<.5?'weapon':'ammo'):wpick(PLACE_W[zone]||catTable(zone,phase));   // v0.17 shops and hospital: their own table
+export function rollLoot(phase,zone,forceGrade,area){
+  const c=forceGrade?(Math.random()<.5?'weapon':'ammo'):wpick(PLACE_W[zone]||catTable(zone,phase,area));   // v0.17 shops and hospital: their own table
   if(c==='bag')return makeItem('backpack');
   if(c==='med')return makeItem(wpick(MED_W[phase]));
   if(c==='throw')return makeItem(zone==='camp'?'flare':wpick(THROW_W));   // v0.23 sometimes a Molotov or a grenade; v0.26 flares at the camp
@@ -60,11 +62,12 @@ export function spawnDrop(item,x,z,sp,nid){
   const d={nid:nid||nextNid++,item,g,m,x,z,spot:sp||null};drops.push(d);if(sp)sp.drop=d;return d;
 }
 export function removeDrop(d){scene.remove(d.g);const i=drops.indexOf(d);if(i>=0)drops.splice(i,1);if(d.spot)d.spot.drop=null;}
-export function fillDay(chance){bagBoost=needBag();for(const s of lootSpots){if(s.drop||s.zone==='police'||s.zone==='military'||s.zone==='ambulance')continue;if(Math.random()<(PLACE_W[s.zone]?Math.min(1,chance*PLACE_FILL):chance))spawnDrop(rollLoot('day',s.zone),s.x,s.z,s);}}
+const areaOf=s=>s.area===undefined?(s.area=(areaAt(s.x,s.z)||{}).id||''):s.area;   // v0.58 cached on the spot
+export function fillDay(chance){bagBoost=needBag();for(const s of lootSpots){if(s.drop||s.zone==='police'||s.zone==='military'||s.zone==='ambulance')continue;if(Math.random()<(PLACE_W[s.zone]?Math.min(1,chance*PLACE_FILL):chance))spawnDrop(rollLoot('day',s.zone,null,areaOf(s)),s.x,s.z,s);}}
 export function fillNight(chance=.4){bagBoost=needBag();for(const s of lootSpots){if(s.drop||s.zone==='ambulance')continue;
   if(s.zone==='police')spawnDrop(rollLoot('night',s.zone,'pol'),s.x,s.z,s);
   else if(s.zone==='military'){if(Math.random()<.7)spawnDrop(rollLoot('night',s.zone,'mil'),s.x,s.z,s);}
-  else if(Math.random()<(PLACE_W[s.zone]?Math.min(1,chance*PLACE_FILL):chance))spawnDrop(rollLoot('night',s.zone),s.x,s.z,s);}}
+  else if(Math.random()<(PLACE_W[s.zone]?Math.min(1,chance*PLACE_FILL):chance))spawnDrop(rollLoot('night',s.zone,null,areaOf(s)),s.x,s.z,s);}}
 // 06:00: other survivors clear some of the loot lying far from every player (v0.7); returns how many went
 const KEEP=new Set(['police','military','ambulance']);
 export function takeByOthers(near){

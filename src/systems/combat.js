@@ -1,3 +1,4 @@
+import {jobOf} from '../config/jobs.js';
 import {rnd} from '../core/util.js';
 import {muzzle} from '../core/renderer.js';
 import {G,isPvp,sideOf} from '../core/state.js';
@@ -73,6 +74,7 @@ export function die(p,by){
     return;}
   if(players.some(q=>q.alive)){   // the others play on (v0.11): the dead watch a teammate and can be brought back with a Kit
     for(const q of players)if(q.alive)uiFor(q).feed(p.name+' ตาย','warn');
+    dropPack(p);   // v0.58
   }
   // nobody left standing: those still down cannot be helped any more
   if(!players.some(standing))for(const q of players)if(q.alive){q.endCause=q.endCause||'hurt';die(q);return;}
@@ -96,7 +98,8 @@ export function startReload(p){
   const w=curWeapon(p),def=DEF[w.id];if(!def.gun||p.reloadT>0||!p.alive||p.bleed>0)return;
   if(w.mag>=def.mag)return;
   if(countAmmo(p,def.ammo)<=0){uiFor(p).feedOnce('noammo','ไม่มีกระสุน '+DEF[def.ammo].name+' ในกระเป๋า','warn');return;}
-  p.reloadT=def.reload;p.reloadFor=w;sfxFor(p).reload(def.model);
+  p.reloadT=def.reload*(jobOf(p).reload||1);p.reloadFor=w;   // v0.58 a soldier reloads faster
+  sfxFor(p).reload(def.model);
 }
 export function finishReload(p){const w=p.reloadFor,def=DEF[w.id];if(w!==curWeapon(p))return;w.mag+=takeAmmo(p,def.ammo,def.mag-w.mag);uiFor(p).updateLoadout(true);}
 // how far a shot may stray (rad, either side): the gun's spread, tighter aiming down the sights and crouched or prone,
@@ -155,7 +158,18 @@ export function meleeHit(p,def){
 // melee weapons lose 1 durability per swing that connects and break at 0 (fists never break)
 function wearMelee(p,def){
   const g=p.gear,w=g.eq.melee,U=uiFor(p);if(!w||g.active!=='melee'||DEF[w.id]!==def||!def.dur)return;
-  w.dur=Math.max(0,(w.dur??def.dur)-1);
+  w.dur=Math.max(0,(w.dur??def.dur)-(jobOf(p).wear||1));   // v0.58 a mechanic's last longer
   if(w.dur<=0){g.eq.melee=null;sfx.crack();U.feed(def.name+' พังแล้ว','warn');U.updateLoadout(true);}
   else if(durPct(w)<=.2)U.updateLoadout();
+}
+
+// v0.58 co-op: what a fallen player carried that others can use (ammo, medicine, things to throw, scraps, traps) is left
+// where they fell, so the friends still standing can go and get it; a Resurrection Kit brings them back with their weapons
+export const PACK_KINDS=['ammo','heal','throw','mat','trap'];   // PLACEHOLDER
+export function dropPack(p){
+  const g=p.gear;let n=0;
+  for(const e of g.bag.slice()){if(!PACK_KINDS.includes(DEF[e.id].kind))continue;g.bag.splice(g.bag.indexOf(e),1);n++;
+    const a=n*2.1,[x,z]=reachableSpot(p.pos.x+Math.sin(a)*.7,p.pos.z+Math.cos(a)*.7);spawnDrop({id:e.id,n:e.n},x,z);}
+  if(n)uiFor(p).updateLoadout(true);
+  return n;
 }

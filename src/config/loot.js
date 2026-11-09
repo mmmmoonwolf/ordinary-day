@@ -21,6 +21,10 @@ export function setMedTables(){for(const ph of ['day','night']){MED_W[ph]={...ME
 setMedTables();
 // v0.37 ammo weights raised (day 38 -> 50, night 42 -> 54; indoors 26 -> 34, 32 -> 42): ammo was too hard to find (PLACEHOLDER)
 // v0.42 no food, planks or bottles: their share is simply gone, the rest keep their weights (PLACEHOLDER)
+// v0.58 each part of the map leans to some kinds of loot on the ground (PLACEHOLDER multipliers on CAT_W / INDOOR_W,
+// by the area of config/world.js; the town centre is as before; shops keep their own tables)
+export const DISTRICT={suburb:{med:1.7,bag:1.6,weapon:.7},farm:{weapon:1.3,throw:1.6,ammo:.8},river:{ammo:1.3,med:1.2},
+  gas:{throw:2.2,ammo:1.2},highway:{ammo:1.4,throw:1.6,med:.7},cemetery:{weapon:1.4,med:.6}};
 export const CAT_W={day:{weapon:22,ammo:50,med:30,bag:6,throw:5},night:{weapon:32,ammo:54,med:26,throw:5}};
 // the two loot spots in each enterable building (v0.14) roll from this table instead of CAT_W; most indoor loot is in the
 // furniture (config/search.js)

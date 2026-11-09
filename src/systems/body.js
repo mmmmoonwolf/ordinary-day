@@ -1,3 +1,4 @@
+import {jobOf} from '../config/jobs.js';
 import {rnd,clamp} from '../core/util.js';
 import {G} from '../core/state.js';
 import {WOUND,ILL,PANIC} from '../config/health.js';
@@ -14,7 +15,7 @@ import {uiFor} from '../ui/hud.js';
 export function updateBody(p,dt){
   // bleeding
   if(p.bleedW>0){
-    p.bleedW-=dt;p.hp=Math.max(Math.min(p.hp,WOUND.floor),p.hp-WOUND.hp*dt);
+    p.bleedW-=dt;p.hp=Math.max(Math.min(p.hp,WOUND.floor),p.hp-WOUND.hp*dt*(jobOf(p).bleed||1));   // v0.58 a medic bleeds less
     if((p.trailT=(p.trailT||0)-dt)<=0){p.trailT=WOUND.trail;addBlood(p.pos.x,p.pos.z);if(Math.random()<.4)uiFor(p).hurt();}
   }
   // soaked in the rain, then ill

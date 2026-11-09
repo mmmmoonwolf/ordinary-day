@@ -41,7 +41,7 @@ export async function join(raw){
       else if(m.t==='bye')leave('เจ้าของห้องปิดห้องแล้ว');
     });
     link.onClose(()=>{clearTimeout(timer);if(!inside)no(new Error('การเชื่อมต่อหลุด ลองใหม่อีกครั้ง'));else leave('หลุดจากห้อง '+code+' · กรอกรหัสเดิมเพื่อกลับเข้าไป');});
-    link.send({t:'hi',v:VERSION,token:token(),name:profile.name,look:profile.look});   // v0.41
+    link.send({t:'hi',v:VERSION,token:token(),name:profile.name,look:profile.look,job:profile.job});   // v0.41
   });
 }
 function enter(link,code){
