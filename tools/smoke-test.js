@@ -304,7 +304,7 @@ T.G.min += Sh.SCENT_AFTER + 1; step(2);
 if (!zs.heard || Math.hypot(zs.heard.x - T.player.pos.x, zs.heard.z - T.player.pos.z) > 1) sfail('scent did not send the zombie after ' + Sh.SCENT_AFTER + ' min in one building');
 // v0.42 no planks: no hammer by a whole door; a broken one is put back with nothing (B)
 T.inv.bag = []; T.player.pos.x = r7.dx - r7.n[0] * 1.2; T.player.pos.z = r7.dz - r7.n[1] * 1.2; step(1);
-if (T.player.fixDoor >= 0 || !els.bFix.hidden) sfail('hammer button by a whole door');
+if (T.player.fixDoor >= 0 && !(T.G.doors[T.player.fixDoor] && !T.G.doors[T.player.fixDoor].open && T.player.room === T.player.fixDoor)) sfail('hammer button by a whole door');   // v0.59 inside by a shut door: the hammer barricades it
 Object.assign(T.G.doors[k7], { open: true, broken: true, hp: 0 }); Dr.applyDoors(T.G.doors); step(1);
 if (T.player.fixDoor !== k7 || els.bFix.hidden) sfail('hammer button did not show by a broken door');
 key('KeyB', 'keydown');
@@ -1262,6 +1262,24 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   if (!Pf.lockOf('m_swat', { nights: 0, kills: 0, wins: 0 }) || Pf.lockOf('m_swat', { nights: 3, kills: 0, wins: 1 }) || Pf.lockOf('m_casual')) vfail('outfit locks');
   for (const q of P.players.slice(1)) q.away = true;
   console.log('v0.58: soldier kit and reload ' + rs.toFixed(2) + ' s vs ' + civ.reloadT.toFixed(2) + ' s, mechanic wear 0.5, pack of ' + (T.drops.length - d0) + ', medicine in the suburb ' + sub + ' vs town ' + city + ' of 3000, SWAT locked until a win');
+}
+
+// v0.59: furniture against a shut door from inside, a gamepad
+{
+  const vfail = m => errs.push('v0.59 test: ' + m), D = await import('../src/systems/doors.js'), I2 = await import('../src/world/interiors.js'), Sh = await import('../src/config/shelter.js'), Ac = await import('../src/systems/actions.js'), Gm = await import('../src/systems/game.js');
+  els.bAgain.fire('click'); T.G.running = true; T.G.min = 12 * 60; step(2); const me = T.player; me.inv = 1e9; for (const a of T.agents) a.gone = true; step(2);
+  const k = 3, r = I2.rooms[k];
+  const q = Gm.addPlayer(); q.inv = 1e9; q.pos.x = r.dx - r.n[0] * 1.2; q.pos.z = r.dz - r.n[1] * 1.2; step(2);
+  if (q.room !== k) vfail('not inside: room ' + q.room);
+  if (T.G.doors[k].open) D.toggleDoor(q, k); step(1);
+  if (q.fixDoor !== k) vfail('no barricade offered: ' + q.fixDoor);
+  const hp0 = T.G.doors[k].hp; Ac.runAction(q, 'fix', []); if (!T.G.doors[k].bar || T.G.doors[k].hp !== hp0 + Sh.BARR.hp) vfail('not barricaded: ' + T.G.doors[k].hp);
+  const out = Gm.addPlayer(); out.inv = 1e9; out.pos.x = r.dx + r.n[0] * 1.2; out.pos.z = r.dz + r.n[1] * 1.2; step(1);
+  D.toggleDoor(out, k); if (T.G.doors[k].open || !T.G.doors[k].bar) vfail('opened from outside');
+  D.damageDoor(k, Sh.BARR.hp + 5); if (T.G.doors[k].bar) vfail('still barricaded after the furniture gave way');
+  const ok = D.toggleDoor(q, k); if (!T.G.doors[k].open) vfail('could not open from inside: ' + ok + ' ' + JSON.stringify(T.G.doors[k]) + ' alive ' + q.alive + ' bleed ' + q.bleed);
+  for (const p of P.players.slice(1)) p.away = true;
+  console.log('v0.59: barricaded from inside (+' + Sh.BARR.hp + '), not from outside, gives way, opens from inside');
 }
 
 console.log(errs.length ? `FAILED: ${errs.length} runtime errors\n` + errs.slice(0, 3).join('\n---\n') : 'PASSED: no runtime errors');

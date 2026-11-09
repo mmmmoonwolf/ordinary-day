@@ -149,3 +149,6 @@ function loop(now){
   renderer.render(scene,activeCam());
 }
 requestAnimationFrame(loop);
+
+// v0.59 installable as an app (manifest.webmanifest, sw.js caches nothing); only over https or on localhost
+try{if(typeof navigator!=='undefined'&&navigator.serviceWorker&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(_){}

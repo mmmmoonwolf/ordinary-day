@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#141210"/>
+  <rect x="40" y="40" width="432" height="432" fill="none" stroke="#c0392b" stroke-width="10"/>
+  <path d="M120 360 L256 140 L392 360 Z" fill="none" stroke="#e8e4da" stroke-width="18" stroke-linejoin="round"/>
+  <circle cx="256" cy="300" r="34" fill="#c0392b"/>
+  <text x="256" y="440" font-family="Arial Black, Impact, sans-serif" font-size="58" font-weight="900" fill="#e8e4da" text-anchor="middle" letter-spacing="4">ORDINARY</text>
+</svg>
