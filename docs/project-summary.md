@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.52 | `systems/director.js` `updateDirector()` `wave()` `isBlood()`, `config/director.js` `DIRECTOR` `BLOOD` `MEGA`, `G.calm` `G.blood` `G.bloodHordes`, ฝูง `mega` ใน `G.plan`, `carAlarm()` ใน `combat.js`, ฟ้าแดงใน `updateSky()` |
 | v0.51 | `RULES` `startPvp(rule)` `goalOf()` `teamScore()` `result()` `infection()` `makeZed()` `hill()` ใน `systems/pvp.js`, `pvpRule()` `sideOf()` ใน `core/state.js`, `PVP.team` `infect` `hill` `killCam` `bounty`, `DEF.claw`, `p.team` `p.zed` `p.killedBy` `p.bounty`, `G.pvpRule` `G.hill` `G.pvpEnd` (snapshot `pr` `hl` `pe`), `ui/pvpfx.js`, `select.pvprule` |
 | v0.50 | ย่องฆ่า `backstab()` `blow()` ใน `combat.js`, `BACKSTAB` `LISTEN` `LIGHT` ใน `config/stealth.js`, `ui/listen.js` `updateListen()` `#listen`, `p.light` `ACTIONS.light` ปุ่ม `#bLight` คีย์ T, ระยะเห็นกลางคืนใน `updateZombie()`, snapshot แถวผู้เล่นมี light |
 | v0.49 | รถไม่ค้าง (`hits()` / `blocked(i,c,x,z)` ข้ามของที่ชนอยู่แล้ว, `CAR.grip0` `backAt` `hitP`, `c.bump`, PvP ชนผู้เล่น `p.carT`), PvP รอบ (`PVP.round`, `G.pvpT`, `leaders()` `endRound()` `nextRound()`, `pvpOver()` ใน `hud.js`, `#pOver.pvp`), กล่องเสบียง (`airdrop(loot)` ใน `events.js`, `PVP.drop`, `G.pvpDrop`), `PVP.killHeal` `dropAmmo` `regen`, `p.shield`, ฝูงตามจำนวนคน `horde.perPlayer`, ไม่มี Kit, ปุ่ม `#bPvpNew` |
@@ -1001,6 +1002,16 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **ค่าหัว:** ทุกคนฆ่ากัน / ยึดพื้นที่ ผู้นำที่มีอย่างน้อย 3 และนำคนที่สองอย่างน้อย 2 มีลำแสงแดงเหนือหัว (`p.bounty`) ฆ่าได้นับ 2 ข้อความมีคำว่า ค่าหัว
 - **ผลรอบ:** host คิด `G.pvpEnd` (หัวข้อ เหตุผล ผู้ชนะ) ทุกเครื่องแสดงเหมือนกัน รายชื่อมีสัญลักษณ์ทีม / ซอมบี้
 - **PLACEHOLDER:** `PVP.team` `infect` `hill` `killCam` `bounty` และ `DEF.claw`
+
+## ผู้กำกับ AI คืนเลือด ฝูงมหึมา (v0.52)
+
+จากรายการไอเดีย #26 #27 #35 #40 (อ้างอิง Left 4 Dead, 7 Days to Die, Days Gone)
+
+- **ผู้กำกับ** (`systems/director.js`, host ทุก step เฉพาะเกมเอาชีวิตรอดหลังระบาด): ทุก 10 วินาทีดูผู้เล่น ถ้าไม่มีซอมบี้ไล่ใครมา 50 วินาทีและ HP เฉลี่ยเกิน 70% ส่งซอมบี้ 3–6 ตัวมาจาก 28–38 ม. รู้ตำแหน่งผู้เล่นแล้ว (`wave()`, กลางวัน Zombie กลางคืน Zombie / Sprinter) ถ้า HP เฉลี่ยต่ำกว่า 35% หรือโดนไล่ 6 ตัวขึ้นไป เลื่อนการเกิดกลางคืนครั้งถัดไป 30 นาทีในเกม
+- **คืนเลือด:** คืนที่ 3 (`isBlood()`: `nightsSurvived` = 2 ตอนกลางคืน) ซอมบี้กลางคืนเกิดทุก 15 นาที (ปกติ 45) เพิ่มครั้งละ 1 ฝูง 26 ตัวตอน 22:00 และ 02:00 (`G.bloodHordes`) เสียงคำรามตอนเริ่ม ท้องฟ้า แสง และดวงจันทร์เป็นสีแดง ค่าและเงื่อนไขเกิดของ Armor Walker / Tyrant ไม่เปลี่ยน
+- **ฝูงมหึมา:** บ่ายวันที่ 2 (15:00) ฝูง 55 ตัวเดินข้ามเมืองตามถนนใหญ่ (เพดานซอมบี้ในโลก 150) เห็นเป็นจุดแดงบนแผนที่เล็กจากไกล ไม่มีใน PvP
+- **สัญญาณกันขโมย:** กระสุนที่ไม่โดนอะไรแล้วไปจบที่รถจอดอยู่ (ไม่พัง ไม่ไหม้) ทำให้สัญญาณดังเหมือนเหตุการณ์สุ่ม ซอมบี้ตามมา 40 นาทีในเกม
+- **PLACEHOLDER:** `DIRECTOR` `BLOOD` `MEGA`
 
 ## ระบบ loot
 
