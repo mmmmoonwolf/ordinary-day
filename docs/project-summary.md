@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.51 | `RULES` `startPvp(rule)` `goalOf()` `teamScore()` `result()` `infection()` `makeZed()` `hill()` ใน `systems/pvp.js`, `pvpRule()` `sideOf()` ใน `core/state.js`, `PVP.team` `infect` `hill` `killCam` `bounty`, `DEF.claw`, `p.team` `p.zed` `p.killedBy` `p.bounty`, `G.pvpRule` `G.hill` `G.pvpEnd` (snapshot `pr` `hl` `pe`), `ui/pvpfx.js`, `select.pvprule` |
 | v0.50 | ย่องฆ่า `backstab()` `blow()` ใน `combat.js`, `BACKSTAB` `LISTEN` `LIGHT` ใน `config/stealth.js`, `ui/listen.js` `updateListen()` `#listen`, `p.light` `ACTIONS.light` ปุ่ม `#bLight` คีย์ T, ระยะเห็นกลางคืนใน `updateZombie()`, snapshot แถวผู้เล่นมี light |
 | v0.49 | รถไม่ค้าง (`hits()` / `blocked(i,c,x,z)` ข้ามของที่ชนอยู่แล้ว, `CAR.grip0` `backAt` `hitP`, `c.bump`, PvP ชนผู้เล่น `p.carT`), PvP รอบ (`PVP.round`, `G.pvpT`, `leaders()` `endRound()` `nextRound()`, `pvpOver()` ใน `hud.js`, `#pOver.pvp`), กล่องเสบียง (`airdrop(loot)` ใน `events.js`, `PVP.drop`, `G.pvpDrop`), `PVP.killHeal` `dropAmmo` `regen`, `p.shield`, ฝูงตามจำนวนคน `horde.perPlayer`, ไม่มี Kit, ปุ่ม `#bPvpNew` |
 | v0.48 | เล็งศูนย์: `#cross` เป็นจุดแดงตอน `body.fps.ads` / `body.scoped` (เดิม `display:none`), `KICK.ads` `KICK.punch` `KICK.arms` ใน `config/handling.js`, `punch` (fov) ใน `updateFps()`, `viewArms(v,dt,scoped,ads)`, แรงถีบปืนกล่องหลังเลื่อนขึ้นศูนย์, `#scope` เลื่อนตาม `recoil` |
@@ -986,6 +987,20 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **ยืนฟัง:** ไม่ขยับ ไม่ยิง ไม่ได้ขับรถ `LISTEN.after` 1.2 วินาที ขอบจอค่อย ๆ มืด ซอมบี้ที่เดินหรือกำลังตีในระยะ 24 ม. เป็นแสงแดงมองทะลุผนัง (`ui/listen.js` ภาพในเครื่องอย่างเดียว) ขยับแล้วหาย ใช้ได้ทั้งคอมและมือถือโดยไม่ต้องมีปุ่ม
 - **ไฟฉาย:** T หรือปุ่ม 🔦 บนแถบบน (`ACTIONS.light`, `p.light` ส่งออนไลน์) กลางคืนเปิดไว้ซอมบี้สังเกตเห็นได้ไกลขึ้น ×1.25 ปิดไว้ ×0.8 แต่ไม่มีแสงไฟฉาย ปุ่มจางและขีดฆ่าตอนปิด
 - **PLACEHOLDER:** `BACKSTAB` `LISTEN` `LIGHT`
+
+## PvP 4 กติกา กล้องคนฆ่า ค่าหัว (v0.51)
+
+จากรายการไอเดีย #12 #13 #14 #15 #16
+
+- **เลือกกติกา:** `select#pvpRule` ข้างปุ่มสร้างห้อง PvP ที่หน้าแรก และ `#pvpRule2` ใต้ปุ่มเปิดห้อง PvP ในเมนูหยุดเกม (สองช่องตรงกัน จำไว้ในเบราว์เซอร์) `startPvp(rule)` รอบต่อไปใช้กติกาเดิม
+- **ฝ่าย:** `sideOf(p)` ทุกคนฆ่ากัน / ยึดพื้นที่ = คนละฝ่ายทุกคน · ทีม = `p.team` (เลขผู้เล่นคู่ / คี่) · ติดเชื้อ = ซอมบี้ / มนุษย์ ฝ่ายเดียวกันยิง ฟาด ระเบิด ไม่เข้า (`foesOf()` `hurtPlayer()`)
+- **ทีม:** ทีมแรกที่ฆ่ารวมครบ `PVP.team.kills` 15 ชนะ แสงใต้เท้าและป้ายชื่อสีแดง / น้ำเงิน แผนที่เล็กและป้ายขอบจอแสดงเพื่อนร่วมทีม
+- **ติดเชื้อ:** เมื่อมีผู้เล่น 2 คนขึ้นไป สุ่มหนึ่งคนเป็นซอมบี้ (`makeZed()`: HP 150 เร็ว ×1.3 อาวุธเป็น `claw` ดาเมจ 45 เก็บของ ขับรถ ค้นตู้ไม่ได้ ซอมบี้ AI ไม่ไล่) คนที่ถูกซอมบี้ผู้เล่นฆ่าเกิดใหม่เป็นซอมบี้ ทุกคนกลายแล้ว = ซอมบี้ชนะ รอดครบ `PVP.infect.minutes` 5 นาที = มนุษย์ชนะ ตัวละครเป็นผิวซอมบี้ (`ui/pvpfx.js`)
+- **ยึดพื้นที่:** วงสีเขียวรัศมี 7 ม. พร้อมลำแสง (`G.hill` ส่งออนไลน์ จุดบนแผนที่เล็ก) อยู่กลางแจ้งใกล้ผู้เล่น ย้ายทุก 90 วินาที คนเดียวในวงได้ 1 แต้มทุก 2 วินาที สองคนขึ้นไปไม่มีใครได้ ฆ่ายังได้ 1 แต้ม ครบ 30 ชนะ
+- **กล้องคนฆ่า:** ตายแล้ว `viewed()` คือคนที่ฆ่า `PVP.killCam` 2.5 วินาทีแล้วกลับมาที่ศพตัวเอง (`p.killedBy` ส่งในข้อมูลส่วนตัวของ snapshot)
+- **ค่าหัว:** ทุกคนฆ่ากัน / ยึดพื้นที่ ผู้นำที่มีอย่างน้อย 3 และนำคนที่สองอย่างน้อย 2 มีลำแสงแดงเหนือหัว (`p.bounty`) ฆ่าได้นับ 2 ข้อความมีคำว่า ค่าหัว
+- **ผลรอบ:** host คิด `G.pvpEnd` (หัวข้อ เหตุผล ผู้ชนะ) ทุกเครื่องแสดงเหมือนกัน รายชื่อมีสัญลักษณ์ทีม / ซอมบี้
+- **PLACEHOLDER:** `PVP.team` `infect` `hill` `killCam` `bounty` และ `DEF.claw`
 
 ## ระบบ loot
 

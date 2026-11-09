@@ -91,10 +91,11 @@ const ENDINGS={
 const escHtml=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 // v0.49 the end of a PvP round: who won, everyone's kills and deaths, the next round on its own (systems/pvp.js)
 function pvpOver(){
-  const L=players.filter(p=>!p.away).sort((a,b)=>(b.frags||0)-(a.frags||0)||(a.deaths||0)-(b.deaths||0)),top=L[0],tie=L[1]&&(L[1].frags||0)===(top.frags||0);
-  $('oEyebrow').textContent='PVP · จบรอบ';$('oTitle').textContent=tie?'เสมอ':top===player?'คุณชนะ':(top?top.name:'')+' ชนะ';
-  $('oCause').textContent=(top&&(top.frags||0)>=PVP.round.kills?'ฆ่าครบ '+PVP.round.kills+' ก่อน':'หมดเวลา '+PVP.round.minutes+' นาที');
-  $('sKillsBy').innerHTML=L.map(p=>'<span>'+escHtml(p.name)+' — <b>'+(p.frags||0)+'</b> ฆ่า · '+(p.deaths||0)+' ตาย</span>').join('');
+  const L=players.filter(p=>!p.away).sort((a,b)=>(b.frags||0)-(a.frags||0)||(a.deaths||0)-(b.deaths||0)),E=G.pvpEnd||{title:'จบรอบ',cause:''};
+  const rule=G.pvpRule||'ffa',mark=p=>rule==='team'?((p.team||0)?'🔵 ':'🔴 '):rule==='infect'&&p.zed?'🧟 ':'';   // v0.51 the rule's result from the host
+  $('oEyebrow').textContent='PVP · '+({ffa:'ทุกคนฆ่ากัน',team:'ทีม',infect:'ติดเชื้อ',hill:'ยึดพื้นที่'}[rule]||'')+' · จบรอบ';
+  $('oTitle').textContent=E.win!==undefined&&E.win===player.id?'คุณชนะ':E.title;$('oCause').textContent=E.cause;
+  $('sKillsBy').innerHTML=L.map(p=>'<span>'+mark(p)+escHtml(p.name)+' — <b>'+(p.frags||0)+'</b> '+(rule==='hill'?'แต้ม':'ฆ่า')+' · '+(p.deaths||0)+' ตาย</span>').join('');
   $('pOver').classList.add('pvp');$('sBest').innerHTML='';
   $('bAgain').textContent='รอบใหม่';$('bAgain').hidden=isClient();$('overNote').textContent='รอบใหม่เริ่มเองใน '+PVP.round.gap+' วินาที';$('bOverTitle').hidden=!isClient();
   $('pStart').hidden=true;$('pOver').hidden=false;$('overlay').hidden=false;

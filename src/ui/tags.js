@@ -1,6 +1,6 @@
 import {clamp} from '../core/util.js';
 import {scene,activeCam,view} from '../core/renderer.js';
-import {G,isPvp} from '../core/state.js';
+import {G,isPvp,sideOf} from '../core/state.js';
 import {players,player} from '../entities/player.js';
 
 // ---------- names over heads and lights at the feet (v0.40) ----------
@@ -22,9 +22,11 @@ function make(p){
   const col=TAG_COLORS[p.id%TAG_COLORS.length];el.style.setProperty('--c',col);
   const light=new THREE.Mesh(new THREE.PlaneGeometry(LIGHT.size,LIGHT.size).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({map:tex,color:col,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));
   light.renderOrder=2;scene.add(light);
-  const t={el,name:el.firstChild,info:el.lastChild,light,text:'',sub:''};tags.set(p,t);return t;
+  // v0.51 PvP: the red beacon over the head of the player with a price on it
+  const beacon=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,color:'#ff3a2a',transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));beacon.scale.set(1.4,7,1);beacon.visible=false;scene.add(beacon);
+  const t={el,name:el.firstChild,info:el.lastChild,light,beacon,text:'',sub:''};tags.set(p,t);return t;
 }
-function drop(p,t){t.el.remove();scene.remove(t.light);t.light.geometry.dispose();t.light.material.dispose();tags.delete(p);}
+function drop(p,t){t.el.remove();scene.remove(t.light,t.beacon);t.light.geometry.dispose();t.light.material.dispose();tags.delete(p);}
 export function updateTags(){
   if(!document.body)return;
   for(const [p,t] of tags)if(!players.includes(p))drop(p,t);
@@ -32,6 +34,9 @@ export function updateTags(){
   for(const p of players){
     const t=tags.get(p)||make(p),on=run&&!p.away;
     // the light at the feet
+    t.beacon.visible=on&&p.alive&&!!p.bounty;if(t.beacon.visible){t.beacon.position.set(p.pos.x,(p.y||0)+4.6,p.pos.z);t.beacon.material.opacity=.55+.3*Math.sin(performance.now()/160);}
+    const tc=isPvp()&&G.pvpRule==='team'?((p.team||0)?'#4aa0ff':'#ff4a3a'):isPvp()&&p.zed?'#7dff5a':TAG_COLORS[p.id%TAG_COLORS.length];   // v0.51 team / zombie colours
+    if(t.col!==tc){t.col=tc;t.el.style.setProperty('--c',tc);t.light.material.color.set(tc);}
     t.light.visible=on&&p.alive;if(t.light.visible){t.light.position.set(p.pos.x,(p.y||0)+.04,p.pos.z);t.light.material.opacity=LIGHT.day+(LIGHT.night-LIGHT.day)*k;}
     // the label
     const mine=p===player,hide=!on||(mine&&view.fps)||(!p.alive&&!mine);
@@ -40,7 +45,7 @@ export function updateTags(){
     const behind=v.z>1,d=Math.hypot(p.pos.x-player.pos.x,p.pos.z-player.pos.z);
     let x=v.x,y=v.y,edge=false;if(behind){x=-x;y=-y;}
     if(behind||Math.abs(x)>1||Math.abs(y)>1){
-      if(mine||isPvp()){if(!t.el.hidden)t.el.hidden=true;continue;}   // v0.47 no pointing the way to someone hunting you
+      if(mine||isPvp()&&sideOf(p)!==sideOf(player)){if(!t.el.hidden)t.el.hidden=true;continue;}   // v0.47 no pointing the way to someone hunting you
       const m=Math.max(Math.abs(x),Math.abs(y),1e-3);x/=m;y/=m;edge=true;   // onto the edge of the screen, the way they are
     }
     const sx=clamp((x+1)/2*W,EDGE[0],W-EDGE[0]),sy=clamp((1-y)/2*H,EDGE[1],H-EDGE[2]);

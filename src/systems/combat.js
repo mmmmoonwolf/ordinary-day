@@ -1,6 +1,6 @@
 import {rnd} from '../core/util.js';
 import {muzzle} from '../core/renderer.js';
-import {G,isPvp} from '../core/state.js';
+import {G,isPvp,sideOf} from '../core/state.js';
 import {ctl} from '../core/controls.js';
 import {DEF,durPct} from '../config/items.js';
 import {ADS,BLOOM,SNEAK} from '../config/handling.js';
@@ -29,6 +29,7 @@ import {shieldDriver,leaveCar} from './vehicles.js';
 export function hurtPlayer(p,n,by){
   if(!p.alive||p.inv>0||p.down>0)return false;
   const foe=by&&by!==p&&by.state==='player'?by:null;n*=foe?PVP.dmg:diffOf(G).dmg;
+  if(foe&&isPvp()&&sideOf(foe)===sideOf(p))return false;   // v0.51 no hurting your own side (a team mate's grenade)
   if(shieldDriver(p,n))return true;   // v0.45 in a car: the car takes it
   const U=uiFor(p);
   // already down (v0.10): every hit takes time off what is left before they bleed out
@@ -55,8 +56,11 @@ export function die(p,by){
   // v0.47 PvP: back in a moment somewhere else (systems/pvp.js); the one who landed the last hit gets the kill
   if(isPvp()){p.respawnT=PVP.respawn;p.deaths=(p.deaths||0)+1;p.shield=false;
     // v0.49 everyone sees who killed whom and how close the killer is to winning the round; a kill heals a little
-    if(by){by.frags=(by.frags||0)+1;by.hp=Math.min(by.maxHp,by.hp+PVP.killHeal);}
-    const line=by?by.name+' ฆ่า '+p.name+' · '+by.frags+'/'+PVP.round.kills:p.name+' ตาย';
+    const bounty=!!(by&&p.bounty);p.killedBy=by?by.id:-1;
+    if(by&&by.zed&&!p.zed&&G.pvpRule==='infect')p.zedNext=true;   // v0.51 bitten to death by a zombie player   // v0.51 the camera looks at the killer for a moment (player.js viewed)
+    if(by){by.frags=(by.frags||0)+(bounty?PVP.bounty.worth:1);by.hp=Math.min(by.maxHp,by.hp+PVP.killHeal);}
+    const tally=G.pvpRule==='team'?players.filter(q=>!q.away&&(q.team||0)===(by&&by.team||0)).reduce((s,q)=>s+(q.frags||0),0)+'/'+PVP.team.kills:by&&G.pvpRule!=='infect'?by.frags+'/'+(G.pvpRule==='hill'?PVP.hill.points:PVP.round.kills):'';
+    const line=by?by.name+(by.zed?' กัด ':' ฆ่า ')+p.name+(bounty?' · ค่าหัว':'')+(tally?' · '+tally:''):p.name+' ตาย';
     for(const q of players)if(!q.away)uiFor(q).feed(line,q===p?'warn':'');
     // v0.49 half of each kind of ammo stays where they fell, for whoever gets there first
     if(PVP.dropAmmo>0)for(const e of p.gear.bag.slice()){if(DEF[e.id].kind!=='ammo')continue;const k=Math.floor(e.n*PVP.dropAmmo);if(k<=0)continue;
@@ -71,7 +75,7 @@ export function die(p,by){
   if(!players.some(q=>q.alive)){clearSave();setTimeout(gameOver,1800);}
 }
 // v0.47 who else a player can hurt: in PvP everyone else still up and in the game
-export const foesOf=p=>isPvp()?players.filter(q=>q!==p&&q.alive&&!q.away&&!(q.inv>0)):[];
+export const foesOf=p=>isPvp()?players.filter(q=>q!==p&&q.alive&&!q.away&&!(q.inv>0)&&sideOf(q)!==sideOf(p)):[];   // v0.51 not the same side
 function hitFoe(p,q,dmg,dx,dz,melee){if(hurtPlayer(q,dmg,p))impact(q.pos.x,q.pos.z,dx,dz,q.alive?0:1,p.id,melee);}
 // turns the player toward the best zombie in front, unless they aim with a mouse
 export function aimAssist(p,def){

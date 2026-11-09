@@ -39,13 +39,15 @@ export function makePlayer(i=0){
   return p;
 }
 // players that zombies can go after (v0.12: not one whose device has dropped out of the game, p.away)
-export const targets=()=>players.filter(p=>p.alive&&p.down<=0&&!p.away);
+export const targets=()=>players.filter(p=>p.alive&&p.down<=0&&!p.away&&!p.zed);   // v0.51 zombies leave zombie players alone
 export const isDown=p=>p.alive&&p.bleed>0;
 // more than one player in the game: the bag and the pause menu no longer stop the world, no ×2 / ×4 (v0.11)
 export const isSolo=()=>players.filter(p=>!p.away).length<2;
 // who the camera, sounds and cutaway follow: the player on this device, or once they are dead a teammate still alive
 export function viewed(){
-  if(!player||player.alive||isPvp())return player;   // v0.47 in PvP the camera waits on their own body until they come back
+  if(!player||player.alive)return player;
+  // v0.47 in PvP the camera waits on their own body until they come back; v0.51 first a look at who killed them
+  if(isPvp()){const k=player.killedBy>=0&&(player.deadT||0)<PVP.killCam&&players.find(q=>q.id===player.killedBy&&q.alive);return k||player;}
   return players.find(q=>q.alive&&!(q.bleed>0))||players.find(q=>q.alive)||player;
 }
 const hasKit=p=>p.gear.bag.some(e=>e.id==='resurrect');
@@ -82,7 +84,7 @@ export function updatePlayer(p,dt){
     if(p.vault){updateVault(p,dt);return;}
   }
   if(p.trapT>0){p.trapT-=dt;p.moving=0;}   // v0.26 caught in a bear trap
-  else if(mag>.08){moveAgent(p,I.mx,I.mz,(p.sneak?SNEAK.speed:(I.run?5.8:3.4)*Math.max(.45,mag))*heavy,dt,I.aim||p.aimT>0||p.ads);
+  else if(mag>.08){moveAgent(p,I.mx,I.mz,(p.sneak?SNEAK.speed:(I.run?5.8:3.4)*Math.max(.45,mag))*heavy*(p.zed?PVP.infect.speed:1),dt,I.aim||p.aimT>0||p.ads);
     if(I.run&&G.phase==='night'){p.runNoise-=dt;if(p.runNoise<=0){p.runNoise=.5;makeNoise(p.pos.x,p.pos.z,5);}}}
   else p.moving=0;
   if(p.cool>0)p.cool-=dt;

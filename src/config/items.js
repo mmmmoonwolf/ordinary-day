@@ -4,6 +4,8 @@
 // dur = how many hits a melee weapon lasts (v0.5, PLACEHOLDER); fists never break
 export const GRADES={civ:{name:'Civilian',color:'#78D99B'},pol:{name:'Police',color:'#66B0FF'},mil:{name:'Military',color:'#F0C46B'}};
 export const DEF={fist:{name:'มือเปล่า',kind:'weapon',slot:'melee',dmg:10,dmgR:1,range:1.45,cd:.42,kb:.4,arc:.5,verb:'ต่อย',model:'fist'}};
+// v0.51 a zombie player's claws in the PvP infection rules (never found as loot) PLACEHOLDER
+DEF.claw={name:'Claws',kind:'weapon',slot:'melee',dmg:45,dmgR:9,range:1.7,cd:.55,kb:.6,arc:.4,verb:'ข่วน',model:'fist',noLoot:true};
 function gun(id,name,grade,slot,dmgR,rateR,o){DEF[id]=Object.assign({name,grade,kind:'weapon',slot,gun:true,dmgR,rateR,dmg:dmgR*5,rate:1.6/rateR,verb:'ยิง'},o);}
 function melee(id,name,grade,dmgR,o){DEF[id]=Object.assign({name,grade,kind:'weapon',slot:'melee',dmgR,dmg:dmgR*5,verb:'ฟาด'},o);}
 const PISTOL={ammo:'a9',reload:1.2,range:22,spread:.035,noise:22,model:'pistol'};

@@ -8,6 +8,9 @@ import {say,updateLoadout} from './hud.js';
 import {players,isSolo} from '../entities/player.js';
 import {saveGame} from '../systems/save.js';
 import {startPvp} from '../systems/pvp.js';
+// v0.51 the PvP rules picked on the start screen or in the pause menu (both show the same, kept in this browser)
+const RULE_KEY='ordinary-day.pvpRule';
+function rule(){const v=$('pvpRule').value;try{localStorage.setItem(RULE_KEY,v);}catch(_){}return v;}
 import {showContinue} from './input.js';
 
 // ---------- online play: buttons (v0.12) ----------
@@ -24,7 +27,7 @@ function scores(){return '<span class="pvpscore">'+players.filter(p=>!p.away).so
   .map(p=>'<span>'+esc(p.name)+' <b>'+(p.frags||0)+'</b> ฆ่า · '+(p.deaths||0)+' ตาย</span>').join('')+'</span>';}
 export function refreshOnline(){
   const client=bus.role==='client',pvp=isPvp();
-  $('bSaveNow').hidden=client||pvp;$('bRoom').hidden=client;$('bPvp').hidden=client||room.open;
+  $('bSaveNow').hidden=client||pvp;$('bRoom').hidden=client;$('bPvp').hidden=$('pvpRule2').hidden=client||room.open;
   $('bToTitle').textContent=client?'ออกจากห้อง':pvp?'กลับหน้าแรก':'เซฟแล้วกลับหน้าแรก';
   if(client){$('roomMsg').innerHTML='อยู่ในห้อง <b>'+net.code+'</b> ของเพื่อน'+(pvp?' · PvP'+scores():' · เกมเดินต่อระหว่างเปิดเมนูนี้');return;}
   $('bRoom').textContent=room.open?'ปิดห้อง':'เปิดห้องให้เพื่อนเข้า';
@@ -32,6 +35,8 @@ export function refreshOnline(){
 }
 export function initOnline(){
   let last='';try{last=localStorage.getItem(CODE_KEY)||'';}catch(_){}
+  let rl='ffa';try{rl=localStorage.getItem(RULE_KEY)||'ffa';}catch(_){}
+  for(const id of ['pvpRule','pvpRule2']){$(id).value=rl;$(id).addEventListener('change',e=>{for(const o of ['pvpRule','pvpRule2'])$(o).value=e.target.value;try{localStorage.setItem(RULE_KEY,e.target.value);}catch(_){}});}
   const inp=$('roomCode');inp.value=last;
   inp.addEventListener('input',()=>{const v=cleanCode(inp.value);if(v!==inp.value)inp.value=v;});
   inp.addEventListener('keydown',e=>{if(e.key==='Enter')$('bJoin').click();e.stopPropagation();});
@@ -59,7 +64,7 @@ export function initOnline(){
     if(busy||room.open)return;
     busy=true;$('roomMsg').textContent='กำลังเปิดห้อง PvP …';
     try{await openRoom();}catch(e){$('roomMsg').textContent=e.message||'เปิดห้องไม่ได้';busy=false;return;}
-    saveGame();startPvp();G.paused=isSolo();updateLoadout(true);
+    saveGame();startPvp($('pvpRule2').value);G.paused=isSolo();updateLoadout(true);
     say('เปิดห้อง PvP แล้ว · รหัส '+room.code+' ให้เพื่อนกรอกที่หน้าแรก','',8);
     busy=false;refreshOnline();
   });
@@ -67,7 +72,7 @@ export function initOnline(){
   $('bPvpNew').addEventListener('click',async()=>{
     if(busy)return;busy=true;$('joinMsg').textContent='กำลังเปิดห้อง PvP …';
     try{if(!room.open)await openRoom();}catch(e){$('joinMsg').textContent=e.message||'เปิดห้องไม่ได้';busy=false;return;}
-    startPvp();G.running=true;$('overlay').hidden=true;$('joinMsg').textContent='';updateLoadout(true);
+    startPvp(rule());G.running=true;$('overlay').hidden=true;$('joinMsg').textContent='';updateLoadout(true);
     say('ห้อง PvP รหัส '+room.code+' · ให้เพื่อนกรอกที่หน้าแรก','',10);busy=false;
   });
   setInterval(()=>{if(!$('pause').hidden&&!busy)refreshOnline();},1000);   // the player count while the menu is open
