@@ -125,6 +125,12 @@ if (isClient) {
     const { fireGun } = await import('../src/systems/combat.js'); fireGun(p2, p2.gear.eq.secondary, DEF.pistol_c);
     let kicks = 0, last = 0; for (let i = 0; i < 20; i++) { const r = await ask('step', 1); step(1); await sleep(2); if (r.me.recoil > last + .3) kicks++; last = r.me.recoil; }
     if (kicks !== 1) fail('one shot kicked the friend\'s gun ' + kicks + ' times'); }
+  // v0.65 client prediction: a key press moves the friend's own player on their screen before the host has stepped once
+  { const r0 = await ask('step', 1); await ask('key', 'KeyD', 'keydown'); const r1 = await ask('step', 2), r2 = await ask('step', 2); await ask('key', 'KeyD', 'keyup');
+    const moved = Math.hypot(r2.me.x - r0.me.x, r2.me.z - r0.me.z); if (!(moved > .1)) fail('no prediction: the friend moved ' + moved.toFixed(3) + ' m before the host stepped');
+    for (let i = 0; i < 30; i++) { await ask('step', 1); step(1); await sleep(1); }
+    const r3 = await ask('step', 1); if (Math.hypot(r3.me.x - p2.pos.x, r3.me.z - p2.pos.z) > .5) fail('prediction drifted from the host: ' + Math.hypot(r3.me.x - p2.pos.x, r3.me.z - p2.pos.z).toFixed(2) + ' m');
+    console.log('net: prediction moved the friend ' + moved.toFixed(2) + ' m in 4 steps with the host still, then ' + Math.hypot(r3.me.x - p2.pos.x, r3.me.z - p2.pos.z).toFixed(2) + ' m from the host'); }
   // v0.47.1 the friend's own player walking, as their screen shows it: steady steps, not a stop-and-go every snapshot
   { Object.assign(p2.input, {}); await ask('key', 'KeyW', 'keydown'); for (let i = 0; i < 20; i++) { await ask('step', 1); step(1); await sleep(1); }
     const xs = []; for (let i = 0; i < 60; i++) { const r = await ask('step', 1); step(1); await sleep(1); xs.push([r.me.x, r.me.z]); }

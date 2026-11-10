@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.65 | `predict()` `PRED` ใน `net/client.js`, `ease(a,dt,f,pred)`, `p.room` บนเครื่องเพื่อน |
 | v0.64 | `BIKE` ใน `config/vehicles.js`, `addBike()` `placeBikes()` ใน `world/vehicles.js` (`r.kind` 'bike' `r.half`), `specOf(i)` ใน `systems/vehicles.js` |
 | v0.63 | `world/roofs.js` `ladders` `ROOF` `buildRoofs()`, `systems/roofs.js` `nearLadder()` `climb()` `roofH()` `keepOnRoof()`, `p.roof` `p.nearLadder` (snapshot `nl`, เซฟ) |
 | v0.62 | `config/npc.js` `NPC` `BANDIT`, `systems/npc.js` `placeSurvivors()` `placeBandits()` `updateNpc()` `hurtNpc()` `updateNpcs()`, `a.npc` `a.gun` `a.home` `a.lead`, `shootable()` ใน `combat.js`, `DAILY.weights.bandits` |
@@ -1155,6 +1156,17 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **ภาพ**: กล่องล้วน (โครง ถัง เบาะ ล้อ แฮนด์ ไฟหน้า) ไม่มีไฟล์โมเดล
 - **PLACEHOLDER:** `BIKE`
 - **ยังไม่ได้ทำ:** โมเดลมอเตอร์ไซค์ 3D, ท่านั่งขี่, ซ้อนท้าย
+
+## client prediction (v0.65)
+
+จากรายการไอเดีย #19
+
+- **ขยับทันที** (`predict(p,dt)` ใน `net/client.js` ทุก step ของเครื่องเพื่อน): ผู้เล่นของเครื่องนี้เดินจาก `p.input` ด้วย `moveAgent()` และความเร็วชุดเดียวกับ `updatePlayer()` บน host (ย่อง วิ่ง เล็ง อาชีพ กะเผลก ซอมบี้ผู้เล่น) ชนผนังแบบเดียวกัน
+- **host ยังเป็นคนตัดสิน**: เป้าคือตำแหน่งจาก snapshot บวกความเร็วที่ host เห็น × `PRED.lat` 0.1 วินาที (เวลาเดินทางโดยประมาณ) ดึงเข้าหาแบบนุ่ม ๆ ตอนเดิน (`gain` 2.2 / วินาที) แรงขึ้นตอนหยุด (`still` 7) ห่างเกิน `snap` 2.5 ม. (ชนอะไรที่ host เห็น ข้ามของ โดนดีด) กระโดดไปตรงนั้นเลย ห่างไม่เกิน `dead` 0.08 ม. ไม่ขยับ
+- **ไม่ทำนาย** ตอนขับรถ ข้ามของ ล้ม ช่วยเพื่อน ค้นตู้ ติดกับดัก: ใช้ตำแหน่ง host แบบเดิม (`ease()`)
+- **บั๊ก**: บรรทัด `p.room=…` ใน `clientStep()` ถูกคอมเมนต์ของ v0.47.1 กลืนไป เครื่องเพื่อนจึงไม่ได้อัปเดตห้องของผู้เล่น ย้ายคอมเมนต์ออกแล้ว
+- **PLACEHOLDER:** `PRED`
+- **ยังไม่ได้ทำ:** วัดเวลาเดินทางจริง (ตอนนี้ใช้ 0.1 วินาทีตายตัว), ทำนายการยิงและการชน (ยังรอ host)
 
 ## ระบบ loot
 
