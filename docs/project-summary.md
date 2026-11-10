@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.64 | `BIKE` ใน `config/vehicles.js`, `addBike()` `placeBikes()` ใน `world/vehicles.js` (`r.kind` 'bike' `r.half`), `specOf(i)` ใน `systems/vehicles.js` |
 | v0.63 | `world/roofs.js` `ladders` `ROOF` `buildRoofs()`, `systems/roofs.js` `nearLadder()` `climb()` `roofH()` `keepOnRoof()`, `p.roof` `p.nearLadder` (snapshot `nl`, เซฟ) |
 | v0.62 | `config/npc.js` `NPC` `BANDIT`, `systems/npc.js` `placeSurvivors()` `placeBandits()` `updateNpc()` `hurtNpc()` `updateNpcs()`, `a.npc` `a.gun` `a.home` `a.lead`, `shootable()` ใน `combat.js`, `DAILY.weights.bandits` |
 | v0.61 | `TRUNK` ใน `config/vehicles.js`, `G.cars[i].trunk`, `trunkOf()` `trunkPut()` `trunkTake()` ใน `systems/vehicles.js` (`ACTIONS.trunkPut` `trunkTake`), `#bagTrunk`, snapshot `cars` ช่องที่ 6 |
@@ -1143,6 +1144,17 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **ภาพ**: ตัวละครยืนบนหลังคา (ไม่ใช้ท่ากระโดด ไม่เอียง) ตึกที่ยืนอยู่ไม่โปร่งใส (`updateOcclusion` ใช้ความสูงของผู้เล่น) เพื่อนออนไลน์เห็นผ่าน `airH` ที่มีอยู่แล้วใน snapshot ปุ่มใช้ `nl`
 - **PLACEHOLDER:** `ROOF`
 - **ยังไม่ได้ทำ:** กล้องยกตามความสูง, ของบนหลังคา, ซอมบี้บางชนิดปีนตาม, กระโดดข้ามหลังคา
+
+## มอเตอร์ไซค์ (v0.64)
+
+จากรายการไอเดีย #8 (ส่วนสุดท้าย)
+
+- **ที่จอด** (`placeBikes()` ใน `main.js` ก่อน `buildRoofs()` ไม่ใช้ `rand()`): จุดของแรกตามลำดับใน `lootSpots` ที่อยู่นอกตึกและมีที่ว่าง หนึ่งคันในเมือง (สีแดง) หนึ่งคันในชานเมือง (สีน้ำเงิน) ต่อท้าย `rides` จึงเป็น `G.cars` ช่องถัดจากรถที่ปั๊มน้ำมัน เซฟเก่าที่มี `G.cars` น้อยกว่าได้ช่องใหม่ใน `applyCars()`
+- **ขี่** (ระบบเดียวกับรถ `specOf(i)` เลือกค่า `BIKE` แทน `CAR`): ความเร็วสูงสุด 17 ม./วินาที (รถ 13) เร่ง 9 เลี้ยว 2.9 เลี้ยวได้ตั้งแต่ช้า กินน้ำมันน้อยกว่า HP 60 ชนแรงเสียมากกว่า ชนซอมบี้ดาเมจ 30 เสียตัวรถ 5 เสียงเครื่อง 18 ม. ท้ายเก็บของ 2 ช่อง กล่องชนเล็ก (`r.half` 0.42 × 1.1)
+- **คนขี่ไม่มีอะไรบัง**: `shieldDriver()` ไม่ทำงานกับมอเตอร์ไซค์ ซอมบี้และโจรตีโดนคนขี่ตรง ๆ ตัวละครคนขี่มองเห็นอยู่บนรถ (ยกขึ้น 0.3 ม.) ไม่ถูกซ่อนเหมือนในรถยนต์
+- **ภาพ**: กล่องล้วน (โครง ถัง เบาะ ล้อ แฮนด์ ไฟหน้า) ไม่มีไฟล์โมเดล
+- **PLACEHOLDER:** `BIKE`
+- **ยังไม่ได้ทำ:** โมเดลมอเตอร์ไซค์ 3D, ท่านั่งขี่, ซ้อนท้าย
 
 ## ระบบ loot
 

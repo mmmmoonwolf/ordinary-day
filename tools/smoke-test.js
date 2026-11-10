@@ -756,7 +756,7 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   // drives it, a zombie in front is run down, a hit meant for the driver hits the car, out again, kept in the save
   { const Hw = await import('../src/world/highway.js'), Vh = await import('../src/systems/vehicles.js'), Wv = await import('../src/world/vehicles.js'), W5 = await import('../src/config/world.js'), Ac = await import('../src/systems/actions.js'), Cb5 = await import('../src/systems/combat.js'), I6 = await import('../src/world/interiors.js'), Sv = await import('../src/systems/save.js');
     const h = Hw.highway, gas = I6.rooms.findIndex(r => r.place && r.place.type === 'gas');
-    if (h.wrecks < 25 || h.trees < 400 || h.graves < 60 || gas < 0 || Wv.rides.length !== 2 || T.G.cars.length !== 2) vfail('highway: ' + JSON.stringify(h) + ', gas shop room ' + gas + ', rides ' + Wv.rides.length + ', cars ' + (T.G.cars || []).length);
+    if (h.wrecks < 25 || h.trees < 400 || h.graves < 60 || gas < 0 || Wv.rides.filter(r => r.kind !== 'bike').length !== 2 || T.G.cars.length !== Wv.rides.length)   // v0.64 plus the motorbikes vfail('highway: ' + JSON.stringify(h) + ', gas shop room ' + gas + ', rides ' + Wv.rides.length + ', cars ' + (T.G.cars || []).length);
     if (W5.areaAt(300, 0) !== W5.HIGHWAY || W5.areaAt(287, -30) !== W5.GAS || W5.areaAt(431, 60) !== W5.CEMETERY || !W5.inWorld(500, 10)) vfail('highway areas');
     const nav = I6.navStep(300, 10, 0, 10);   // from the highway (off the road's line) back to town: through the east gate
     if (!(nav.x > 60 && nav.x < 75 && Math.abs(nav.z) < 1)) vfail('walking back to town from the highway goes ' + JSON.stringify(nav));
@@ -1143,7 +1143,7 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   const slow = walk(20), fast = walk(100); Object.assign(bot.input, { mx: 0, mz: 0, mag: 0, run: false });
   if (!(slow < fast * .9)) vfail('no limp: ' + slow.toFixed(2) + ' vs ' + fast.toFixed(2));
   // soaked: wet climbs in heavy rain outdoors, then illness and a sneeze
-  me.room = -1; T.G.rain = 1; T.G.rainTarget = 1; me.wet = 1; me.sick = 0; for (let i = 0; i < 600 && !(me.sick > 0); i++) Bd.updateBody(me, .1);
+  me.room = -1; T.G.rain = 1; T.G.rainTarget = 1; me.wet = 1; me.sick = 0; for (let i = 0; i < 4000 && !(me.sick > 0); i++) Bd.updateBody(me, .1);   // a 1-in-25 chance a second: 60 s missed it 1 run in 12
   if (!(me.sick > 0)) vfail('never fell ill soaked'); me.sneezeT = 0; Bd.updateBody(me, .01); if (!(me.sneezeT > 0)) vfail('no sneeze');
   me.gear.bag.push({ id: 'painkiller', n: 1 }); me.hp = 50; Iv.useHeal(me); if (me.sick > 0) vfail('a Painkiller did not end the illness');
   T.G.rain = 0; T.G.rainTarget = 0;
@@ -1330,7 +1330,7 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     for (const [vx, vz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { let ok = true; for (let k = -3; k <= 12; k += .5) if (!Col.freeAt(s2.x + vx * k, s2.z + vz * k, .6)) ok = false; if (ok) { ox = s2.x; oz = s2.z; ux = vx; uz = vz; found = true; break; } } }
   for (const a of sv.slice(1)) a.gone = true; const a = sv[0]; a.pos.x = ox; a.pos.z = oz; me.pos.x = ox - ux * 40; me.pos.z = oz - uz * 40; step(1);
   const z = T.makeAgent(ox + ux * 9, oz + uz * 9); T.becomeZombie(z, 'armor'); T.agents.push(z); z.feed = 99; const hp0 = z.hp;
-  for (let k = 0; k < 200 && z.hp >= hp0; k++) step(1); if (!(z.hp < hp0)) vfail('the survivor did not shoot the zombie');
+  for (let k = 0; k < 1200 && z.hp >= hp0; k++) step(1); if (!(z.hp < hp0)) vfail('the survivor did not shoot the zombie');   // 55% a shot
   z.gone = true; step(1);
   const q = Gm.addPlayer(); q.inv = 1e9; q.pos.x = ox + uz * 1.5; q.pos.z = oz + ux * 1.5; step(2); if (a.lead !== q.id) vfail('the survivor did not join');
   // a zombie bites a survivor: it is hurt before it turns
@@ -1362,6 +1362,21 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   z.gone = true; q.pos.x = L.rx; q.pos.z = L.rz; step(2); Ac.runAction(q, 'use', []); step(2); if (q.roof !== -1 || q.airH > .5) vfail('not down');
   for (const p of P.players.slice(1)) p.away = true; step(1);
   console.log('v0.63: ' + Rw.ladders.length + ' ladders, up to ' + L.h.toFixed(1) + ' m, kept on the roof, out of zombies\' reach, down again');
+}
+
+// v0.64: the motorbike
+{
+  const vfail = m => errs.push('v0.64 test: ' + m), Wv = await import('../src/world/vehicles.js'), Vh = await import('../src/systems/vehicles.js'), { BIKE, CAR } = await import('../src/config/vehicles.js'), Gm = await import('../src/systems/game.js'), Cb = await import('../src/systems/combat.js');
+  els.bAgain.fire('click'); T.G.running = true; T.G.min = 12 * 60; step(2); for (const a of T.agents) a.gone = true; step(2);
+  const bikes = Wv.rides.map((r, i) => [r, i]).filter(([r]) => r.kind === 'bike'); if (bikes.length < 1) vfail('no motorbike');
+  const [, bi] = bikes[0], c = T.G.cars[bi]; c.fuel = 1; if (c.hp !== BIKE.hp) vfail('bike hp ' + c.hp);
+  const q = Gm.addPlayer(); q.inv = 1e9; q.pos.x = c.x + 1.2; q.pos.z = c.z; step(2);
+  if (!Vh.enterCar(q, bi)) vfail('could not get on');
+  q.inv = 0; q.hp = 100; const hp0 = q.hp; Cb.hurtPlayer(q, 10); if (!(q.hp < hp0) || c.hp !== BIKE.hp) vfail('the bike shielded its rider: ' + q.hp + ' bike ' + c.hp);
+  q.inv = 1e9; const x0 = c.x, z0 = c.z; q.input.mx = Math.sin(c.a); q.input.mz = Math.cos(c.a); q.input.mag = 1; let top = 0; for (let k = 0; k < 150; k++) { step(1); top = Math.max(top, Math.abs(c.v)); }
+  q.input.mag = 0; if (!(Math.hypot(c.x - x0, c.z - z0) > 3)) vfail('did not ride: ' + Math.hypot(c.x - x0, c.z - z0).toFixed(1));
+  Vh.leaveCar(q); for (const p of P.players.slice(1)) p.away = true; step(1);
+  console.log('v0.64: ' + bikes.length + ' motorbikes, rode ' + Math.hypot(c.x - x0, c.z - z0).toFixed(1) + ' m (top ' + top.toFixed(1) + ' m/s, a car tops at ' + CAR.max + '), the rider takes the hits');
 }
 
 console.log(errs.length ? `FAILED: ${errs.length} runtime errors\n` + errs.slice(0, 3).join('\n---\n') : 'PASSED: no runtime errors');

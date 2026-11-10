@@ -1,12 +1,15 @@
 import {jobOf} from '../config/jobs.js';
 import {G,isPvp} from '../core/state.js';
-import {CAR,TRUNK} from '../config/vehicles.js';
+import {CAR as CAR0,BIKE,TRUNK} from '../config/vehicles.js';
+// v0.64 the numbers of ride i: a car's, or the motorbike's
+export const specOf=i=>rides[i]&&rides[i].kind==='bike'?BIKE:CAR0;
+const CAR=CAR0;
 import {DEF,STACKS} from '../config/items.js';
 import {rollLoot} from './drops.js';
 import {addStack,tidyBag} from './inventory.js';
 import {inWorld} from '../config/world.js';
 import {solids} from '../world/collision.js';
-import {rides,placeRide,CAR_HALF} from '../world/vehicles.js';
+import {rides,placeRide,CAR_HALF as CAR_H} from '../world/vehicles.js';
 import {pumpSpots} from '../world/highway.js';
 import {agents} from '../entities/agents.js';
 import {players} from '../entities/player.js';
@@ -23,9 +26,10 @@ import {uiFor} from '../ui/hud.js';
 // wreck). The engine is loud: zombies around it come. All of it runs on the host, in simStep (numbers in
 // config/vehicles.js, PLACEHOLDER).
 const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
-export function freshCars(){return rides.map(r=>({x:r.x,z:r.z,a:r.a,v:0,hp:CAR.hp,fuel:CAR.fuel[0]+Math.random()*(CAR.fuel[1]-CAR.fuel[0]),trunk:bootLoot()}));}   // v0.61 a few things in the boot   // v0.53 part full
+export function freshCars(){return rides.map((r,i)=>({x:r.x,z:r.z,a:r.a,v:0,hp:specOf(i).hp,fuel:CAR.fuel[0]+Math.random()*(CAR.fuel[1]-CAR.fuel[0]),trunk:bootLoot()}));}   // v0.61 a few things in the boot   // v0.53 part full
 // the look and collision of every car from G.cars (after a reset, a load, or a snapshot on a friend's device)
-export function applyCars(){for(let i=0;i<rides.length;i++){const c=G.cars&&G.cars[i];if(c)placeRide(rides[i],c.x,c.z,c.a,c.hp);}}
+export function applyCars(){if(G.cars&&G.cars.length<rides.length)G.cars.push(...freshCars().slice(G.cars.length));   // v0.64 a save from before the bike
+  for(let i=0;i<rides.length;i++){const c=G.cars&&G.cars[i];if(c)placeRide(rides[i],c.x,c.z,c.a,c.hp);}}
 export const driverOf=i=>players.find(p=>p.car===i)||null;
 // the car a player could get into (or the one they are in)
 export function nearCar(p){
@@ -52,7 +56,7 @@ function freeSpot(x,z){if(!inWorld(x,z,.4))return false;for(const b of solids)if
 // what the car at (x,z) facing a would hit (other than itself): the four corners and the middles of its sides and ends
 const EDGE=[[1,1],[-1,1],[1,-1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]];
 function hits(i,x,z,a){
-  const s=Math.sin(a),c=Math.cos(a),own=rides[i].box,[hw,hl]=CAR_HALF,out=new Set();
+  const s=Math.sin(a),c=Math.cos(a),own=rides[i].box,[hw,hl]=rides[i].half||CAR_H,out=new Set();
   for(const [eu,ew] of EDGE){
     const u=eu*hw,w=ew*hl,px=x+c*u+s*w,pz=z-s*u+c*w;if(!inWorld(px,pz))out.add('world');
     for(const b of solids){if(b===own)continue;if(px>b.x0&&px<b.x1&&pz>b.z0&&pz<b.z1)out.add(b);}}
@@ -63,7 +67,7 @@ function hits(i,x,z,a){
 function blocked(i,c,x,z){const now=hits(i,c.x,c.z,c.a);for(const h of hits(i,x,z,c.a))if(!now.has(h))return true;return false;}
 // a player driving, once a step, instead of walking (entities/player.js updatePlayer)
 export function driveStep(p,dt){
-  const i=p.car,c=G.cars[i];if(!c||c.hp<=0){leaveCar(p);return;}
+  const i=p.car,c=G.cars[i],CAR=specOf(i);if(!c||c.hp<=0){leaveCar(p);return;}
   const I=p.input;let target=0;
   // v0.53 the horn (attack while driving): loud, zombies come
   p.hornT=(p.hornT||0)-dt;if((I.fire||I.fireQ>0)&&p.hornT<=0){p.hornT=1;sfx.horn(c.x,c.z);makeNoise(c.x,c.z,CAR.hornNoise);}
@@ -83,7 +87,7 @@ export function driveStep(p,dt){
   p.pos.x=c.x;p.pos.z=c.z;p.face=c.a;p.moving=0;p.room=-1;
   p.noiseT=(p.noiseT||0)-dt;if(p.noiseT<=0&&Math.abs(c.v)>.3){p.noiseT=CAR.noiseEvery;makeNoise(c.x,c.z,CAR.noise);}
 }
-function move(i,c,dt,driver){
+function move(i,c,dt,driver){const CAR=specOf(i),CAR_HALF=CAR.half||CAR_H;
   if(Math.abs(c.v)<.01){c.v=0;return;}
   const nx=c.x+Math.sin(c.a)*c.v*dt,nz=c.z+Math.cos(c.a)*c.v*dt;
   if(c.bump>0)c.bump-=dt;
@@ -112,13 +116,13 @@ function move(i,c,dt,driver){
 // cars nobody drives roll to a stop; zombie hit timers count down (host, every step)
 export function updateCars(dt){
   if(!G.cars)return;
-  for(let i=0;i<G.cars.length;i++){const c=G.cars[i];if(!driverOf(i)&&c.v){const dv=Math.min(Math.abs(c.v),CAR.drag*2*dt);c.v-=Math.sign(c.v)*dv;move(i,c,dt,null);}}
+  for(let i=0;i<G.cars.length;i++){const c=G.cars[i];if(!driverOf(i)&&c.v){const dv=Math.min(Math.abs(c.v),specOf(i).drag*2*dt);c.v-=Math.sign(c.v)*dv;move(i,c,dt,null);}}
   for(const z of agents)if(z.carT>0)z.carT-=dt;
   for(const p of players)if(p.carT>0)p.carT-=dt;
 }
 // a hit meant for a driver hits the car (true when it took it)
 export function shieldDriver(p,n){
-  if(!(p.car>=0))return false;const c=G.cars[p.car];if(!c||c.hp<=0)return false;
+  if(!(p.car>=0)||specOf(p.car)===BIKE)return false;const c=G.cars[p.car];if(!c||c.hp<=0)return false;   // v0.64 a rider is out in the open
   c.hp-=n;placeRide(rides[p.car],c.x,c.z,c.a,c.hp);if(c.hp<=0){c.hp=0;c.v=0;sfx.crack();uiFor(p).feed('รถพังแล้ว','warn');leaveCar(p);}
   return true;
 }
@@ -133,7 +137,7 @@ export const trunkOf=p=>{const i=p.car>=0?p.car:p.nearCar;const c=i>=0&&G.cars&&
 export function trunkPut(p,i){
   const c=trunkOf(p),g=p.gear,it=g.bag[i|0];if(!c||!it)return;if(!c.trunk)c.trunk=[];
   const stack=STACKS.has(DEF[it.id].kind),e=stack&&c.trunk.find(x=>x.id===it.id);
-  if(e)e.n+=it.n;else{if(c.trunk.length>=TRUNK.slots){uiFor(p).feed('ท้ายรถเต็ม','warn');return;}c.trunk.push(it);}
+  if(e)e.n+=it.n;else{if(c.trunk.length>=(specOf(G.cars.indexOf(c)).trunk||TRUNK.slots)){uiFor(p).feed('ท้ายรถเต็ม','warn');return;}c.trunk.push(it);}
   g.bag.splice(i|0,1);sfxFor(p).pickup();uiFor(p).updateLoadout(true);
 }
 export function trunkTake(p,j){

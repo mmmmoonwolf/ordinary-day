@@ -2,6 +2,9 @@ import {groundY} from '../config/world.js';
 import {collide} from '../world/collision.js';
 import {DEF} from '../config/items.js';
 import {agents} from './agents.js';
+import {rides} from '../world/vehicles.js';
+// v0.64 inside a car (hidden), as opposed to on a motorbike (seen)
+const inCar=a=>a.car>=0&&!(rides[a.car]&&rides[a.car].kind==='bike');
 import {players} from './player.js';
 import {curWeapon} from '../systems/inventory.js';
 import {skins,dress,undress,skinFrame,skinId} from './skins.js';
@@ -15,7 +18,7 @@ export function animate(a,dt){
   if(!a.sk&&skins.ready&&skins.on)dress(a);
   if(a.sk){
     a.y+=(groundY(a.pos.x,a.pos.z)-a.y)*Math.min(1,dt*12);p.root.position.set(a.pos.x,a.y,a.pos.z);p.root.rotation.y=a.face;
-    if(a.state==='player'){p.root.visible=!(a.inv>0&&a.alive&&Math.floor(a.inv*10)%2===0)&&!(a.car>=0);tip(a,p);}   // v0.45 hidden inside a car
+    if(a.state==='player'){p.root.visible=!(a.inv>0&&a.alive&&Math.floor(a.inv*10)%2===0)&&!inCar(a);tip(a,p);}   // v0.45 hidden inside a car (v0.64 seen on a motorbike)
     skinFrame(a,dt);return;
   }
   if(a.state==='dead'){p.root.position.set(a.pos.x,a.y,a.pos.z);p.root.rotation.y=a.face;return;}
@@ -42,7 +45,7 @@ export function animate(a,dt){
       else p.armR.rotation.x=k<.4?-.35-(k/.4)*2.3:-2.65+((k-.4)/.6)*3.5;
       p.armL.rotation.x=-s*.5;
     } else {p.armL.rotation.x=-s*.7;p.armR.rotation.x=(curWeapon(a).id==='fist'?s*.7:-.35+s*.3);}
-    p.root.visible=!(a.inv>0&&Math.floor(a.inv*10)%2===0)&&!(a.car>=0);   // v0.45 not while driving
+    p.root.visible=!(a.inv>0&&Math.floor(a.inv*10)%2===0)&&!inCar(a);   // v0.45 not while driving (v0.64 a rider shows)
   }
   else{const f=a.panic>0?1.5:.8;p.armL.rotation.x=-s*f;p.armR.rotation.x=s*f;p.head.rotation.z=0;}
   a.y+=(groundY(a.pos.x,a.pos.z)-a.y)*Math.min(1,dt*12);
@@ -53,6 +56,7 @@ export function animate(a,dt){
 // lies prone any more (v0.29)
 function tip(a,p){
   p.root.rotation.order='YXZ';p.root.rotation.x=0;
+  if(a.car>=0&&rides[a.car]&&rides[a.car].kind==='bike')p.root.position.y+=.3;   // v0.64 sitting up on the bike
   if(a.airH>0){p.root.position.y+=a.airH;if(!a.sk&&a.airH<1.5)p.root.rotation.x=a.airH*.35;}   // v0.63 on a roof: standing up there
 }
 export function separate(){
