@@ -3,6 +3,7 @@ import {G} from '../core/state.js';
 import {DAY_START,DUSK_WARN,isNightTod} from '../config/time.js';
 import {isSpecial,RISE,SCREAMER,HUNTER} from '../config/zombies.js';
 import {isPvp} from '../core/state.js';
+import {ACT,ACT2} from '../config/act.js';
 import {fireFx} from './effects.js';
 import {agents,becomeZombie,setKind,zombies,spawnEdge} from '../entities/agents.js';
 import {d2} from '../entities/movement.js';
@@ -46,6 +47,8 @@ export const EVENTS=[
   {t:11*60,fn:()=>{G.rainTarget=1;}},
   {t:13*60+20,fn:()=>{G.rainTarget=0;}},
 ];
+// v0.66 the second town: the same morning, three hours later (the bitten escapee arrives at ACT2.outbreak)
+if(ACT===2){const d=ACT2.outbreak-(9*60+30);for(const e of EVENTS)if(e.t<=9*60+30)e.t+=d;}
 function onNight(){
   G.phase='night';sfx.night();
   for(const z of zombies())if(z.kind==='walker')setKind(z,'zombie');

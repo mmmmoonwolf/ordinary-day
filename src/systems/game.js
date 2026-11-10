@@ -18,6 +18,7 @@ import {clearFireFx} from './effects.js';
 import {resetEvents} from './events.js';
 import {applyProfile} from '../core/profile.js';
 import {jobOf} from '../config/jobs.js';
+import {ACT,goTo,takeCarry} from '../config/act.js';
 import {placeDog} from './dog.js';
 import {DEF} from '../config/items.js';
 import {addStack} from './inventory.js';
@@ -38,7 +39,7 @@ export function clearWorld(){
 }
 export function reset(){
   clearWorld();
-  const me=makePlayer(0);me.local=true;applyProfile(me);giveKit(me);players.push(me);setPlayer(me);spawnPopulation();camTarget.set(player.pos.x,0,player.pos.z);   // one player on this device; more join with addPlayer() (v0.9); v0.41 wearing the name and clothes made on the start screen
+  const me=makePlayer(0);me.local=true;applyProfile(me);giveKit(me);bringCarry(me);players.push(me);setPlayer(me);spawnPopulation();camTarget.set(player.pos.x,0,player.pos.z);   // one player on this device; more join with addPlayer() (v0.9); v0.41 wearing the name and clothes made on the start screen
   let near=null,nd=1e9;for(const s of lootSpots){if(s.zone!=='city')continue;const d=Math.hypot(s.x-player.pos.x,s.z-player.pos.z);if(d>4&&d<nd){nd=d;near=s;}}
   if(near)spawnDrop(makeItem(pick(['pipe_c','knife_c','bat_c'])),near.x,near.z,near);
   // v0.37 and a backpack a little further on (config/loot.js BAG_HELP.start)
@@ -57,4 +58,18 @@ export function giveKit(p){
     if(d.gun){if(!g.eq.secondary&&d.slot==='secondary'){g.eq.secondary={id,mag:d.mag};g.active='secondary';}else if(!g.eq.primary&&d.slot==='primary')g.eq.primary={id,mag:d.mag};}
     else addStack(p,id,n);}
   uiFor(p).updateLoadout(true);
+}
+
+// v0.66 what the player brought from the first town (config/act.js, once, right after the page loaded the second)
+export const arrival={now:false};   // v0.66 the page just loaded the second town from the first: the game goes on at once
+function bringCarry(p){
+  const c=takeCarry();if(!c||!c.gear)return;arrival.now=true;const ok=it=>it&&typeof it==='object'&&DEF[it.id];
+  const g=p.gear;g.bag=(Array.isArray(c.gear.bag)?c.gear.bag:[]).filter(ok);g.cap=Math.max(g.cap,+c.gear.cap||0);
+  for(const k of ['primary','secondary','melee'])g.eq[k]=c.gear.eq&&ok(c.gear.eq[k])?c.gear.eq[k]:g.eq[k];
+  if(['primary','secondary','melee'].includes(c.gear.active))g.active=c.gear.active;
+}
+export function travel(){
+  const p=players.find(q=>q.local)||players[0];
+  if(ACT===2)goTo(1,null);else goTo(2,{gear:p?{bag:p.gear.bag,eq:p.gear.eq,cap:p.gear.cap,active:p.gear.active}:null});
+  if(typeof location!=='undefined')location.reload();
 }

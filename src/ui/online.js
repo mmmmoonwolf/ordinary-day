@@ -1,3 +1,4 @@
+import {takeRejoin} from '../config/act.js';
 import {$} from '../core/util.js';
 import {bus} from '../core/bus.js';
 import {G,isPvp} from '../core/state.js';
@@ -50,6 +51,7 @@ export function initOnline(){
     busy=false;$('bJoin').disabled=false;
   });
   net.onLeave=why=>toTitle(why);
+  {const back=takeRejoin();if(back){inp.value=back;setTimeout(()=>$('bJoin').click(),300);}}   // v0.66 back from loading the host's town
   $('bOverTitle').addEventListener('click',()=>leave(''));
   $('bRoom').addEventListener('click',async()=>{
     if(busy)return;

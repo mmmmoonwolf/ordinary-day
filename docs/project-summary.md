@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.66 | `config/act.js` `ACT` `SEED` `ACT2` `goTo()` `takeCarry()` `setRejoin()` `takeRejoin()`, `rand` ใช้ `SEED`, `travel()` `bringCarry()` `arrival` ใน `systems/game.js`, `#bTravel`, เซฟ `ordinary-day.save.2`, `tools/act2-test.js` |
 | v0.65 | `predict()` `PRED` ใน `net/client.js`, `ease(a,dt,f,pred)`, `p.room` บนเครื่องเพื่อน |
 | v0.64 | `BIKE` ใน `config/vehicles.js`, `addBike()` `placeBikes()` ใน `world/vehicles.js` (`r.kind` 'bike' `r.half`), `specOf(i)` ใน `systems/vehicles.js` |
 | v0.63 | `world/roofs.js` `ladders` `ROOF` `buildRoofs()`, `systems/roofs.js` `nearLadder()` `climb()` `roofH()` `keepOnRoof()`, `p.roof` `p.nearLadder` (snapshot `nl`, เซฟ) |
@@ -1167,6 +1168,20 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **บั๊ก**: บรรทัด `p.room=…` ใน `clientStep()` ถูกคอมเมนต์ของ v0.47.1 กลืนไป เครื่องเพื่อนจึงไม่ได้อัปเดตห้องของผู้เล่น ย้ายคอมเมนต์ออกแล้ว
 - **PLACEHOLDER:** `PRED`
 - **ยังไม่ได้ทำ:** วัดเวลาเดินทางจริง (ตอนนี้ใช้ 0.1 วินาทีตายตัว), ทำนายการยิงและการชน (ยังรอ host)
+
+## เมืองที่สอง (v0.66)
+
+จากรายการไอเดีย #9 (แผนเมืองใหม่: โหลดแผนที่ใหม่หลังผ่านค่ายทหาร เมืองยังไม่ระบาดจนคนติดเชื้อหลุดมา)
+
+- **เดินทาง** (`travel()` ใน `systems/game.js`, ปุ่ม `#bTravel` บนหน้าจบเกม): ชนะเมืองแรกแล้วปุ่มขึ้นว่า เดินทางต่อไปเมืองถัดไป กดแล้วเก็บกระเป๋าและอาวุธของผู้เล่นในเครื่องลง `sessionStorage` (`goTo(2,carry)`) แล้วโหลดหน้าใหม่ ในเมืองที่สองทุกจบเกมมีปุ่ม เริ่มใหม่ที่เมืองแรก (`goTo(1)`) เครื่องเพื่อนในห้องไม่เห็นปุ่มนี้
+- **เมืองใหม่** (`config/act.js` `ACT` อ่านจาก `sessionStorage` ตอนโหลด `SEED`): `rand` ใน `core/util.js` ใช้ seed 7151 แทน 2626 ถนน (`RC`) เหมือนเดิม แต่ขนาด ความสูง ผนัง หลังคา ร้าน ตึกที่เข้าได้ ของบนหน้าตึก ต่างหมด ส่วนที่สร้างด้วย rng ของตัวเอง (ฟาร์ม ชานเมือง แม่น้ำ ค่าย ทางหลวง ค่ายทหาร) เหมือนเดิม แท็บอื่น / เปิดใหม่เป็นเมืองแรกเสมอ (ไม่มี `sessionStorage`)
+- **ถึงแล้วเล่นต่อทันที** (`bringCarry()` ใน `reset()`, `arrival.now` ใน `main.js`): ข้ามหน้าแรก ใส่ของจากกระเป๋าเดิม (ผ่านการตรวจ `DEF`) ของที่พามาใช้ได้ครั้งเดียว
+- **ระบาดช้ากว่า** (`ACT2.outbreak` 12:30): เหตุการณ์ตอนเช้า (คนวิ่ง 09:12 เสียงกรีดร้อง 09:24 การระบาด 09:30) เลื่อนไป 3 ชั่วโมง นาฬิกาเดินช้า (`CALM_PACE`) จนถึงตอนนั้น เป้าหมายยังเป็น 3 คืนแล้วออกค่ายทหาร ข้อความจบเมืองที่สองต่างจากเมืองแรก
+- **เซฟแยก** (`ordinary-day.save.2`): เมืองแรกกับเมืองที่สองไม่เขียนทับกัน
+- **ออนไลน์**: host ส่ง `act` ไปกับข้อความ 'w' เพื่อนที่อยู่คนละเมืองจะจำรหัสห้อง (`setRejoin()`) โหลดเมืองของ host แล้วกดเข้าห้องเอง (`takeRejoin()` ใน `ui/online.js`) host ที่เดินทางต่อจะปิดห้องเพราะหน้าโหลดใหม่ ต้องเปิดห้องใหม่ในเมืองที่สอง
+- **เทสต์** `tools/act2-test.js` (อยู่ใน `npm test`): โหลดแบบเมืองที่สองพร้อมกระเป๋าที่พามา ตรวจว่าตึกไม่เหมือนเมืองแรก ไม่ระบาดก่อน 12:30 ระบาดหลัง 12:30 ของมาครบ เดินหนึ่งคืนไม่มี error
+- **PLACEHOLDER:** `SEED` ของเมืองที่สอง `ACT2.outbreak`
+- **ยังไม่ได้ทำ:** หน้าตาเมืองที่ต่างไปมากกว่าผังตึก (ป้าย สีโทน ไฟยังเปิดครบ คนเดินเยอะ), ผู้รอดชีวิตที่โดนกัดเดินเข้าเมืองให้เห็น, พาเพื่อนทั้งห้องเดินทางพร้อมกัน, เมืองที่สาม
 
 ## ระบบ loot
 

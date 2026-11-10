@@ -1,3 +1,4 @@
+import {ACT,goTo,setRejoin} from '../config/act.js';
 import {$} from '../core/util.js';
 import {bus} from '../core/bus.js';
 import {G} from '../core/state.js';
@@ -39,6 +40,7 @@ export async function join(raw){
     link.onData(m=>{
       if(!m||typeof m!=='object')return;
       if(m.t==='no'){clearTimeout(timer);link.close();no(new Error(m.why||'เข้าห้องไม่ได้'));return;}
+      if(m.t==='w'&&(m.act||1)!==ACT&&typeof location!=='undefined'){goTo(m.act||1);setRejoin(code);location.reload();return;}   // v0.66 the host is in the other town: load it, then come back
       if(m.t==='w'){net.id=m.id;if(!inside){inside=true;clearTimeout(timer);enter(link,code);ok(code);}return;}   // again later: the host began a new game
       if(!inside)return;
       if(m.t==='s')onSnap(m);
