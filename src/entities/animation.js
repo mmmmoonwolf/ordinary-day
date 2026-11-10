@@ -53,10 +53,10 @@ export function animate(a,dt){
 // lies prone any more (v0.29)
 function tip(a,p){
   p.root.rotation.order='YXZ';p.root.rotation.x=0;
-  if(a.airH>0){p.root.position.y+=a.airH;if(!a.sk)p.root.rotation.x=a.airH*.35;}
+  if(a.airH>0){p.root.position.y+=a.airH;if(!a.sk&&a.airH<1.5)p.root.rotation.x=a.airH*.35;}   // v0.63 on a roof: standing up there
 }
 export function separate(){
-  const L=agents.filter(a=>a.state!=='dead');for(const p of players)if(p.alive&&!p.vault)L.push(p);   // v0.30 not mid-vault
+  const L=agents.filter(a=>a.state!=='dead');for(const p of players)if(p.alive&&!p.vault&&!(p.roof>=0))L.push(p);   // v0.63 not up on a roof   // v0.30 not mid-vault
   for(let i=0;i<L.length;i++)for(let j=i+1;j<L.length;j++){const a=L[i],b=L[j];const need=(a.rad||.34)+(b.rad||.34);const dx=b.pos.x-a.pos.x,dz=b.pos.z-a.pos.z,dd=dx*dx+dz*dz;if(dd>need*need||dd<1e-6)continue;const fa=a.kind==='nest'?0:1,fb=b.kind==='nest'?0:1;if(!fa&&!fb)continue;const d=Math.sqrt(dd),push=(need-d)/(fa+fb);a.pos.x-=dx/d*push*fa;a.pos.z-=dz/d*push*fa;b.pos.x+=dx/d*push*fb;b.pos.z+=dz/d*push*fb;collide(a.pos,a.rad||.34);collide(b.pos,b.rad||.34);}   // never push anyone through a thin wall
 }
 

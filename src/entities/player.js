@@ -1,3 +1,4 @@
+import {roofH,nearLadder} from '../systems/roofs.js';
 import {jobOf} from '../config/jobs.js';
 import {G,isPvp} from '../core/state.js';
 import {OFF} from '../config/world.js';
@@ -41,7 +42,7 @@ export function makePlayer(i=0){
   return p;
 }
 // players that zombies can go after (v0.12: not one whose device has dropped out of the game, p.away)
-export const targets=()=>players.filter(p=>p.alive&&p.down<=0&&!p.away&&!p.zed);   // v0.51 zombies leave zombie players alone
+export const targets=()=>players.filter(p=>p.alive&&p.down<=0&&!p.away&&!p.zed&&!(p.roof>=0));   // v0.63 out of reach on a roof   // v0.51 zombies leave zombie players alone
 export const isDown=p=>p.alive&&p.bleed>0;
 // more than one player in the game: the bag and the pause menu no longer stop the world, no ×2 / ×4 (v0.11)
 export const isSolo=()=>players.filter(p=>!p.away).length<2;
@@ -78,7 +79,7 @@ export function updatePlayer(p,dt){
   p.ads=!!(I.ads&&def.gun&&!I.run&&p.reloadT<=0);p.bloom=Math.max(0,p.bloom-dt*BLOOM.decay);   // v0.29 aiming down the sights
   const heavy=(def.heavy&&(I.fire||p.aimT>0)?.7:1)*(p.ads?ADS.speed:1);
   // v0.30 Space vaults what is ahead (or hops), running straight into something low vaults it
-  if(p.hop>0){p.hop-=dt;p.airH=Math.max(0,Math.sin(Math.PI*(1-p.hop/VAULT.hop)))*VAULT.hopH;}else p.airH=0;
+  if(p.hop>0&&!(p.roof>=0)){p.hop-=dt;p.airH=Math.max(0,Math.sin(Math.PI*(1-p.hop/VAULT.hop)))*VAULT.hopH;}else p.airH=roofH(p);   // v0.63 up on a roof
   if(!(p.trapT>0)&&!(p.reloadT>0)){
     const dir=mag>.08?[I.mx,I.mz]:[Math.sin(p.face),Math.cos(p.face)];
     if(I.jumpQ>0){I.jumpQ=0;if(!startVault(p,dir[0],dir[1])&&p.hop<=0)p.hop=VAULT.hop;}
@@ -105,14 +106,16 @@ export function updatePlayer(p,dt){
   p.recoil=Math.max(0,p.recoil-dt*8);
   // walk-over pickups; what is in reach for E / the pick button (ui/prompts.js shows it for the local player)
   let full=null;   // an item underfoot that does not fit in the bag
-  for(let i=drops.length-1;i>=0;i--){const d=drops[i];if(!STACKS.has(DEF[d.item.id].kind))continue;
+  for(let i=p.roof>=0?-1:drops.length-1;i>=0;i--){const d=drops[i];if(!STACKS.has(DEF[d.item.id].kind))continue;   // v0.63 nothing underfoot up on a roof
+    
     const dist=Math.hypot(d.x-p.pos.x,d.z-p.pos.z);if(d.hold){if(dist>1.4)d.hold=false;continue;}   // just dropped: wait until the player walks away
     if(dist<.9&&!pickup(p,d,true))full=d;}
   p.nearDown=nearestDowned(p);
-  const np=nearestPickable(p);p.full=!np&&full?full:null;p.near=p.full?null:np;
-  p.nearDoor=p.full||np?-1:nearDoor(p);p.fixDoor=nearFixDoor(p);
-  p.nearBox=p.full||np||p.nearDoor>=0?-1:nearBoxOf(p);
-  p.nearCar=p.full||np||p.nearDoor>=0||p.nearBox>=0?-1:nearCar(p);   // v0.45 a car that still starts
+  const np=p.roof>=0?null:nearestPickable(p);p.full=!np&&full?full:null;p.near=p.full?null:np;
+  p.nearLadder=nearLadder(p);   // v0.63
+  p.nearDoor=p.full||np||p.roof>=0?-1:nearDoor(p);p.fixDoor=p.roof>=0?-1:nearFixDoor(p);
+  p.nearBox=p.full||np||p.nearDoor>=0||p.roof>=0?-1:nearBoxOf(p);
+  p.nearCar=p.full||np||p.nearDoor>=0||p.nearBox>=0||p.roof>=0?-1:nearCar(p);   // v0.45 a car that still starts
   const R=isPvp()?PVP.regen:REGEN,cap=p.maxHp*R.cap;if(performance.now()/1000-p.lastHit>R.after&&p.hp<cap&&!(p.infect>0)&&!(p.bleedW>0))p.hp=Math.min(cap,p.hp+R.rate*dt);   // v0.42 slower, up to a cap (config/health.js); v0.49 PvP faster, to full
   updateInfection(p,dt);
 }

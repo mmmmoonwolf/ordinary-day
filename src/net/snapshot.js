@@ -32,7 +32,7 @@ export function encodeWorld(c,me){
   const who=players.map(p=>[p.id,p.name,p.wear||null]),wj=JSON.stringify(who);if(wj!==c.who){c.who=wj;s.who=who;}   // v0.41 names and clothes, when they change
   const gj=JSON.stringify(me.gear);
   s.me={id:me.id,inf:r2(me.infect),ec:me.endCause,near:me.near?me.near.nid:0,full:me.full?me.full.nid:0,
-    nd:me.nearDoor,fd:me.fixDoor,dn:me.nearDown?me.nearDown.id:-1,hp:me.helping?me.helping.id:-1,ht:r2(me.helpT),nb:me.nearBox,sb:me.searching,st:r2(me.searchT),nc:me.nearCar,kb:me.killedBy??-1,pn:r2(me.panic||0),bw:me.bleedW>0?1:0,sk:me.sick>0?1:0};   // v0.54 panic, bleeding, ill   // v0.51 kb: who killed them
+    nd:me.nearDoor,fd:me.fixDoor,nl:me.nearLadder??-1,dn:me.nearDown?me.nearDown.id:-1,hp:me.helping?me.helping.id:-1,ht:r2(me.helpT),nb:me.nearBox,sb:me.searching,st:r2(me.searchT),nc:me.nearCar,kb:me.killedBy??-1,pn:r2(me.panic||0),bw:me.bleedW>0?1:0,sk:me.sick>0?1:0};   // v0.54 panic, bleeding, ill   // v0.51 kb: who killed them
   if(gj!==c.gear){c.gear=gj;s.me.gear=me.gear;}
   s.ag=[];s.nw=[];
   for(const a of agents){
@@ -94,7 +94,7 @@ export function applyWorld(s,myId){
   const me=s.me;
   if(me&&player){
     if(me.gear)player.gear=me.gear;
-    Object.assign(player,{infect:me.inf,endCause:me.ec,nearDoor:me.nd,fixDoor:me.fd,helpT:me.ht,nearBox:me.nb??-1,searching:me.sb??-1,searchT:me.st||0,nearCar:me.nc??-1,killedBy:me.kb??-1,panic:me.pn||0,bleedW:me.bw?1:0,sick:me.sk?1:0,
+    Object.assign(player,{infect:me.inf,endCause:me.ec,nearDoor:me.nd,fixDoor:me.fd,nearLadder:me.nl??-1,helpT:me.ht,nearBox:me.nb??-1,searching:me.sb??-1,searchT:me.st||0,nearCar:me.nc??-1,killedBy:me.kb??-1,panic:me.pn||0,bleedW:me.bw?1:0,sick:me.sk?1:0,
       near:dropOf(me.near),full:dropOf(me.full),nearDown:players.find(q=>q.id===me.dn)||null,helping:players.find(q=>q.id===me.hp)||null});
   }
   // people and zombies

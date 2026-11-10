@@ -29,7 +29,7 @@ const validItem=it=>it&&DEF[it.id];
 function snapshot(){
   const g=Object.assign({},G,{alertA:null,alertT:0,running:false,paused:false,over:false,lastMinShown:-1});
   return {v:SAVE_VERSION,savedAt:Date.now(),G:g,
-    players:players.map(p=>({x:p.pos.x,z:p.pos.z,face:p.face,hp:p.hp,alive:p.alive,down:p.down,bleed:p.bleed,inv:p.inv,infect:p.infect,infWarn:p.infWarn,sinceHit:performance.now()/1000-p.lastHit,stay:p.stay,job:p.job||'none',kitGot:!!p.kitGot,bleedW:p.bleedW||0,wet:p.wet||0,sick:p.sick||0,gear:p.gear,token:p.token,name:p.name,wear:p.wear||null})),   // v0.41 name and clothes (friends'; this device's come from the profile)
+    players:players.map(p=>({x:p.pos.x,z:p.pos.z,face:p.face,hp:p.hp,alive:p.alive,down:p.down,bleed:p.bleed,inv:p.inv,infect:p.infect,infWarn:p.infWarn,sinceHit:performance.now()/1000-p.lastHit,stay:p.stay,job:p.job||'none',kitGot:!!p.kitGot,roof:p.roof??-1,bleedW:p.bleedW||0,wet:p.wet||0,sick:p.sick||0,gear:p.gear,token:p.token,name:p.name,wear:p.wear||null})),   // v0.41 name and clothes (friends'; this device's come from the profile)
     agents:agents.filter(a=>a.state!=='dead'&&!a.gone).map(a=>{const o={x:a.pos.x,z:a.pos.z,look:a.look};for(const k of AGENT_KEYS)o[k]=a[k];return o;}),
     drops:drops.map(d=>({item:d.item,x:d.x,z:d.z,spot:d.spot?lootSpots.indexOf(d.spot):-1,mine:!!d.mine}))};
 }
@@ -61,7 +61,7 @@ export function loadGame(){
     p.gear=Object.assign(freshGear(),{bag:(g.bag||[]).filter(validItem),cap:g.cap||6,active:g.active||'melee'});
     for(const k of ['primary','secondary','melee'])p.gear.eq[k]=validItem(eq[k])?eq[k]:null;
     tidyBag(p.gear);   // saves from before v0.14.1 can hold several stacks of one item
-    Object.assign(p.pos,{x:o.x,z:o.z});Object.assign(p,{face:o.face,hp:o.hp,down:o.down,bleed:o.bleed||0,inv:o.inv,infect:o.infect||0,infWarn:o.infWarn||0,stay:o.stay||null,bleedW:o.bleedW||0,wet:o.wet||0,sick:o.sick||0,kitGot:o.kitGot!==false,lastHit:performance.now()/1000-o.sinceHit});
+    Object.assign(p.pos,{x:o.x,z:o.z});Object.assign(p,{face:o.face,hp:o.hp,down:o.down,bleed:o.bleed||0,inv:o.inv,infect:o.infect||0,infWarn:o.infWarn||0,stay:o.stay||null,bleedW:o.bleedW||0,wet:o.wet||0,sick:o.sick||0,kitGot:o.kitGot!==false,roof:o.roof??-1,lastHit:performance.now()/1000-o.sinceHit});
     if(o.alive===false)Object.assign(p,{alive:false,state:'dead',deadT:30});
     if(i)Object.assign(p,{token:o.token||null,away:true,name:cleanName(o.name)||p.name,wear:cleanLook(o.wear),job:o.job||'none'});   // friends wait as they were until they join the room again (v0.12)
   });
