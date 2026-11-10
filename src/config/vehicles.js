@@ -18,3 +18,7 @@ export const CAR={
 
 // v0.61 each drivable car has a boot: `slots` stacks or items, starting with `start` civilian things (PLACEHOLDERS)
 export const TRUNK={slots:8,start:[1,3],reach:3.5};
+
+// v0.64 the motorbike: quicker, turns sharper, goes further on its fuel, but takes little before it dies, barely hurts
+// what it runs down, and does not shield its rider (zombies hit the rider, not the bike); a small box (PLACEHOLDERS)
+export const BIKE={...CAR,max:17,rev:3,accel:9,steer:2.9,grip0:.55,hp:60,crash:1.2,hitMin:4,hitDmg:30,hitCost:5,noise:18,fuelUse:.00028,trunk:2,half:[.42,1.1]};

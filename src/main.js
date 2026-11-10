@@ -1,4 +1,5 @@
 // Ordinary Day — entry point: builds the city, wires input, starts a new game and runs the frame loop.
+import {placeBikes} from './world/vehicles.js';
 import {buildRoofs} from './world/roofs.js';
 import {updateNpcs} from './systems/npc.js';
 import {updateDog} from './systems/dog.js';
@@ -77,6 +78,7 @@ buildRiver();   // v0.25: the river and the bridge east of town; own rng, append
 buildCamp();   // v0.26: the survivors' camp in the woods across the river; own rng, appended
 buildOldTown();   // v0.34: an old European town, abandoned: shop boards, balconies, posters, body bags, barriers; own rng
 buildHighway();   // v0.45: the highway east out of town, its gas station and cemetery, the cars that drive; own rng, appended
+placeBikes();   // v0.64 two motorbikes (no rand), after the cars on the highway
 buildRoofs();   // v0.63 ladders up a few roofs (no rand, no solids)
 moreBoxes();   // v0.40: more cupboards in every room and the cars to search; own rng, appended to `boxes`, last
 initInput();

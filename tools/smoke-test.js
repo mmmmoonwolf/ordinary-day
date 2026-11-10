@@ -756,7 +756,7 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   // drives it, a zombie in front is run down, a hit meant for the driver hits the car, out again, kept in the save
   { const Hw = await import('../src/world/highway.js'), Vh = await import('../src/systems/vehicles.js'), Wv = await import('../src/world/vehicles.js'), W5 = await import('../src/config/world.js'), Ac = await import('../src/systems/actions.js'), Cb5 = await import('../src/systems/combat.js'), I6 = await import('../src/world/interiors.js'), Sv = await import('../src/systems/save.js');
     const h = Hw.highway, gas = I6.rooms.findIndex(r => r.place && r.place.type === 'gas');
-    if (h.wrecks < 25 || h.trees < 400 || h.graves < 60 || gas < 0 || Wv.rides.length !== 2 || T.G.cars.length !== 2) vfail('highway: ' + JSON.stringify(h) + ', gas shop room ' + gas + ', rides ' + Wv.rides.length + ', cars ' + (T.G.cars || []).length);
+    if (h.wrecks < 25 || h.trees < 400 || h.graves < 60 || gas < 0 || Wv.rides.filter(r => r.kind !== 'bike').length !== 2 || T.G.cars.length !== Wv.rides.length)   // v0.64 plus the motorbikes vfail('highway: ' + JSON.stringify(h) + ', gas shop room ' + gas + ', rides ' + Wv.rides.length + ', cars ' + (T.G.cars || []).length);
     if (W5.areaAt(300, 0) !== W5.HIGHWAY || W5.areaAt(287, -30) !== W5.GAS || W5.areaAt(431, 60) !== W5.CEMETERY || !W5.inWorld(500, 10)) vfail('highway areas');
     const nav = I6.navStep(300, 10, 0, 10);   // from the highway (off the road's line) back to town: through the east gate
     if (!(nav.x > 60 && nav.x < 75 && Math.abs(nav.z) < 1)) vfail('walking back to town from the highway goes ' + JSON.stringify(nav));
@@ -1362,6 +1362,21 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   z.gone = true; q.pos.x = L.rx; q.pos.z = L.rz; step(2); Ac.runAction(q, 'use', []); step(2); if (q.roof !== -1 || q.airH > .5) vfail('not down');
   for (const p of P.players.slice(1)) p.away = true; step(1);
   console.log('v0.63: ' + Rw.ladders.length + ' ladders, up to ' + L.h.toFixed(1) + ' m, kept on the roof, out of zombies\' reach, down again');
+}
+
+// v0.64: the motorbike
+{
+  const vfail = m => errs.push('v0.64 test: ' + m), Wv = await import('../src/world/vehicles.js'), Vh = await import('../src/systems/vehicles.js'), { BIKE, CAR } = await import('../src/config/vehicles.js'), Gm = await import('../src/systems/game.js'), Cb = await import('../src/systems/combat.js');
+  els.bAgain.fire('click'); T.G.running = true; T.G.min = 12 * 60; step(2); for (const a of T.agents) a.gone = true; step(2);
+  const bikes = Wv.rides.map((r, i) => [r, i]).filter(([r]) => r.kind === 'bike'); if (bikes.length < 1) vfail('no motorbike');
+  const [, bi] = bikes[0], c = T.G.cars[bi]; c.fuel = 1; if (c.hp !== BIKE.hp) vfail('bike hp ' + c.hp);
+  const q = Gm.addPlayer(); q.inv = 1e9; q.pos.x = c.x + 1.2; q.pos.z = c.z; step(2);
+  if (!Vh.enterCar(q, bi)) vfail('could not get on');
+  q.inv = 0; q.hp = 100; const hp0 = q.hp; Cb.hurtPlayer(q, 10); if (!(q.hp < hp0) || c.hp !== BIKE.hp) vfail('the bike shielded its rider: ' + q.hp + ' bike ' + c.hp);
+  q.inv = 1e9; const x0 = c.x, z0 = c.z; q.input.mx = Math.sin(c.a); q.input.mz = Math.cos(c.a); q.input.mag = 1; let top = 0; for (let k = 0; k < 150; k++) { step(1); top = Math.max(top, Math.abs(c.v)); }
+  q.input.mag = 0; if (!(Math.hypot(c.x - x0, c.z - z0) > 3)) vfail('did not ride: ' + Math.hypot(c.x - x0, c.z - z0).toFixed(1));
+  Vh.leaveCar(q); for (const p of P.players.slice(1)) p.away = true; step(1);
+  console.log('v0.64: ' + bikes.length + ' motorbikes, rode ' + Math.hypot(c.x - x0, c.z - z0).toFixed(1) + ' m (top ' + top.toFixed(1) + ' m/s, a car tops at ' + CAR.max + '), the rider takes the hits');
 }
 
 console.log(errs.length ? `FAILED: ${errs.length} runtime errors\n` + errs.slice(0, 3).join('\n---\n') : 'PASSED: no runtime errors');
