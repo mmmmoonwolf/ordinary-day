@@ -1143,7 +1143,7 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
   const slow = walk(20), fast = walk(100); Object.assign(bot.input, { mx: 0, mz: 0, mag: 0, run: false });
   if (!(slow < fast * .9)) vfail('no limp: ' + slow.toFixed(2) + ' vs ' + fast.toFixed(2));
   // soaked: wet climbs in heavy rain outdoors, then illness and a sneeze
-  me.room = -1; T.G.rain = 1; T.G.rainTarget = 1; me.wet = 1; me.sick = 0; for (let i = 0; i < 600 && !(me.sick > 0); i++) Bd.updateBody(me, .1);
+  me.room = -1; T.G.rain = 1; T.G.rainTarget = 1; me.wet = 1; me.sick = 0; for (let i = 0; i < 4000 && !(me.sick > 0); i++) Bd.updateBody(me, .1);   // a 1-in-25 chance a second: 60 s missed it 1 run in 12
   if (!(me.sick > 0)) vfail('never fell ill soaked'); me.sneezeT = 0; Bd.updateBody(me, .01); if (!(me.sneezeT > 0)) vfail('no sneeze');
   me.gear.bag.push({ id: 'painkiller', n: 1 }); me.hp = 50; Iv.useHeal(me); if (me.sick > 0) vfail('a Painkiller did not end the illness');
   T.G.rain = 0; T.G.rainTarget = 0;
@@ -1330,7 +1330,7 @@ console.log('v0.11: bus (' + want.length + ' kinds, received), bag/pause/speed w
     for (const [vx, vz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { let ok = true; for (let k = -3; k <= 12; k += .5) if (!Col.freeAt(s2.x + vx * k, s2.z + vz * k, .6)) ok = false; if (ok) { ox = s2.x; oz = s2.z; ux = vx; uz = vz; found = true; break; } } }
   for (const a of sv.slice(1)) a.gone = true; const a = sv[0]; a.pos.x = ox; a.pos.z = oz; me.pos.x = ox - ux * 40; me.pos.z = oz - uz * 40; step(1);
   const z = T.makeAgent(ox + ux * 9, oz + uz * 9); T.becomeZombie(z, 'armor'); T.agents.push(z); z.feed = 99; const hp0 = z.hp;
-  for (let k = 0; k < 200 && z.hp >= hp0; k++) step(1); if (!(z.hp < hp0)) vfail('the survivor did not shoot the zombie');
+  for (let k = 0; k < 1200 && z.hp >= hp0; k++) step(1); if (!(z.hp < hp0)) vfail('the survivor did not shoot the zombie');   // 55% a shot
   z.gone = true; step(1);
   const q = Gm.addPlayer(); q.inv = 1e9; q.pos.x = ox + uz * 1.5; q.pos.z = oz + ux * 1.5; step(2); if (a.lead !== q.id) vfail('the survivor did not join');
   // a zombie bites a survivor: it is hurt before it turns
