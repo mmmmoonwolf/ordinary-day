@@ -1,3 +1,5 @@
+import {placeBandits} from './npc.js';
+import {BANDIT} from '../config/npc.js';
 import {rnd,pick,wpick} from '../core/util.js';
 import {scene} from '../core/renderer.js';
 import {G,isPvp} from '../core/state.js';
@@ -117,6 +119,7 @@ const DAILY_RUN={
     sfx.explode(x,z);makeNoise(x,z,40);
   },
   fog(){G.fog=G.min+DAILY.last.fog;},
+  bandits(){if(isPvp()||Math.floor(G.min/1440)+1<BANDIT.from)return;const s=farSpot(40,90);if(s)placeBandits(s[0],s[1]);},   // v0.62
   storm(){G.storm=G.min+DAILY.last.storm;G.rainTarget=1;G.boltAt=G.min+rnd(STORM.every[0],STORM.every[1]);},   // v0.56
   raid(){
     const list=rooms.map((r,k)=>[r,k]).filter(([r,k])=>!players.some(p=>roomAt(p.pos.x,p.pos.z)===k));if(!list.length)return;

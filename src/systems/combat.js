@@ -1,4 +1,7 @@
 import {jobOf} from '../config/jobs.js';
+import {hurtNpc} from './npc.js';
+// v0.62 what a player's weapons hit: zombies, and bandits (people with a.npc 'bandit', still alive)
+export const shootable=z=>z.state==='zombie'||z.npc==='bandit'&&z.state==='human';
 import {rnd} from '../core/util.js';
 import {muzzle} from '../core/renderer.js';
 import {G,isPvp,sideOf} from '../core/state.js';
@@ -88,7 +91,7 @@ export function aimAssist(p,def){
   if(p.input.aim)return;
   const range=def.gun?def.range*.85:def.range+1.6,cone=def.gun?.8:.4;
   const fx=Math.sin(p.face),fz=Math.cos(p.face);let best=null,bs=-9;
-  for(const z of agents){if(z.state!=='zombie'||z.retreat)continue;const dx=z.pos.x-p.pos.x,dz=z.pos.z-p.pos.z,d=Math.hypot(dx,dz);if(d>range||d<1e-3)continue;if(walledOff(p.pos.x,p.pos.z,z.pos.x,z.pos.z))continue;
+  for(const z of agents){if(!shootable(z)||z.retreat)continue;const dx=z.pos.x-p.pos.x,dz=z.pos.z-p.pos.z,d=Math.hypot(dx,dz);if(d>range||d<1e-3)continue;if(walledOff(p.pos.x,p.pos.z,z.pos.x,z.pos.z))continue;
     const dot=(dx*fx+dz*fz)/d;if(dot<cone&&d>2.2)continue;const s=dot-d/range*.6;if(s>bs){bs=s;best=z;}}
   for(const q of foesOf(p)){const dx=q.pos.x-p.pos.x,dz=q.pos.z-p.pos.z,d=Math.hypot(dx,dz);if(d>range||d<1e-3)continue;if(walledOff(p.pos.x,p.pos.z,q.pos.x,q.pos.z))continue;   // v0.47 the other players in PvP
     const dot=(dx*fx+dz*fz)/d;if(dot<cone&&d>2.2)continue;const s=dot-d/range*.6;if(s>bs){bs=s;best=q;}}
@@ -120,11 +123,11 @@ export function fireGun(p,w,def){
     const sp=spreadOf(p,def),ang=p.face+rnd(-sp,sp),dx=Math.sin(ang),dz=Math.cos(ang);
     let wall=rayWall(ox,oz,dx,dz,def.range);const tank=tankOnRay(ox,oz,dx,dz,wall+.6);if(tank)wall=Math.min(wall,tank[0]);   // v0.23 a gas cylinder stops the bullet, and goes off
     const hits=[];
-    for(const z of agents){if(z.state!=='zombie')continue;const rx=z.pos.x-ox,rz=z.pos.z-oz,t=rx*dx+rz*dz;if(t<-.3||t>wall)continue;if(Math.abs(rx*dz-rz*dx)<.45+(z.rad-.34))hits.push([Math.max(t,0),z]);}
+    for(const z of agents){if(!shootable(z))continue;const rx=z.pos.x-ox,rz=z.pos.z-oz,t=rx*dx+rz*dz;if(t<-.3||t>wall)continue;if(Math.abs(rx*dz-rz*dx)<.45+(z.rad-.34))hits.push([Math.max(t,0),z]);}
     for(const q of foesOf(p)){const rx=q.pos.x-ox,rz=q.pos.z-oz,t=rx*dx+rz*dz;if(t<-.3||t>wall)continue;if(Math.abs(rx*dz-rz*dx)<.42)hits.push([Math.max(t,0),q]);}   // v0.47 PvP
     hits.sort((a,b)=>a[0]-b[0]);
     const n=Math.min(hits.length,def.pierce||1);let end=n?hits[n-1][0]:wall,armor=false;
-    for(let k=0;k<n;k++){const [t,z]=hits[k];if(z.state==='player'){hitFoe(p,z,def.falloff?pd*(1-t/def.range*.6):pd,dx,dz,false);continue;}if(hurtZombie(z,def.falloff?pd*(1-t/def.range*.6):pd,dx,dz,def.pellets?.12:.25,true,false,p))armor=true;}
+    for(let k=0;k<n;k++){const [t,z]=hits[k];if(z.state==='player'){hitFoe(p,z,def.falloff?pd*(1-t/def.range*.6):pd,dx,dz,false);continue;}if(z.npc){hurtNpc(z,def.falloff?pd*(1-t/def.range*.6):pd,p,dx,dz);continue;}if(hurtZombie(z,def.falloff?pd*(1-t/def.range*.6):pd,dx,dz,def.pellets?.12:.25,true,false,p))armor=true;}
     tracer(ox,oz,ox+dx*end,oz+dz*end,armor?'#a9d4ff':null);
     if(!G.alarm&&!n)carAlarm(ox,oz,dx,dz,end);   // v0.52 a stray bullet into a parked car sets its alarm off
     if(tank&&hits.length<(def.pierce||1))blowTank(tank[1],p);
@@ -141,10 +144,10 @@ export function backstab(p,z){
   const dx=p.pos.x-z.pos.x,dz=p.pos.z-z.pos.z,d=Math.hypot(dx,dz)||1;
   return (dx*Math.sin(z.face)+dz*Math.cos(z.face))/d<-BACKSTAB.arc;
 }
-function blow(p,z,def,dx,dz){if(backstab(p,z)){hurtZombie(z,z.hp+1,dx,dz,.1,false,true,p);p.stabs=(p.stabs||0)+1;}else{hurtZombie(z,def.dmg,dx,dz,def.kb,false,false,p);if(def.stun&&z.state==='zombie')z.feed=Math.max(z.feed||0,def.stun);}}   // v0.55 stun: the extinguisher
+function blow(p,z,def,dx,dz){if(z.npc){hurtNpc(z,def.dmg,p,dx,dz);return;}if(backstab(p,z)){hurtZombie(z,z.hp+1,dx,dz,.1,false,true,p);p.stabs=(p.stabs||0)+1;}else{hurtZombie(z,def.dmg,dx,dz,def.kb,false,false,p);if(def.stun&&z.state==='zombie')z.feed=Math.max(z.feed||0,def.stun);}}   // v0.55 stun: the extinguisher
 export function meleeHit(p,def){
   const fx=Math.sin(p.face),fz=Math.cos(p.face);let best=null,bd=1e9;
-  for(const z of agents){if(z.state!=='zombie')continue;const dx=z.pos.x-p.pos.x,dz=z.pos.z-p.pos.z,d=Math.hypot(dx,dz);
+  for(const z of agents){if(!shootable(z))continue;const dx=z.pos.x-p.pos.x,dz=z.pos.z-p.pos.z,d=Math.hypot(dx,dz);
     if(d-(z.rad-.34)>def.range||d<1e-3)continue;if((dx*fx+dz*fz)/d<def.arc)continue;if(walledOff(p.pos.x,p.pos.z,z.pos.x,z.pos.z))continue;   // no hitting through a wall
     if(def.cleave){blow(p,z,def,dx/d,dz/d);best=best||z;}else if(d<bd){bd=d;best=z;}}
   for(const q of foesOf(p)){const dx=q.pos.x-p.pos.x,dz=q.pos.z-p.pos.z,d=Math.hypot(dx,dz);   // v0.47 PvP

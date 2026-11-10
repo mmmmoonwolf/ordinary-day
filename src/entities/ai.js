@@ -1,3 +1,4 @@
+import {updateNpc} from '../systems/npc.js';
 import {rnd,pick,clamp,wpick} from '../core/util.js';
 import {G} from '../core/state.js';
 import {inWorld} from '../config/world.js';
@@ -26,6 +27,7 @@ import {damageDoor} from '../systems/doors.js';
 
 // ---------- AI ----------
 export function updateHuman(a,dt){
+  if(a.npc&&a.state==='human'){updateNpc(a,dt);return;}   // v0.62 survivors and bandits
   if(a.state==='infected'){a.turnT-=dt;const k=clamp(1-a.turnT/8,0,1);a.b.mats[2].color.copy(a.b.base.skin).lerp(new THREE.Color(ZC.walker.skin),k*.7);
     if(a.turnT<=0){becomeZombie(a);a.rise=RISE.up;return;}
     if(a.turnT<RISE.fall){a.moving=0;return;}}   // v0.27 down on the ground, about to turn
@@ -97,7 +99,8 @@ export function updateZombie(a,dt){
       if(a.kind==='boomer'){a.fuse=1.2;sfx.swell(a.pos.x,a.pos.z);return;}
       if(a.kind==='tyrant'){if(a.atk<=0){a.atk=2.2;a.wind=.85;sfx.roar(a.pos.x,a.pos.z,.8);}return;}
       if(a.atk<=0){a.atk=C.rate;a.swingT=.5;if(hurtPlayer(tgt,C.dmg)){wound(tgt);if(Math.random()<(C.infect||0)*diffOf(G).infect)infectPlayer(tgt);}if(a.kind==='sprinter')a.feed=1.3;}
-    } else {tgt.state='infected';tgt.turnT=rnd(6,11);tgt.panic=6;tgt.tx=tgt.pos.x-a.pos.x;tgt.tz=tgt.pos.z-a.pos.z;a.feed=1.4;addBlood(tgt.pos.x,tgt.pos.z);sfx.scream(tgt.pos.x,tgt.pos.z);}   // v0.19
+    } else if(tgt.npc&&(a.atk>0||(a.atk=C.rate,a.swingT=.5,tgt.hp-=C.dmg,addBlood(tgt.pos.x,tgt.pos.z),tgt.hp>0))){}   // v0.62 an armed person fights it off a while
+    else {tgt.state='infected';tgt.turnT=rnd(6,11);tgt.panic=6;tgt.tx=tgt.pos.x-a.pos.x;tgt.tz=tgt.pos.z-a.pos.z;a.feed=1.4;addBlood(tgt.pos.x,tgt.pos.z);sfx.scream(tgt.pos.x,tgt.pos.z);}   // v0.19
     return;
   }
   const ox=a.pos.x,oz=a.pos.z;if(!approach(a,tgt.pos.x,tgt.pos.z,day&&!isP?sp*1.4:sp,dt,C))return;
