@@ -1,4 +1,5 @@
 // Ordinary Day — entry point: builds the city, wires input, starts a new game and runs the frame loop.
+import {updateNpcs} from './systems/npc.js';
 import {updateDog} from './systems/dog.js';
 import {drawDog} from './ui/dog.js';
 import {updateNests} from './systems/nests.js';
@@ -101,7 +102,7 @@ function simStep(dt,now){
     else updateDead(a,dt);
     if(a.gone||(a.state==='dead'&&a.deadT>25)){removeAgent(a);agents.splice(i,1);}
   }
-  separate();updateThrows(dt);updateLures(dt);updateFires(dt);if(G.running){updateCamp(dt);updateCars(dt);updateArmy(dt);updatePvp(dt);updateDirector(dt);updateNests();updateDog(dt);tickPings(dt);updateTraps(dt);}
+  separate();updateThrows(dt);updateLures(dt);updateFires(dt);if(G.running){updateCamp(dt);updateCars(dt);updateArmy(dt);updatePvp(dt);updateDirector(dt);updateNests();updateNpcs();updateDog(dt);tickPings(dt);updateTraps(dt);}
 }
 reset();
 // character models load in the background; until then everyone is blocky (v0.13)

@@ -1,3 +1,4 @@
+import {hurtNpc} from './npc.js';
 import {G} from '../core/state.js';
 import {BLAST,FIRE} from '../config/blast.js';
 import {solids} from '../world/collision.js';
@@ -23,7 +24,8 @@ export function blast(x,z,o,by){
   for(let i=0;i<5;i++)addBlood(x+(Math.random()*2-1)*o.r*.5,z+(Math.random()*2-1)*o.r*.5);
   for(const p of players){if(!p.alive)continue;const d=Math.hypot(p.pos.x-x,p.pos.z-z);if(d<o.r&&!walledOff(x,z,p.pos.x,p.pos.z))hurtPlayer(p,Math.round(o.pdmg*(1-d/o.r*.5)),by);}   // v0.47 by: whose it was (PvP)
   for(let k=0;k<rooms.length;k++)if(doorDist(k,x,z)<o.r)damageDoor(k,o.door);
-  for(const a of agents){if(a.state!=='zombie')continue;const d=Math.hypot(a.pos.x-x,a.pos.z-z);if(d>o.r||walledOff(x,z,a.pos.x,a.pos.z))continue;
+  for(const a of agents){if(a.state!=='zombie'&&!(a.npc&&a.state==='human'))continue;const d=Math.hypot(a.pos.x-x,a.pos.z-z);if(d>o.r||walledOff(x,z,a.pos.x,a.pos.z))continue;
+    if(a.npc){hurtNpc(a,o.zdmg*(1-d/o.r*.5),by,(a.pos.x-x)/(d||1),(a.pos.z-z)/(d||1));continue;}   // v0.62 people with guns too
     hurtZombie(a,o.zdmg*(1-d/o.r*.5),(a.pos.x-x)/(d||1),(a.pos.z-z)/(d||1),1.4,false,true,by);}
   for(let i=0;i<tanks.length;i++)if(!G.blown.includes(i)&&!pending.some(q=>q.i===i)&&Math.hypot(tanks[i].x-x,tanks[i].z-z)<o.r*.8)pending.push({i,t:.18,by});   // a chain
   if(o.fire)ignite(x,z,o.fire[0],o.fire[1]);

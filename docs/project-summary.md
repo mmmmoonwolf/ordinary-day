@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.62 | `config/npc.js` `NPC` `BANDIT`, `systems/npc.js` `placeSurvivors()` `placeBandits()` `updateNpc()` `hurtNpc()` `updateNpcs()`, `a.npc` `a.gun` `a.home` `a.lead`, `shootable()` ใน `combat.js`, `DAILY.weights.bandits` |
 | v0.61 | `TRUNK` ใน `config/vehicles.js`, `G.cars[i].trunk`, `trunkOf()` `trunkPut()` `trunkTake()` ใน `systems/vehicles.js` (`ACTIONS.trunkPut` `trunkTake`), `#bagTrunk`, snapshot `cars` ช่องที่ 6 |
 | v0.60 | `config/dog.js` `DOG`, `systems/dog.js` `placeDog()` `updateDog(dt)`, `ui/dog.js` `drawDog(now)`, `G.dog` (snapshot `dg`), `sfx.bark` `whine` `growl2` |
 | v0.59 | `BARR` ใน `config/shelter.js`, `st.bar` ใน `G.doors`, `fixAction(k,p)` 'barricade', gamepad `padButtons()` `padAim()` `padOn()` ใน `ui/input.js`, `manifest.webmanifest` `sw.js` `assets/icons/`, ค่าเริ่ม `settings.quality` |
@@ -1120,6 +1121,16 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **ใช้งาน** (`trunkOf(p)` รถที่นั่งอยู่หรือรถที่ยืนใกล้ `p.nearCar`): เปิดกระเป๋าแล้วมีส่วน ท้ายรถ n/8 กดของเพื่อเอาออก (เข้ากระเป๋าถ้ามีที่) ในกระเป๋าเลือกของแล้วมีปุ่ม ใส่ท้ายรถ ผ่าน `ACTIONS.trunkPut` / `trunkTake` เพื่อนออนไลน์จึงใช้ได้ด้วย รถพังแล้วเปิดท้ายไม่ได้
 - **PLACEHOLDER:** `TRUNK`
 - **ยังไม่ได้ทำ:** มอเตอร์ไซค์ (#8), ของในท้ายรถหล่นเมื่อรถพัง
+
+## ผู้รอดชีวิตและโจร (v0.62)
+
+จากรายการไอเดีย #5 #39 (อ้างอิง State of Decay, DayZ, Project Zomboid)
+
+- **คนถือปืน**: เป็นตัวละคร state `'human'` ที่มี `a.npc` = 'survivor' / 'bandit', ปืน `a.gun` (ปืนพลเรือนจาก `POOLS.civ`), ที่ประจำ `a.home`, HP `NPC.hp` 80 (`updateHuman()` ส่งต่อให้ `updateNpc()`) ยิงทีละนัด เห็นด้วย `walledOff()` + `rayWall()` โดนตามโอกาส `hit` พลาดก็ยังมี tracer เสียงปืน และเสียงดังเรียกซอมบี้ ซอมบี้กัดแล้วลด HP ก่อน (ตามอัตราตีของซอมบี้) หมดแล้วกลายเป็นซอมบี้แบบคนทั่วไป ตายแล้วทิ้งปืนและกระสุนของปืนนั้น เซฟใน `AGENT_KEYS`
+- **ผู้รอดชีวิต** (`placeSurvivors()` ครั้งแรกหลังระบาด `G.npcPlaced`): 3 คนบนจุดของนอกตึก ห่างผู้เล่น 40–120 ม. ยิงซอมบี้ในระยะ 16 ม. ทุก 0.9 วินาที ดาเมจ 14 (ซอมบี้ที่ตายนับเป็นของผู้เล่นที่พาไป) ผู้เล่นเดินเข้าใกล้ 2.6 ม. แล้วตามไป (`a.lead`, ไม่เกิน `NPC.follow` 1 คนต่อผู้เล่น) อยู่ห่าง 3 ม. วิ่งเมื่อห่าง 8 ม. ห่างเกิน 45 ม. (หลังขับรถ) มาโผล่ข้าง ๆ ผู้เล่นยิงหรือตีผู้รอดชีวิตไม่ได้ ระเบิดโดนได้ ไม่มีในโหมด PvP
+- **โจร** (เหตุการณ์สุ่ม `bandits` ตั้งแต่วันที่ 2 ช่วง 09:00–16:00 `placeBandits()`): 2–3 คนรอบกองของ 3 ชิ้น (กระสุน ยา) ห่างผู้เล่น 40–90 ม. เห็นผู้เล่นในระยะ 20 ม. แล้วยิงทุก ~1.1 วินาที โดน 40% ดาเมจ 9 (ผ่าน `hurtPlayer()` ตัวคูณความยากใช้ตามปกติ) ผู้เล่นเข้าใกล้ 5 ม. ถอยพร้อมยิง ยิงซอมบี้ที่ใกล้ 9 ม. โดนยิงแล้วไล่ไปตรงที่คนยิงยืน แล้วกลับที่ประจำ ปืน การตี ระเบิด ไฟ และ aim assist ของผู้เล่นโดนโจร (`shootable()` `hurtNpc()`)
+- **PLACEHOLDER:** `NPC` `BANDIT` น้ำหนัก `bandits` ใน `DAILY`
+- **ยังไม่ได้ทำ:** ปืนในมือและชุดเฉพาะของผู้รอดชีวิต / โจร (ตอนนี้ใช้โมเดลคนทั่วไป เห็นแค่ tracer และเสียงปืน), สั่งผู้รอดชีวิต, แลกของ
 
 ## ระบบ loot
 
