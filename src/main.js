@@ -2,6 +2,7 @@
 import {placeBikes} from './world/vehicles.js';
 import {buildRoofs} from './world/roofs.js';
 import {updateNpcs} from './systems/npc.js';
+import {arrival} from './systems/game.js';
 import {updateDog} from './systems/dog.js';
 import {drawDog} from './ui/dog.js';
 import {updateNests} from './systems/nests.js';
@@ -109,6 +110,7 @@ function simStep(dt,now){
   separate();updateThrows(dt);updateLures(dt);updateFires(dt);if(G.running){updateCamp(dt);updateCars(dt);updateArmy(dt);updatePvp(dt);updateDirector(dt);updateNests();updateNpcs();updateDog(dt);tickPings(dt);updateTraps(dt);}
 }
 reset();
+if(arrival.now){arrival.now=false;$('overlay').hidden=true;G.running=true;}   // v0.66 arrived in the second town: straight into it
 // character models load in the background; until then everyone is blocky (v0.13)
 loadSkins(s=>{const n=$('skinNote');n.hidden=s.ready;n.textContent=s.failed?'โหลดตัวละครไม่ได้ ใช้ตัวละครแบบเรียบแทน':'กำลังโหลดตัวละคร '+s.loaded+'/'+s.total;});
 // guns, items and cars too (v0.14)

@@ -1,3 +1,4 @@
+import {ACT} from '../config/act.js';
 import {camTarget} from '../core/renderer.js';
 import {G,isPvp} from '../core/state.js';
 import {applyTanks,clearFires} from './blast.js';
@@ -20,7 +21,7 @@ import {applyEvents} from './events.js';
 // ---------- save ----------
 // One autosave slot in localStorage, kept per browser. It is deleted when the player dies (survival rules).
 // The city is rebuilt from its seed, so loot spots are stored by index; bump SAVE_VERSION when that or the format changes.
-const SAVE_KEY='ordinary-day.save',SAVE_VERSION=2;   // 2 (v0.9): players[] with their own gear; 1 still loads (one player)
+const SAVE_KEY='ordinary-day.save'+(ACT===2?'.2':''),SAVE_VERSION=2;   // v0.66 the second town keeps its own save   // 2 (v0.9): players[] with their own gear; 1 still loads (one player)
 const AUTOSAVE_EVERY=15;   // real seconds while playing
 const AGENT_KEYS=['state','kind','face','phase','node','prev','jx','jz','walk','panic','tx','tz','wait','vendor','hp','maxHp','feed','atk','spd','stuckT','lost','turnT','heard','fuse','wind','retreat','shrieked','march','rise','from','nextBrood','screamT','burst','npc','gun','home','lead'];   // v0.62 survivors and bandits   // v0.57 nests and their brood
 let sinceSave=0;

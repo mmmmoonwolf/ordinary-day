@@ -1,3 +1,4 @@
+import {ACT} from '../config/act.js';
 import {$} from '../core/util.js';
 import {G,isPvp} from '../core/state.js';
 import {DEF,GRADES,durPct} from '../config/items.js';
@@ -86,7 +87,8 @@ export function updateHUD(dt){
 const ENDINGS={
   hurt:{eyebrow:'GAME OVER',title:'คุณไม่รอด',text:'บาดเจ็บหนักจนไปต่อไม่ไหว'},
   infected:{eyebrow:'GAME OVER',title:'คุณกลายเป็นซอมบี้',text:'เชื้อลามถึง 100% ก่อนได้ใช้ Antibiotic'},
-  won:{eyebrow:'ESCAPED',title:'คุณรอดแล้ว',text:'ทหารเปิดทางหลวงให้ผู้รอดชีวิตออกจากเมือง เดินทางต่อไปเมืองอื่น'},   // v0.46 (was the rescue helicopter)
+  won:{eyebrow:'ESCAPED',title:'คุณรอดแล้ว',text:'ทหารเปิดทางหลวงให้ผู้รอดชีวิตออกจากเมือง เดินทางต่อไปเมืองอื่น'},
+  won2:{eyebrow:'ESCAPED',title:'คุณรอดจากเมืองที่สอง',text:'เชื้อตามมาถึงที่นี่เหมือนกัน แต่คุณก็ออกมาได้อีกครั้ง'},   // v0.66   // v0.46 (was the rescue helicopter)
 };
 const escHtml=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 // v0.49 the end of a PvP round: who won, everyone's kills and deaths, the next round on its own (systems/pvp.js)
@@ -105,7 +107,7 @@ export function gameOver(){
   G.over=true;G.running=false;closeBag();$('pause').hidden=true;G.paused=false;
   if(isPvp()){pvpOver();return;}
   $('pOver').classList.remove('pvp');$('bAgain').textContent='เล่นอีกครั้ง';
-  const end=ENDINGS[G.endCause]||ENDINGS.hurt,nights=nightsSurvived(G.min);
+  const end=(G.endCause==='won'&&ACT===2?ENDINGS.won2:ENDINGS[G.endCause])||ENDINGS.hurt,nights=nightsSurvived(G.min);
   $('oEyebrow').textContent=end.eyebrow+' · '+diffOf(G).name;$('oTitle').textContent=end.title;$('oCause').textContent=end.text;
   $('sNights').textContent=nights;$('sTime').textContent=hhmm(G.min);$('sDay').textContent=Math.floor(G.min/1440)+1;$('sKill').textContent=G.kills;
   $('sKillsBy').innerHTML=Object.keys(ZC).map(k=>'<span>'+ZC[k].name+'<b>'+(G.killsBy[k]||0)+'</b></span>').join('');
@@ -113,5 +115,7 @@ export function gameOver(){
   $('sBest').innerHTML=(isNew?'<span class="new">สถิติใหม่! </span>':'')+'สถิติดีสุด ('+diffOf(G).name+'): รอด '+best.nights+' คืน · กำจัด '+best.kills+' ตัว'+(best.wins?' · รอดสำเร็จ '+best.wins+' ครั้ง':'');
   // in a friend's room only the host starts the next day (v0.12)
   $('bAgain').hidden=isClient();$('overNote').textContent=isClient()?'รอเจ้าของห้องเริ่มวันใหม่ หรือกลับหน้าแรก':'';$('bOverTitle').hidden=!isClient();
+  // v0.66 out of the first town: on to the second, bag and all; from the second, back to the start of the first
+  const tv=$('bTravel');if(tv){const go=!isClient()&&(ACT===2||G.endCause==='won');tv.hidden=!go;tv.textContent=ACT===2?'เริ่มใหม่ที่เมืองแรก':'เดินทางต่อไปเมืองถัดไป';}
   $('pStart').hidden=true;$('pOver').hidden=false;$('overlay').hidden=false;$('bAgain').focus();
 }

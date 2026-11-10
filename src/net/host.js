@@ -1,3 +1,4 @@
+import {ACT} from '../config/act.js';
 import {bus} from '../core/bus.js';
 import {G} from '../core/state.js';
 import {VERSION} from '../config/version.js';
@@ -62,7 +63,7 @@ function onMsg(c,m){
     c.p.name=cleanName(m.name)||'ผู้เล่น '+(c.p.id+1);c.p.wear=cleanLook(m.look);c.p.job=cleanJob(m.job);if(!c.p.kitGot)giveKit(c.p);   // v0.41 their name and clothes · v0.58 their job and its kit
     room.conns.push(c);
     if(G.paused)G.paused=false;   // with a friend in, the bag or menu no longer stops the world (Q13)
-    c.link.send({t:'w',id:c.p.id,code:room.code});c.link.send(encodeWorld(c.sent,c.p));
+    c.link.send({t:'w',id:c.p.id,code:room.code,act:ACT});c.link.send(encodeWorld(c.sent,c.p));   // v0.66 which town
     say(c.p.name+' เข้าห้องแล้ว','',4);
     return;
   }
@@ -88,7 +89,7 @@ function gone(c){
 export function hostFrame(dt){
   if(!room.open)return;
   // a new game, or a loaded one, made new players: give each friend theirs again
-  for(const c of room.conns)if(!players.includes(c.p)&&bind(c))c.link.send({t:'w',id:c.p.id,code:room.code});
+  for(const c of room.conns)if(!players.includes(c.p)&&bind(c))c.link.send({t:'w',id:c.p.id,code:room.code,act:ACT});
   if(bus.out.length){
     const out=bus.out.splice(0);
     for(const c of room.conns){if(!c.p)continue;const l=out.filter(m=>m.to==='*'||m.to===c.p.id);if(l.length)c.link.send({t:'m',l});}

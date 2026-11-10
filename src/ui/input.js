@@ -6,7 +6,7 @@ import {player} from '../entities/player.js';
 import {act} from '../systems/actions.js';
 import {DIFFS} from '../config/difficulty.js';
 import {PING} from '../config/party.js';
-import {reset} from '../systems/game.js';
+import {reset,travel} from '../systems/game.js';
 import {readSave,loadGame,clearSave} from '../systems/save.js';
 import {chipEls} from './hud.js';
 import {openBag,closeBag} from './bag.js';
@@ -186,6 +186,7 @@ export function initInput(){
   $('bContinue').addEventListener('click',()=>{if(!loadGame()){showContinue();return;}$('overlay').hidden=true;G.running=true;});
   showContinue();
   for(const id of ['bSound','bSound2'])$(id).addEventListener('click',()=>{toggleMute();showSound();});showSound();
+  {const tv=$('bTravel');if(tv)tv.addEventListener('click',()=>{clearSave();travel();});}   // v0.66 on to the next town (or back to the first)
   $('bAgain').addEventListener('click',async()=>{if(isPvp()){(await import('../systems/pvp.js')).nextRound();return;}   // v0.49 the next PvP round
     reset();ctl.sneak=false;ctl.adsTouch=false;$('overlay').hidden=true;G.running=true;});
   if(isTouch){$('atkKey').textContent='กดค้าง';}
