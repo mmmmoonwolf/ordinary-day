@@ -1,3 +1,4 @@
+import {keepOnRoof} from '../systems/roofs.js';
 import {rnd,pick} from '../core/util.js';
 import {collide,freeAt} from '../world/collision.js';
 import {areaAt} from '../config/world.js';
@@ -15,7 +16,7 @@ export function moveAgent(a,dx,dz,speed,dt,keepFace){
   const ox=a.pos.x,oz=a.pos.z,step=speed*dt;
   a.pos.x+=ux*step;a.pos.z+=uz*step;a.moving=speed;
   if(!keepFace)a.face=lerpAng(a.face,Math.atan2(ux,uz),Math.min(1,dt*9));
-  collide(a.pos,r);
+  if(a.roof>=0)keepOnRoof(a);else collide(a.pos,r);   // v0.63 up on a roof: its edge is the wall
   // pushed back by something: turn aside, to the same side as last time if that way is open
   if(steer&&step>1e-3&&Math.hypot(a.pos.x-ox,a.pos.z-oz)<step*STEER.blocked)a.det=detour(a,dx/len,dz/len,r);
 }

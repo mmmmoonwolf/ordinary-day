@@ -246,7 +246,7 @@ export function armsFrame(s,p,dt,makeHeld){
 // every device), a gun held ready, kneeling when crouched and still, the hop over something low
 function playerClip(a,s,step){
   const def=DEF[curWeapon(a).id];
-  if(a.vault||a.airH>.05)return ['pJump',1.4,true];
+  if(a.vault||a.airH>.05&&a.airH<1.5)return ['pJump',1.4,true];   // v0.63 higher: on a roof
   if(a.moving>.3&&def.gun){
     const dx=a.pos.x-(s.px??a.pos.x),dz=a.pos.z-(s.pz??a.pos.z),d=Math.hypot(dx,dz);
     if(d>1e-4){s.fwd=(dx*Math.sin(a.face)+dz*Math.cos(a.face))/d;s.side=(dz*Math.sin(a.face)-dx*Math.cos(a.face))/d;}   // side > 0: to the right

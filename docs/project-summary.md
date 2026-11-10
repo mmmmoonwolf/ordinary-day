@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.63 | `world/roofs.js` `ladders` `ROOF` `buildRoofs()`, `systems/roofs.js` `nearLadder()` `climb()` `roofH()` `keepOnRoof()`, `p.roof` `p.nearLadder` (snapshot `nl`, เซฟ) |
 | v0.62 | `config/npc.js` `NPC` `BANDIT`, `systems/npc.js` `placeSurvivors()` `placeBandits()` `updateNpc()` `hurtNpc()` `updateNpcs()`, `a.npc` `a.gun` `a.home` `a.lead`, `shootable()` ใน `combat.js`, `DAILY.weights.bandits` |
 | v0.61 | `TRUNK` ใน `config/vehicles.js`, `G.cars[i].trunk`, `trunkOf()` `trunkPut()` `trunkTake()` ใน `systems/vehicles.js` (`ACTIONS.trunkPut` `trunkTake`), `#bagTrunk`, snapshot `cars` ช่องที่ 6 |
 | v0.60 | `config/dog.js` `DOG`, `systems/dog.js` `placeDog()` `updateDog(dt)`, `ui/dog.js` `drawDog(now)`, `G.dog` (snapshot `dg`), `sfx.bark` `whine` `growl2` |
@@ -1131,6 +1132,17 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **โจร** (เหตุการณ์สุ่ม `bandits` ตั้งแต่วันที่ 2 ช่วง 09:00–16:00 `placeBandits()`): 2–3 คนรอบกองของ 3 ชิ้น (กระสุน ยา) ห่างผู้เล่น 40–90 ม. เห็นผู้เล่นในระยะ 20 ม. แล้วยิงทุก ~1.1 วินาที โดน 40% ดาเมจ 9 (ผ่าน `hurtPlayer()` ตัวคูณความยากใช้ตามปกติ) ผู้เล่นเข้าใกล้ 5 ม. ถอยพร้อมยิง ยิงซอมบี้ที่ใกล้ 9 ม. โดนยิงแล้วไล่ไปตรงที่คนยิงยืน แล้วกลับที่ประจำ ปืน การตี ระเบิด ไฟ และ aim assist ของผู้เล่นโดนโจร (`shootable()` `hurtNpc()`)
 - **PLACEHOLDER:** `NPC` `BANDIT` น้ำหนัก `bandits` ใน `DAILY`
 - **ยังไม่ได้ทำ:** ปืนในมือและชุดเฉพาะของผู้รอดชีวิต / โจร (ตอนนี้ใช้โมเดลคนทั่วไป เห็นแค่ tracer และเสียงปืน), สั่งผู้รอดชีวิต, แลกของ
+
+## ขึ้นหลังคา (v0.63)
+
+จากรายการไอเดีย #29 (อ้างอิง Dying Light, Project Zomboid)
+
+- **บันได** (`buildRoofs()` ใน `world/roofs.js` รันใน `main.js` ก่อน `moreBoxes()` ไม่ใช้ `rand()` ไม่เพิ่ม `solids`): ตึกในเมืองที่เข้าไม่ได้ สูงไม่เกิน `ROOF.maxH` ทุกหลังที่ 3 ตามลำดับใน `buildings` (ไม่เกิน 9) ได้บันไดเหล็กบนผนังด้านที่มีที่ว่างหน้าบันได ตอนนี้ได้ 5 หลัง (`ladders[]`: ตีนบันได หัวบันไดบนหลังคา ความสูง ขอบหลังคา)
+- **ปีน** (`systems/roofs.js`, `ACTIONS.use` ก่อนประตู): ยืนห่างตีนบันไดไม่เกิน 1.4 ม. ปุ่มขึ้นว่า ปีนขึ้นหลังคา บนหลังคาห่างหัวบันได 1.6 ม. ขึ้นว่า ปีนลง `p.roof` = บันไดที่ขึ้นมา `p.airH` = ความสูงหลังคา (`roofH()` ใน `updatePlayer()`) เดินด้วย `moveAgent()` แต่จำกัดในขอบหลังคา (`keepOnRoof()` แทน `collide()`) ไม่ถูกดันใน `separate()` ไม่เก็บของ ไม่เปิดประตู ไม่ค้นตู้ ไม่ขึ้นรถจากบนหลังคา
+- **ซอมบี้**: `targets()` ไม่นับคนบนหลังคา ซอมบี้จึงไม่ไล่และไม่ตี แต่ยังได้ยินเสียงปืน (`makeNoise`) แล้วเดินมาออใต้ตึก กระสุนจากบนหลังคาวิ่งออกได้ (`rayWall` ไม่นับกล่องที่ยืนอยู่ข้างใน) โจรยิงขึ้นได้เมื่อมองเห็น
+- **ภาพ**: ตัวละครยืนบนหลังคา (ไม่ใช้ท่ากระโดด ไม่เอียง) ตึกที่ยืนอยู่ไม่โปร่งใส (`updateOcclusion` ใช้ความสูงของผู้เล่น) เพื่อนออนไลน์เห็นผ่าน `airH` ที่มีอยู่แล้วใน snapshot ปุ่มใช้ `nl`
+- **PLACEHOLDER:** `ROOF`
+- **ยังไม่ได้ทำ:** กล้องยกตามความสูง, ของบนหลังคา, ซอมบี้บางชนิดปีนตาม, กระโดดข้ามหลังคา
 
 ## ระบบ loot
 

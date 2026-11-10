@@ -110,7 +110,7 @@ function arm(p){
 }
 export function respawn(p){
   Object.assign(p,{alive:true,state:'player',deadT:0,hp:p.maxHp,bleed:0,down:0,inv:PVP.inv,endCause:null,lastHit:performance.now()/1000,
-    trapT:0,burn:0,swing:0,reloadT:0,vault:null,hop:0,airH:0,helping:null,searching:-1,respawnT:0,shield:true});
+    trapT:0,burn:0,swing:0,reloadT:0,vault:null,hop:0,airH:0,roof:-1,helping:null,searching:-1,respawnT:0,shield:true});
   if(p.zedNext){p.zedNext=false;makeZed(p);}   // v0.51 killed by a zombie player: back as one   // v0.49 shield: the untouchable time ends at their first attack
   cureInfection(p);if(p.local)G.endCause=null;
   place(p);uiFor(p).updateLoadout(true);

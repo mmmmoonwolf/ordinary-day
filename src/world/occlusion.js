@@ -7,7 +7,8 @@ import {rooms,shownRoom} from './interiors.js';
 const ray=new THREE.Raycaster(),rayDir=new THREE.Vector3(),chest=new THREE.Vector3();
 export function updateOcclusion(){
   if(view.fps){for(const b of buildings)if(b.faded){b.faded=false;for(const m of b.mats){m.transparent=false;m.opacity=1;m.depthWrite=true;m.needsUpdate=true;}}return;}   // v0.28 nothing in the way from the eyes
-  const v=viewed();chest.set(v.pos.x,1.2,v.pos.z);rayDir.copy(chest).sub(camera.position);const dist=rayDir.length();rayDir.normalize();
+  const v=viewed();chest.set(v.pos.x,1.2+(v.airH||0),v.pos.z);   // v0.63 up on a roof too
+  rayDir.copy(chest).sub(camera.position);const dist=rayDir.length();rayDir.normalize();
   ray.set(camera.position,rayDir);ray.far=dist-.3;
   const hit=new Set();for(const h of ray.intersectObjects(occluders,false))hit.add(h.object.userData.b);
   const inside=shownRoom()>=0?rooms[shownRoom()].b:null;   // the building the player is in is cut away, not faded

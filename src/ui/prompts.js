@@ -31,6 +31,7 @@ export function updatePrompts(){
   else if(p.nearDoor>=0){const st=G.doors[p.nearDoor],label=(st.open?'ปิดประตู':st.bar?'รื้อที่กั้น':'เปิดประตู')+(st.hp!==DOOR_HP?' · '+Math.round(st.hp/DOOR_HP*100)+'%':'');pick('door'+p.nearDoor+label,'',label,'#e2a64a');}
   else if(p.nearBox>=0)pick('box'+p.nearBox,'ค้น ',boxName(p.nearBox),'#c9b27a');
   else if(p.car>=0)pick('out'+p.car,'','ลงจากรถ','#9fd3a0');   // v0.45
+  else if(p.nearLadder>=0)pick('lad'+p.nearLadder+(p.airH>1.5?'d':'u'),'',p.airH>1.5?'ปีนลง':'ปีนขึ้นหลังคา','#c9c3b4');   // v0.63
   else if(p.nearCar>=0)pick('car'+p.nearCar,'','ขึ้นรถ','#9fd3a0');
   else if(!bp.hidden)bp.hidden=true;
   const k=p.fixDoor;

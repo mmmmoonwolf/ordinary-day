@@ -1,4 +1,4 @@
 // ---------- version ----------
 // Shown on the start screen and attached to bug reports; bump it with the README version table.
-export const VERSION='0.62';
+export const VERSION='0.63';
 export const REPO='https://github.com/mmmmoonwolf/ordinary-day';
