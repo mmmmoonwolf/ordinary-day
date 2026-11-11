@@ -46,7 +46,7 @@ if (isClient) {
       else if (cmd === 'exit') { process.send({ ctlr: { errs } }); setTimeout(() => process.exit(0), 20); return; }
       const me = P.player;
       r = { role: bus.role, overlay: $('overlay').hidden, over: G.over, again: $('bAgain').hidden, joinMsg: $('joinMsg').textContent, min: G.min, id: net.net.id,
-        n: P.players.length, me: me && { id: me.id, x: me.pos.x, z: me.pos.z, gear: me.gear, alive: me.alive, deaths: me.deaths, recoil: me.recoil }, mode: G.mode, agents: agents.length,
+        n: P.players.length, me: me && { id: me.id, x: me.pos.x, z: me.pos.z, roof: me.roof ?? -1, gear: me.gear, alive: me.alive, deaths: me.deaths, recoil: me.recoil }, mode: G.mode, agents: agents.length,
         zombies: agents.filter(x => x.state === 'zombie').map(x => x.kind), drops: drops.length, doors: G.doors.map(d => d.open),
         feed: $('feed').children.map(c => c.textContent), msg: $('msg').textContent, errs: errs.length, who: P.players.map(p => p.name + '|' + (p.wear ? p.wear.bd : '')) };
       process.send({ ctlr: r });
@@ -131,6 +131,18 @@ if (isClient) {
     for (let i = 0; i < 30; i++) { await ask('step', 1); step(1); await sleep(1); }
     const r3 = await ask('step', 1); if (Math.hypot(r3.me.x - p2.pos.x, r3.me.z - p2.pos.z) > .5) fail('prediction drifted from the host: ' + Math.hypot(r3.me.x - p2.pos.x, r3.me.z - p2.pos.z).toFixed(2) + ' m');
     console.log('net: prediction moved the friend ' + moved.toFixed(2) + ' m in 4 steps with the host still, then ' + Math.hypot(r3.me.x - p2.pos.x, r3.me.z - p2.pos.z).toFixed(2) + ' m from the host'); }
+  // up on a roof (v0.63) the friend's own screen keeps them on it: the host sends which roof, so their device's
+  // prediction walks inside the roof's edge instead of colliding with the building below
+  { const Rw = await import('../src/world/roofs.js'), Rf = await import('../src/systems/roofs.js'), L = Rw.ladders[0], back = [p2.pos.x, p2.pos.z];
+    p2.pos.x = L.lx; p2.pos.z = L.lz; step(2); Rf.climb(p2, 0); const up = await rounds(8);
+    if (up.me.roof !== 0) fail('the friend does not know it is on a roof: ' + up.me.roof);
+    await ask('key', 'KeyD', 'keydown'); let worst = 0, r;
+    for (let i = 0; i < 40; i++) { r = await ask('step', 1); step(1); await sleep(1); worst = Math.max(worst, Math.hypot(r.me.x - p2.pos.x, r.me.z - p2.pos.z)); }
+    await ask('key', 'KeyD', 'keyup');
+    const R = L.roof, on = r.me.x >= R.x0 - .05 && r.me.x <= R.x1 + .05 && r.me.z >= R.z0 - .05 && r.me.z <= R.z1 + .05;
+    if (!on || worst > 1) fail('on a roof the friend sees itself ' + (on ? 'on it' : 'off it') + ', up to ' + worst.toFixed(2) + ' m from where the host has it');
+    console.log('net: on a roof the friend stays on it, at most ' + worst.toFixed(2) + ' m from the host');
+    Rf.climb(p2, 0); p2.pos.x = back[0]; p2.pos.z = back[1]; await rounds(8); }
   // v0.47.1 the friend's own player walking, as their screen shows it: steady steps, not a stop-and-go every snapshot
   { Object.assign(p2.input, {}); await ask('key', 'KeyW', 'keydown'); for (let i = 0; i < 20; i++) { await ask('step', 1); step(1); await sleep(1); }
     const xs = []; for (let i = 0; i < 60; i++) { const r = await ask('step', 1); step(1); await sleep(1); xs.push([r.me.x, r.me.z]); }
