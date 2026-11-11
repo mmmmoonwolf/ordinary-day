@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node tools/smoke-test.js && node tools/act2-test.js && node tools/net-test.js"
+    "lint": "node tools/lint.js",
+    "test": "node tools/lint.js && node tools/smoke-test.js && node tools/act2-test.js && node tools/net-test.js"
   }
 }
