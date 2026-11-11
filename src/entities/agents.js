@@ -68,6 +68,9 @@ function nestLook(a){
 export function becomeZombie(a,kind){
   a.state='zombie';a.kind=kind||(isNightTod(G.min%1440)?'zombie':'walker');a.hp=ZC[a.kind].hp;a.maxHp=a.hp;
   a.vendor=false;a.panic=0;a.node=nearestNode(a.pos);a.prev=null;a.spd=rnd(.9,1.1);a.retreat=false;a.rise=0;
+  // an armed person who turned is a zombie like any other: while a.npc stayed set, guns, blows and blasts were still
+  // routed to hurtNpc(), which ignores anything that is not a living person, so nothing could kill it
+  a.npc=null;a.lead=-1;a.alert=null;
   styleZombie(a);
 }
 export function setKind(a,kind){const ratio=a.hp/a.maxHp;a.kind=kind;a.maxHp=ZC[kind].hp;a.hp=Math.max(1,a.maxHp*ratio);styleZombie(a);}

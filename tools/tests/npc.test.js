@@ -26,6 +26,16 @@ import { els, errs, step, key, store, T, P, I, finish } from './setup.js';
   q.inv = 1e9; const b = bs[0], dd = T.drops.length; Nc.hurtNpc(b, 999, q, ux, uz); if (b.state !== 'dead' || T.drops.length < dd + 2) vfail('a bandit did not fall with its gun');
   if (!Cb.shootable(bs[1] || bs[0]) && (bs[1] && bs[1].state === 'human')) vfail('bandits not shootable');
   if (Cb.shootable(a)) vfail('survivors shootable');
+  // a bandit or survivor who turns can be killed like any zombie (it used to shrug off guns, blows and blasts)
+  { for (const c of T.agents) c.gone = true; step(2); const { DEF } = await import('../../src/config/items.js'), Bl = await import('../../src/systems/blast.js');
+    const [t] = Nc.placeBandits(q.pos.x + ux * 3, q.pos.z + uz * 3); for (const c of T.agents) if (c !== t) c.gone = true;
+    t.state = 'infected'; t.turnT = .01; step(4); t.rise = 0; t.feed = 99;
+    if (t.state !== 'zombie' || t.npc) vfail('a turned bandit is still marked as one: ' + t.state + ' / ' + t.npc);
+    q.gear.eq.secondary = { id: 'pistol_c', mag: 12 }; q.gear.active = 'secondary'; q.face = Math.atan2(t.pos.x - q.pos.x, t.pos.z - q.pos.z); q.bloom = 0;
+    const h0 = t.hp; Cb.fireGun(q, q.gear.eq.secondary, DEF.pistol_c); if (!(t.hp < h0)) vfail('a pistol shot did nothing to a turned bandit: ' + h0 + ' -> ' + t.hp);
+    const [t2] = Nc.placeBandits(q.pos.x + ux * 1.2, q.pos.z + uz * 1.2); for (const c of T.agents) if (c !== t2) c.gone = true; T.becomeZombie(t2, 'armor'); t2.feed = 99; t2.pos.x = q.pos.x + ux * 1.2; t2.pos.z = q.pos.z + uz * 1.2;
+    const h1 = t2.hp; Cb.meleeHit(q, DEF.bat_c); if (!(t2.hp < h1)) vfail('a blow did nothing to a turned bandit');
+    const h2 = t2.hp; Bl.blast(t2.pos.x, t2.pos.z, (await import('../../src/config/blast.js')).BLAST.grenade, q); step(1); if (!(t2.hp < h2)) vfail('a blast did nothing to a turned bandit'); }
   for (const c of T.agents) c.gone = true; for (const p of P.players.slice(1)) p.away = true; step(2);
   console.log('v0.62: ' + sv.length + ' survivors, one shoots a zombie (' + hp0 + ' -> ' + Math.round(z.hp) + '), joins a player, is hurt by a bite before turning; ' + bs.length + ' bandits shoot a player (hp ' + Math.round(q.hp) + '), one falls and leaves its gun');
 
