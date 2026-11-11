@@ -1,7 +1,7 @@
 import {wpick,rnd} from '../core/util.js';
 import {G} from '../core/state.js';
 import {DAY_START,DUSK_WARN,isNightTod} from '../config/time.js';
-import {isSpecial,RISE,SCREAMER,HUNTER} from '../config/zombies.js';
+import {isSpecial,RISE,SCREAMER,HUNTER,ELITE} from '../config/zombies.js';
 import {isPvp} from '../core/state.js';
 import {ACT,ACT2} from '../config/act.js';
 import {fireFx} from './effects.js';
@@ -52,8 +52,8 @@ if(ACT===2){const d=ACT2.outbreak-(9*60+30);for(const e of EVENTS)if(e.t<=9*60+3
 function onNight(){
   G.phase='night';sfx.night();
   for(const z of zombies())if(z.kind==='walker')setKind(z,'zombie');
-  G.armorNight=Math.random()<.6;G.armorNext=G.min+30;G.armorAnnounced=false;G.armorCount=0;
-  G.tyrantPending=Math.random()<.4;G.tyrantAt=G.min-(G.min%1440)+1440;
+  G.armorNight=Math.random()<ELITE.armor.chance;G.armorNext=G.min+ELITE.armor.first;G.armorAnnounced=false;G.armorCount=0;
+  G.tyrantPending=Math.random()<ELITE.tyrant.chance;G.tyrantAt=G.min-(G.min%1440)+1440;
   G.nightSpawnNext=G.min+15;
   G.huntAt=!isPvp()&&Math.floor(G.min/1440)+1>=HUNTER.from?G.min+HUNTER.after:0;   // v0.57 the Hunters come later in the night
   if(isBlood()){const mid=G.min-(G.min%1440)+1440;G.bloodHordes=BLOOD.hordes.map(m=>mid+m);sfx.roar(0,0,2);}   // v0.52 the last night: hordes at set times
@@ -85,8 +85,8 @@ export function runEvents(now){
   if(ph==='night'&&G.outbreak){
     // v0.52 the blood night: more often, more of them
     if(G.min>=G.nightSpawnNext){const blood=isBlood();G.nightSpawnNext+=blood?BLOOD.spawnEvery:45;const n=Math.max(1,Math.min(4,2+Math.floor((day-1)/2))+diffOf(G).spawn+partyOf(partySize(),'spawn')+(blood?BLOOD.extra:0));const mix=nightMix();for(let k=0;k<n;k++)spawnEdge(wpick(mix));}
-    if(G.armorNight&&G.min>=G.armorNext&&!(tod>=300&&tod<DAY_START)){G.armorNext+=60;
-      if(G.armorCount<6){const a=spawnEdge('armor');if(a){G.armorCount++;if(!G.armorAnnounced){G.armorAnnounced=true;}}}}   // Q05: at most 6 per night
+    if(G.armorNight&&G.min>=G.armorNext&&!(tod>=300&&tod<DAY_START)){G.armorNext+=ELITE.armor.every;
+      if(G.armorCount<ELITE.armor.max){const a=spawnEdge('armor');if(a){G.armorCount++;if(!G.armorAnnounced){G.armorAnnounced=true;}}}}   // Q05: at most 6 per night
     if(G.huntAt&&G.min>=G.huntAt){G.huntAt=0;const n=Math.round(rnd(HUNTER.count[0]-.49,HUNTER.count[1]+.49));   // v0.57 the Hunters: they know where the players are
       for(let k=0;k<n;k++){const h=spawnEdge('hunter');if(!h)continue;let q=null,qd=1e9;for(const p of players)if(p.alive&&!p.away){const d=Math.hypot(p.pos.x-h.pos.x,p.pos.z-h.pos.z);if(d<qd){qd=d;q=p;}}
         if(q)h.heard={x:q.pos.x,z:q.pos.z,t:60};if(k===0)sfx.howl(h.pos.x,h.pos.z);}}

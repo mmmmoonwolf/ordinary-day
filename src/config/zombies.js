@@ -26,6 +26,10 @@ export const HUNTER={from:2,count:[2,3],after:60,lightR:11,arc:.45,flinch:.6};
 // a player is within `near` m one grows a zombie every `every` in-game minutes (faster at night), at most `max` alive;
 // destroyed, it leaves `cache` things
 export const NEST={at:1440+6*60,count:4,far:55,apart:45,near:70,every:45,night:.6,max:5,cache:4};
+// The elite classes at night [CONFIRMED, Q04-Q05]: rolled once a night at 18:30. Armor Walkers: a `chance` night has
+// them, at most `max` in the whole night, the first `first` in-game minutes in and then one every `every`. Tyrant: a
+// `chance` night has one, at midnight.
+export const ELITE={armor:{chance:.6,max:6,first:30,every:60},tyrant:{chance:.4}};
 // PLACEHOLDER: in-game minutes from bite to turning (~100 real seconds at ×1)
 export const INFECT_MINUTES=8*60;
 // v0.27 a bitten person falls down for the last seconds before turning, then needs a moment to get up as a zombie
