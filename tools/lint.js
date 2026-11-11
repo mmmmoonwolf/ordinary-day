@@ -47,6 +47,8 @@ const CODE = [
   /[;}]\s*[A-Za-z_$][\w$]*(?:\.[\w$]+|\[[^\]]*\])*(?:\(|\s*(?:[+\-*/]?=)(?!=))/,   // ...; a.b(   ;x=   ;x+=
   /[a-z]{3,}[A-Za-z_$][\w$]*\.[A-Za-z_$][\w$]*=(?![=>])/,           // prose run straight into `p.room=`
   /\b(?:for|while)\((?:let|const|var)\s/,                           // a loop header
+  /\b(?:if|for|while) ?\(.*\)\s*[A-Za-z_$][\w$.]*\(.*\);?\s*$/,           // if (x) call(...) to the end of the line
+  /\w\([^()]*\);\s*$/,                                            // ends in a call and a semicolon
   /\)\{\s*[A-Za-z_$][\w$.]*[(=]/,                                 // ){parts.push(   ){x=
 ];
 export function swallowed(line) {
@@ -71,6 +73,7 @@ function self() {
     "    ease(p,dt,f);   // faces where it aims now, not a snapshot laterp.room=p.alive?roomAt(p.pos.x,p.pos.z):-1;",
     "    if(G.min>=G.nightSpawnNext){   // v0.52 the blood night  ;G.nightSpawnNext+=45;spawnEdge(kind);}",
     "  a.x=1;   // old; return a.y",
+    "  for (let k = 0; k < 9 && q.hp >= 100; k++) { step(1); }   // 40% a shot, one a second or so if (!(q.hp < 100)) vfail('did not shoot');",
   ];
   const good = [
     "  const u='https://example.com/a.js';   // where it loads from",

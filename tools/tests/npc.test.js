@@ -21,7 +21,8 @@ import { els, errs, step, key, store, T, P, I, finish } from './setup.js';
   // bandits shoot a player in sight; shot back, one falls and leaves its gun
   const d0 = T.drops.length, bs = Nc.placeBandits(ox + ux * 8, oz + uz * 8); if (!bs.length) vfail('no bandits');
   q.pos.x = ox; q.pos.z = oz; q.inv = 0; q.hp = 100; q.lastHit = 0;
-  for (let k = 0; k < 1200 && q.hp >= 100; k++) { q.inv = 0; step(1); }   // 40% a shot, one a second or so if (!(q.hp < 100)) vfail('the bandits did not shoot');
+  for (let k = 0; k < 1200 && q.hp >= 100; k++) { q.inv = 0; step(1); }   // 40% a shot, one a second or so
+  if (!(q.hp < 100)) vfail('the bandits did not shoot');
   q.inv = 1e9; const b = bs[0], dd = T.drops.length; Nc.hurtNpc(b, 999, q, ux, uz); if (b.state !== 'dead' || T.drops.length < dd + 2) vfail('a bandit did not fall with its gun');
   if (!Cb.shootable(bs[1] || bs[0]) && (bs[1] && bs[1].state === 'human')) vfail('bandits not shootable');
   if (Cb.shootable(a)) vfail('survivors shootable');
