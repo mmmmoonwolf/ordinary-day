@@ -4,6 +4,6 @@
   "type": "module",
   "scripts": {
     "lint": "node tools/lint.js",
-    "test": "node tools/lint.js && node tools/smoke-test.js && node tools/act2-test.js && node tools/net-test.js"
+    "test": "node tools/lint.js && node tools/smoke-test.js && node tools/run-tests.js && node tools/act2-test.js && node tools/net-test.js"
   }
 }

@@ -134,7 +134,7 @@
 ## การทดสอบ
 
 - GitHub Actions รัน `npm test` ทุก PR และทุก push เข้า `main` (`.github/workflows/smoke-test.yml`) อย่า merge ถ้าแดง
-- `npm test` รัน `tools/lint.js` (ทุกไฟล์ parse ได้ และไม่มีโค้ดถูกคอมเมนต์กลืน) แล้ว `tools/smoke-test.js` แล้ว `tools/act2-test.js` (เมืองที่สอง v0.66) แล้ว `tools/net-test.js` (host กับเพื่อน 2 process คุยผ่าน IPC แทน WebRTC: เข้าห้อง โลกตรงกัน เดิน เก็บของ กระเป๋า ข้อความ หลุดแล้วกลับเข้า จบเกมแล้วเริ่มใหม่ ปิดห้อง) ทั้งสองใช้ stub จาก `tools/headless.js`
+- `npm test` รัน `tools/lint.js` (ทุกไฟล์ parse ได้ และไม่มีโค้ดถูกคอมเมนต์กลืน) แล้ว `tools/smoke-test.js` (ระบบถึง v0.41 รันต่อเนื่องในไฟล์เดียว) แล้ว `tools/run-tests.js` (เทสต์ต่อระบบใน `tools/tests/*.test.js` ไฟล์ละ process โลกใหม่ทุกไฟล์ ใช้ `tools/tests/setup.js`; รันบางไฟล์ได้ด้วย `node tools/run-tests.js dog roofs`; **เทสต์ของระบบใหม่ให้เพิ่มเป็นไฟล์ใหม่ที่นี่** ไม่ต่อท้าย smoke-test) แล้ว `tools/act2-test.js` (เมืองที่สอง v0.66) แล้ว `tools/net-test.js` (host กับเพื่อน 2 process คุยผ่าน IPC แทน WebRTC: เข้าห้อง โลกตรงกัน เดิน เก็บของ กระเป๋า ข้อความ หลุดแล้วกลับเข้า จบเกมแล้วเริ่มใหม่ ปิดห้อง) ทั้งสองใช้ stub จาก `tools/headless.js`
 - เทสต์สุ่มแบบมี seed (`Math.random` ถูกแทนใน `tools/headless.js`): รันกี่ครั้งก็ได้ผลเดิม `SEED=<เลข>` เปลี่ยนชุดสุ่ม `SEED=random` สุ่มใหม่ทุกครั้ง ถ้าพังจะพิมพ์ seed ที่ใช้
 - `node tools/smoke-test.js` จำลองเกม 2 วันเต็มแบบไม่มีหน้าจอ (THREE ถูกแทนด้วย stub) โดย import โมดูลใน `src/` แล้วรายงาน error ใช้จับบั๊กตรรกะเท่านั้น ไม่ได้ตรวจภาพ
 - ต้องเปิดผ่าน dev server (`npx serve .`) แล้วทดสอบทั้งจอคอมและจอมือถือ (DevTools device mode) ก่อน commit
