@@ -38,7 +38,7 @@ import {updateFires} from './systems/blast.js';
 import {initAudio,updateMusic,updateAmbience} from './systems/audio.js';
 import {updateGoal} from './systems/goal.js';
 import {updateHUD} from './ui/hud.js';
-import {initInput,pollInput} from './ui/input.js';
+import {initInput,pollInput,padMenu} from './ui/input.js';
 import {initPause} from './ui/pause.js';
 import {updatePrompts} from './ui/prompts.js';
 import {updateMinimap} from './ui/minimap.js';
@@ -119,6 +119,7 @@ let last=performance.now(),frame=0,acc=0;
 function loop(now){
   requestAnimationFrame(loop);
   const real=Math.min(.25,(now-last)/1000),dt=Math.min(.05,real);last=now;frame++;
+  padMenu();   // a gamepad's Menu and bag buttons, also while the game is stopped by one of those screens
   if(!G.paused){
     const frozen=feel.stop>0;if(frozen)feel.stop-=real;   // v0.31 hit stop: a landed blow holds the world still for a moment
     if(!frozen){acc+=real;let n=0;while(acc>=STEP&&n<MAX_STEPS){simStep(STEP,now);acc-=STEP;n++;}if(n===MAX_STEPS)acc=0;}   // a long stall is dropped, not replayed
