@@ -28,12 +28,16 @@ const AGENT_KEYS=['nid','state','kind','face','phase','node','prev','jx','jz','w
 let sinceSave=0;
 
 const validItem=it=>it&&DEF[it.id];
+// A loot spot's name in a save: its zone and where it is (to 10 cm). Its index in lootSpots changes whenever a spot is
+// added before it, which used to need a new SAVE_VERSION; the place does not. Saves from before this hold the index.
+const spotId=s=>s.zone+'@'+Math.round(s.x*10)+','+Math.round(s.z*10);
+const spotOf=(v,byId)=>typeof v==='string'?byId.get(v)||null:v>=0?lootSpots[v]||null:null;
 function snapshot(){
   const g=Object.assign({},G,{alertA:null,alertT:0,running:false,paused:false,over:false,lastMinShown:-1});
   return {v:SAVE_VERSION,savedAt:Date.now(),G:g,
     players:players.map(p=>({x:p.pos.x,z:p.pos.z,face:p.face,hp:p.hp,alive:p.alive,down:p.down,bleed:p.bleed,inv:p.inv,infect:p.infect,infWarn:p.infWarn,sinceHit:performance.now()/1000-p.lastHit,stay:p.stay,job:p.job||'none',kitGot:!!p.kitGot,roof:p.roof??-1,bleedW:p.bleedW||0,wet:p.wet||0,sick:p.sick||0,gear:p.gear,token:p.token,name:p.name,wear:p.wear||null})),   // v0.41 name and clothes (friends'; this device's come from the profile)
     agents:agents.filter(a=>a.state!=='dead'&&!a.gone).map(a=>{const o={x:a.pos.x,z:a.pos.z,look:a.look};for(const k of AGENT_KEYS)o[k]=a[k];return o;}),
-    drops:drops.map(d=>({item:d.item,x:d.x,z:d.z,spot:d.spot?lootSpots.indexOf(d.spot):-1,mine:!!d.mine}))};
+    drops:drops.map(d=>({item:d.item,x:d.x,z:d.z,spot:d.spot?spotId(d.spot):-1,mine:!!d.mine}))};
 }
 export function saveGame(){
   if(!player||!players.some(p=>p.alive)||G.over||isPvp())return false;   // v0.47 a PvP game is never saved
@@ -76,7 +80,8 @@ export function loadGame(){
     if(a.state==='zombie')styleZombie(a);
     agents.push(a);
   }
-  for(const d of s.drops)if(validItem(d.item))spawnDrop(d.item,d.x,d.z,d.spot>=0&&lootSpots[d.spot]&&!lootSpots[d.spot].drop?lootSpots[d.spot]:null).mine=!!d.mine;
+  const byId=new Map(lootSpots.map(sp=>[spotId(sp),sp]));
+  for(const d of s.drops)if(validItem(d.item)){const sp=spotOf(d.spot,byId);spawnDrop(d.item,d.x,d.z,sp&&!sp.drop?sp:null).mine=!!d.mine;}
   sinceSave=0;updateLoadout(true);
   return true;
 }
