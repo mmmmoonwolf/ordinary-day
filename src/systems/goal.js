@@ -1,7 +1,7 @@
 import {$} from '../core/util.js';
 import {scene,screenAngle} from '../core/renderer.js';
 import {G,isPvp} from '../core/state.js';
-import {DAY_START} from '../config/time.js';
+import {DAY_START,dayOf,todOf} from '../config/time.js';
 import {GOAL_NIGHTS,EXIT,exitOpen,nightsSurvived} from '../config/goal.js';
 import {player,players} from '../entities/player.js';
 import {clearSave} from './save.js';
@@ -31,7 +31,7 @@ export function updateGoal(dt,now){
     $('lzDist').textContent='ค่ายทหาร '+Math.round(dist)+' ม.';
   }
   if(!G.running||!open||isClient())return;   // in a friend's room the host decides (v0.12)
-  const day=Math.floor(G.min/1440);if(G.exitSaid!==day){G.exitSaid=day;if(nightsSurvived(G.min)===GOAL_NIGHTS&&G.min%1440<DAY_START+60)sfx.outbreak();}   // the siren from the camp, the morning it opens
+  const day=(dayOf(G.min)-1);if(G.exitSaid!==day){G.exitSaid=day;if(nightsSurvived(G.min)===GOAL_NIGHTS&&todOf(G.min)<DAY_START+60)sfx.outbreak();}   // the siren from the camp, the morning it opens
   // everyone still alive has to be through (v0.9: one or more players)
   const alive=players.filter(p=>p.alive&&!p.away);   // v0.12: not those whose device dropped out
   if(alive.length&&alive.every(p=>p.down<=0&&!(p.bleed>0)&&p.pos.x>=EXIT.x)){

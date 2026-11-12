@@ -1,3 +1,4 @@
+import {dayOf} from '../config/time.js';
 import {placeBandits} from './npc.js';
 import {BANDIT} from '../config/npc.js';
 import {rnd,pick,wpick} from '../core/util.js';
@@ -59,7 +60,7 @@ export function airdrop(loot){
   // v0.49 the PvP crate also lands out of town, where the players are (any open loot spot at that distance)
   if(!spots.length&&loot)for(const s of lootSpots){const d=nearestPlayerDist(s.x,s.z);if(d>20&&d<90&&roomAt(s.x,s.z)<0&&freeAt(s.x,s.z,1.2))spots.push([s.x,s.z]);}
   if(!spots.length)return;
-  const [x,z]=pick(spots);makeCrate(x,z);G.drop={x,z,day:Math.floor(G.min/1440)+1};
+  const [x,z]=pick(spots);makeCrate(x,z);G.drop={x,z,day:dayOf(G.min)};
   // daytime loot only: Police / Military grades stay night-only (confirmed rule)
   const items=[makeItem(pick(POOLS.civ.weapons)),makeItem(pick(POOLS.civ.ammo)),makeItem(pick(POOLS.civ.ammo)),makeItem(wpick(MED_W.day)),makeItem(wpick(MED_W.day)),makeItem(wpick(THROW_W))].slice(0,AIRDROP_ITEMS);
   if(loot)items.splice(0,items.length,...loot());
@@ -71,7 +72,7 @@ export function airdrop(loot){
 // ---------- horde ----------
 // v0.47 count / cap: the PvP mode's bigger hordes (systems/pvp.js)
 export function horde(count,cap=HORDE.cap){
-  const day=Math.floor(G.min/1440)+1,k2=partyOf(partySize(),'horde'),n=count||Math.round(Math.min(HORDE.max,HORDE.base+day)*k2),ri=1+Math.floor(Math.random()*3),alongX=Math.random()<.5,s=Math.random()<.5?1:-1;
+  const day=dayOf(G.min),k2=partyOf(partySize(),'horde'),n=count||Math.round(Math.min(HORDE.max,HORDE.base+day)*k2),ri=1+Math.floor(Math.random()*3),alongX=Math.random()<.5,s=Math.random()<.5?1:-1;
   if(Math.random()<HORDE.bridge){   // v0.25 out of the woods, over the bridge, in through the east gate and across the town
     for(let k=0;k<n&&agents.length<cap;k++){const a=makeAgent(RIVER.x1+12+(k>>1)*1.6,k&1?1.4:-1.4);becomeZombie(a,k%5===4?'boomer':'zombie');a.march={x:-(LIM-1),z:k&1?1.4:-1.4};agents.push(a);}
     sfx.roar(RIVER.x1+10,0,1.6);return;
@@ -102,7 +103,7 @@ function farSpot(minD=25,maxD=70){
 }
 function guards(x,z,kind){const [a,b]=DAILY.siteZombies;for(let k=RR(a,b);k>0;k--){const t=rnd(0,6.28),r=rnd(4,8),wx=x+Math.sin(t)*r,wz=z+Math.cos(t)*r;if(!freeAt(wx,wz,.5))continue;const w=makeAgent(wx,wz);becomeZombie(w,kind);agents.push(w);}}
 function site(kind,items,zkind){
-  const s=farSpot();if(!s)return;const [x,z]=s;G.site={kind,x,z,day:Math.floor(G.min/1440)+1};
+  const s=farSpot();if(!s)return;const [x,z]=s;G.site={kind,x,z,day:dayOf(G.min)};
   items.forEach((it,k)=>{const a=k/items.length*Math.PI*2,[px,pz]=reachableSpot(x+Math.sin(a)*1.2,z+Math.cos(a)*1.2);spawnDrop(it,px,pz);});
   guards(x,z,zkind);sfx.radio();
 }
@@ -115,12 +116,12 @@ const DAILY_RUN={
   stash(){const [a,b]=DAILY.siteItems,items=[];for(let k=RR(a,b);k>0;k--)items.push(civ());site('stash',items,G.phase==='night'?'zombie':'walker');},
   truck(){const items=[];for(let k=RR(5,7);k>0;k--)items.push(makeItem(Math.random()<.6?wpick(MED_W.day):pick(POOLS.civ.ammo)));site('truck',items,'walker');},
   crash(){
-    const s=farSpot(30,80);if(!s)return;const [x,z]=s;G.site={kind:'crash',x,z,day:Math.floor(G.min/1440)+1};
+    const s=farSpot(30,80);if(!s)return;const [x,z]=s;G.site={kind:'crash',x,z,day:dayOf(G.min)};
     dropGuaranteed('pol',x,z);spawnDrop(makeItem(wpick(MED_W.night)),...reachableSpot(x+1.2,z));guards(x,z,'zombie');   // night only: Police grade stays a night thing
     sfx.explode(x,z);makeNoise(x,z,40);
   },
   fog(){G.fog=G.min+DAILY.last.fog;},
-  bandits(){if(isPvp()||Math.floor(G.min/1440)+1<BANDIT.from)return;const s=farSpot(40,90);if(s)placeBandits(s[0],s[1]);},   // v0.62
+  bandits(){if(isPvp()||dayOf(G.min)<BANDIT.from)return;const s=farSpot(40,90);if(s)placeBandits(s[0],s[1]);},   // v0.62
   storm(){G.storm=G.min+DAILY.last.storm;G.rainTarget=1;G.boltAt=G.min+rnd(STORM.every[0],STORM.every[1]);},   // v0.56
   raid(){
     const list=rooms.map((r,k)=>[r,k]).filter(([r,k])=>!players.some(p=>roomAt(p.pos.x,p.pos.z)===k));if(!list.length)return;
@@ -169,7 +170,7 @@ function updateBroadcast(){
   if(G.castAt==null)G.castAt=nextCast(G.min);
   if(G.min<G.castAt)return;
   const late=G.min-G.castAt;G.castAt=nextCast(G.min);
-  if(late<30)sfx.broadcast(Math.min(Math.floor(G.min/1440),BROADCAST.lines.length-1));
+  if(late<30)sfx.broadcast(Math.min((dayOf(G.min)-1),BROADCAST.lines.length-1));
 }
 // new game / loaded game
 export function resetEvents(){clearCrate();planEvents();planDaily(1);}

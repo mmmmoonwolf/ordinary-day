@@ -1,3 +1,4 @@
+import {dayOf} from '../config/time.js';
 import {ACT} from '../config/act.js';
 import {$} from '../core/util.js';
 import {G,isPvp} from '../core/state.js';
@@ -109,7 +110,7 @@ export function gameOver(){
   $('pOver').classList.remove('pvp');$('bAgain').textContent='เล่นอีกครั้ง';
   const end=(G.endCause==='won'&&ACT===2?ENDINGS.won2:ENDINGS[G.endCause])||ENDINGS.hurt,nights=nightsSurvived(G.min);
   $('oEyebrow').textContent=end.eyebrow+' · '+diffOf(G).name;$('oTitle').textContent=end.title;$('oCause').textContent=end.text;
-  $('sNights').textContent=nights;$('sTime').textContent=hhmm(G.min);$('sDay').textContent=Math.floor(G.min/1440)+1;$('sKill').textContent=G.kills;
+  $('sNights').textContent=nights;$('sTime').textContent=hhmm(G.min);$('sDay').textContent=dayOf(G.min);$('sKill').textContent=G.kills;
   $('sKillsBy').innerHTML=Object.keys(ZC).map(k=>'<span>'+ZC[k].name+'<b>'+(G.killsBy[k]||0)+'</b></span>').join('');
   const {best,isNew}=recordRun({nights,kills:G.kills,won:G.endCause==='won',diff:G.diff});
   $('sBest').innerHTML=(isNew?'<span class="new">สถิติใหม่! </span>':'')+'สถิติดีสุด ('+diffOf(G).name+'): รอด '+best.nights+' คืน · กำจัด '+best.kills+' ตัว'+(best.wins?' · รอดสำเร็จ '+best.wins+' ครั้ง':'');
