@@ -14,7 +14,23 @@ import { els, errs, step, key, store, T, P, I, finish } from './setup.js';
   D.toggleDoor(out, k); if (T.G.doors[k].open || !T.G.doors[k].bar) vfail('opened from outside');
   D.damageDoor(k, Sh.BARR.hp + 5); if (T.G.doors[k].bar) vfail('still barricaded after the furniture gave way');
   const ok = D.toggleDoor(q, k); if (!T.G.doors[k].open) vfail('could not open from inside: ' + ok + ' ' + JSON.stringify(T.G.doors[k]) + ' alive ' + q.alive + ' bleed ' + q.bleed);
+  // B6: the furniture is not a door that heals. Once smashed it cannot be dragged back until the next morning,
+  // and pulling it away yourself keeps only what was left of it
+  D.toggleDoor(q, k); step(1); const st = T.G.doors[k];
+  if (st.open) vfail('B6: the door did not shut again');
+  if (D.fixAction(k, q) || q.fixDoor === k) vfail('B6: smashed furniture was offered again');
+  const hp1 = st.hp; for (let i = 0; i < 5; i++) Ac.runAction(q, 'fix', []);
+  if (st.bar || st.hp !== hp1) vfail('B6: barricaded again after it was smashed: ' + hp1 + ' -> ' + st.hp);
+  T.G.phase = 'night'; T.G.min = 1440 + 6 * 60 + 1; step(2);                      // the next morning
+  if (T.G.phase !== 'day') vfail('B6: no morning came'); q.hp = q.maxHp || 100; q.bleedW = 0;
+  if (D.fixAction(k, q) !== 'barricade') vfail('B6: no furniture the next morning: ' + JSON.stringify(st));
+  const hp2 = st.hp; D.fixDoor(q, k); if (!st.bar || st.hp !== hp2 + Sh.BARR.hp) vfail('B6: the morning barricade: ' + st.hp);
+  D.damageDoor(k, 30); D.toggleDoor(q, k);                                           // 50 of the 80 left, pulled away from inside
+  if (st.bar || st.hp !== hp2) vfail('B6: pulled away, the door has ' + st.hp + ' not its own ' + hp2);
+  D.fixDoor(q, k); if (!st.bar || st.hp !== hp2 + Sh.BARR.hp - 30) vfail('B6: put back, it was made whole again: ' + st.hp + ' (door ' + hp2 + ')');
+  D.toggleDoor(q, k);
   for (const p of P.players.slice(1)) p.away = true;
+  console.log('B6: smashed furniture stays smashed until morning; pulled away and put back it keeps its damage');
   console.log('v0.59: barricaded from inside (+' + Sh.BARR.hp + '), not from outside, gives way, opens from inside');
 
 finish('barricade');

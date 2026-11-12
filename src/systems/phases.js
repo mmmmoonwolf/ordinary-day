@@ -11,6 +11,7 @@ import {players,nearestPlayerDist,partySize} from '../entities/player.js';
 import {partyOf} from '../config/party.js';
 import {fillDay,fillNight,takeByOthers} from './drops.js';
 import {restockBoxes} from './search.js';
+import {restoreFurniture} from './doors.js';
 import {planDaily} from './events.js';
 import {REFILL,refillScale} from '../config/loot.js';
 import {sfx} from './audio.js';
@@ -71,6 +72,7 @@ function onDay(){
   for(const z of zs)if(z.kind==='hunter'){z.gone=true;fireFx(z.pos.x,z.pos.z,.8,2.5);}
   if(G.outbreak&&!isPvp()&&day>=SCREAMER.from)for(let k=0;k<SCREAMER.day;k++)spawnEdge('screamer');
   restockBoxes();   // v0.15
+  restoreFurniture();   // v0.59 smashed barricades can be built again
   planDaily(day);   // v0.18 random events for the day
   takeByOthers(players);
   fillDay(Math.min(1,REFILL.day*refillScale(day)*partyOf(partySize(),'loot')));
