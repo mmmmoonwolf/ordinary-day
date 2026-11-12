@@ -1,3 +1,4 @@
+import {useOf} from '../entities/use.js';
 import {$,isTouch} from '../core/util.js';
 import {cv,zoom,camera,view} from '../core/renderer.js';
 import {G,isPvp} from '../core/state.js';
@@ -30,7 +31,7 @@ function pingHere(ahead){
   if(x===undefined){const a=view.fps?view.yaw:p.face;x=p.pos.x+Math.sin(a)*PING.ahead;z=p.pos.z+Math.cos(a)*PING.ahead;}
   act('ping',Math.round(x*10)/10,Math.round(z*10)/10);
 }
-function usePick(){if(player.full&&!player.near&&!player.nearDown)openBag();else act('use');}
+function usePick(){const u=useOf(player);if(u&&u.k==='full')openBag();else act('use');}   // a full bag is this device's to sort out; the rest is the host's
 // keyboard / mouse / stick -> the local player's input, once per simulation step (v0.9: the player reads only p.input)
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),mray=new THREE.Raycaster();
 export function pollInput(p){

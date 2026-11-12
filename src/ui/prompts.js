@@ -1,3 +1,4 @@
+import {useOf} from '../entities/use.js';
 import {$} from '../core/util.js';
 import {G} from '../core/state.js';
 import {DEF,itemColor} from '../config/items.js';
@@ -24,16 +25,19 @@ export function updatePrompts(){
   if(p.bleed>0)pick('downed'+Math.ceil(p.bleed)+'·'+Math.round(p.reviveT*10),'',p.reviveT>0?'เพื่อนกำลังช่วย '+Math.round(p.reviveT*100)+'%':'ล้ม · รอเพื่อนช่วย '+Math.ceil(p.bleed)+' วิ','#ff8f7c');   // shown, not pressed (v0.10)
   else if(p.helping)pick('help'+Math.round(p.helpT*10),'',(p.helping.alive?'ช่วยพยุงเพื่อน ':'ชุบเพื่อน ')+Math.min(100,Math.round(p.helpT/(REVIVE_SECONDS*(jobOf(p).revive||1))*100))+'%','#7fc8ff');
   else if(p.searching>=0)pick('srch'+Math.round(p.searchT*10),'','ค้น'+boxName(p.searching)+' '+Math.min(100,Math.round(p.searchT/SEARCH_SECONDS*100))+'%','#c9b27a');   // v0.15
-  else if(p.nearDown)p.nearDown.alive?pick('down','','ช่วยเพื่อนลุก','#7fc8ff')
-    :p.gear.bag.some(e=>e.id==='resurrect')?pick('kit','','ชุบเพื่อนด้วย Kit','#7fc8ff'):pick('nokit','','เพื่อนตาย · ต้องมี Kit','#8a8a86');   // v0.11
-  else if(p.full)pick('full'+drops.indexOf(p.full),'','กระเป๋าเต็ม · '+DEF[p.full.item.id].name,'#ff8f7c');   // opens the bag to make room (v0.6.1)
-  else if(p.near)pick(String(drops.indexOf(p.near)),'เก็บ ',DEF[p.near.item.id].name+gradeTag(p.near.item.id),itemColor(p.near.item.id));
-  else if(p.nearDoor>=0){const st=G.doors[p.nearDoor],label=(st.open?'ปิดประตู':st.bar?'รื้อที่กั้น':'เปิดประตู')+(st.hp!==DOOR_HP?' · '+Math.round(st.hp/DOOR_HP*100)+'%':'');pick('door'+p.nearDoor+label,'',label,'#e2a64a');}
-  else if(p.nearBox>=0)pick('box'+p.nearBox,'ค้น ',boxName(p.nearBox),'#c9b27a');
-  else if(p.car>=0)pick('out'+p.car,'','ลงจากรถ','#9fd3a0');   // v0.45
-  else if(p.nearLadder>=0)pick('lad'+p.nearLadder+(p.airH>1.5?'d':'u'),'',p.airH>1.5?'ปีนลง':'ปีนขึ้นหลังคา','#c9c3b4');   // v0.63
-  else if(p.nearCar>=0)pick('car'+p.nearCar,'','ขึ้นรถ','#9fd3a0');
-  else if(!bp.hidden)bp.hidden=true;
+  else{
+    const u=useOf(p);   // the same answer the action gets (entities/use.js)
+    if(!u){if(!bp.hidden)bp.hidden=true;}
+    else if(u.k==='help')u.q.alive?pick('down','','ช่วยเพื่อนลุก','#7fc8ff')
+      :p.gear.bag.some(e=>e.id==='resurrect')?pick('kit','','ชุบเพื่อนด้วย Kit','#7fc8ff'):pick('nokit','','เพื่อนตาย · ต้องมี Kit','#8a8a86');   // v0.11
+    else if(u.k==='full')pick('full'+drops.indexOf(u.d),'','กระเป๋าเต็ม · '+DEF[u.d.item.id].name,'#ff8f7c');   // opens the bag to make room (v0.6.1)
+    else if(u.k==='pick')pick(String(drops.indexOf(u.d)),'เก็บ ',DEF[u.d.item.id].name+gradeTag(u.d.item.id),itemColor(u.d.item.id));
+    else if(u.k==='out')pick('out'+u.id,'','ลงจากรถ','#9fd3a0');   // v0.45
+    else if(u.k==='ladder')pick('lad'+u.id+(p.airH>1.5?'d':'u'),'',p.airH>1.5?'ปีนลง':'ปีนขึ้นหลังคา','#c9c3b4');   // v0.63
+    else if(u.k==='door'){const st=G.doors[u.id],label=(st.open?'ปิดประตู':st.bar?'รื้อที่กั้น':'เปิดประตู')+(st.hp!==DOOR_HP?' · '+Math.round(st.hp/DOOR_HP*100)+'%':'');pick('door'+u.id+label,'',label,'#e2a64a');}
+    else if(u.k==='box')pick('box'+u.id,'ค้น ',boxName(u.id),'#c9b27a');
+    else if(u.k==='car')pick('car'+u.id,'','ขึ้นรถ','#9fd3a0');
+  }
   const k=p.fixDoor;
   const st=k>=0&&G.doors[k],how=!st?null:st.broken?'rebuild':!st.open&&!st.bar?'barricade':null;   // p.fixDoor: the host already checked it (a friend's device has no p.room)
   if(!how){if(!bf.hidden)bf.hidden=true;return;}
