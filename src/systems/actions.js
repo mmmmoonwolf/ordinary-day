@@ -1,3 +1,4 @@
+import {useOf} from '../entities/use.js';
 import {climb} from './roofs.js';
 import {trunkPut,trunkTake} from './vehicles.js';
 import {bus} from '../core/bus.js';
@@ -17,8 +18,10 @@ import {craft,place} from './craft.js';
 export const ACTIONS={
   // E / the pick button: help a downed (or with a Kit, dead) teammate, take the item, work the door or search the furniture
   // v0.45 in a car it gets out; next to one that starts, in
-  use(p){if(p.zed){if(p.nearDoor>=0)toggleDoor(p,p.nearDoor);return;}   // v0.51 a zombie player only works doors
-    if(p.car>=0)leaveCar(p);else if(p.nearDown)startHelp(p,p.nearDown);else if(p.near)pickup(p,p.near);else if(p.nearLadder>=0)climb(p,p.nearLadder);else if(p.nearDoor>=0)toggleDoor(p,p.nearDoor);else if(p.nearBox>=0)startSearch(p,p.nearBox);else if(p.nearCar>=0)enterCar(p,p.nearCar);},
+  // the order of what E does is in entities/use.js, shared with the button on screen
+  use(p){const u=useOf(p);if(!u)return;
+    if(u.k==='out')leaveCar(p);else if(u.k==='help')startHelp(p,u.q);else if(u.k==='pick')pickup(p,u.d);else if(u.k==='ladder')climb(p,u.id);
+    else if(u.k==='door')toggleDoor(p,u.id);else if(u.k==='box')startSearch(p,u.id);else if(u.k==='car')enterCar(p,u.id);},
   fix(p){if(p.fixDoor>=0)fixDoor(p,p.fixDoor);},
   light:p=>{p.light=!p.light;},
   ping:(p,x,z)=>ping(p,+x,+z),   // v0.53 a marker for the team

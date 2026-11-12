@@ -16,6 +16,12 @@ import {renderBag} from '../ui/bag.js';
 // bullets and sight. Zombies that want what is behind it hit it until it breaks; broken doors stay open
 // until a new game. Saved with G.
 const fresh=()=>({open:true,hp:DOOR_HP,broken:false});
+// v0.59 the furniture against a shut door. While it stands `bar` is set, `base` is the door's own HP under it and
+// hp = base + what is left of the furniture. `furn` is what the room still has to put against the door: all of it
+// (BARR.hp) until used; what was left when it was pulled away; nothing once the zombies have smashed it, until the
+// next morning (restoreFurniture). Without that, dragging it back after every blow made a door that never broke.
+const furnOf=st=>st.furn??BARR.hp,baseOf=st=>st.base??DOOR_HP;   // a save from before `base` barricaded a whole door
+export function restoreFurniture(){for(const st of G.doors)if(!st.bar)delete st.furn;}
 function sync(k){
   const st=G.doors[k],b=rooms[k].doorBox,i=solids.indexOf(b);
   if(st.open&&i>=0)solids.splice(i,1);else if(!st.open&&i<0)solids.push(b);
@@ -35,15 +41,15 @@ const blocked=(p,k)=>{const b=rooms[k].doorBox;if(players.some(q=>q.alive&&inBox
 export function toggleDoor(p,k){
   const st=G.doors[k];if(!st||st.broken||!p.alive||p.bleed>0)return false;
   if(st.bar){if(p.room!==k){uiFor(p).feed('ประตูถูกกั้นไว้','warn');sfx.bash(rooms[k].dx,rooms[k].dz);return false;}   // v0.59 barricaded: only from inside, and that first pulls it away
-    st.bar=false;st.hp=Math.min(st.hp,DOOR_HP);sync(k);sfx.bash(rooms[k].dx,rooms[k].dz);return true;}
+    st.furn=Math.max(0,st.hp-baseOf(st));st.hp=Math.min(st.hp,baseOf(st));st.bar=false;delete st.base;sync(k);sfx.bash(rooms[k].dx,rooms[k].dz);return true;}
   if(st.open&&blocked(p,k))return false;
   st.open=!st.open;sync(k);markMapDirty();sfx.door(rooms[k].dx,rooms[k].dz);
   return true;
 }
 // ---------- putting a broken door back (v0.7 planks; v0.42 without them) ----------
 // what the hammer would do at door k: 'rebuild' when it is broken, else nothing
-// v0.59 or 'barricade' when player p is inside with it shut and nothing against it yet
-export function fixAction(k,p){const st=G.doors[k];if(!st)return null;if(st.broken)return 'rebuild';return p&&!st.open&&!st.bar&&p.room===k?'barricade':null;}
+// v0.59 or 'barricade' when player p is inside with it shut, nothing against it yet and furniture left to use
+export function fixAction(k,p){const st=G.doors[k];if(!st)return null;if(st.broken)return 'rebuild';return p&&!st.open&&!st.bar&&furnOf(st)>0&&p.room===k?'barricade':null;}
 // the nearest broken door player p could put back, or -1
 export function nearFixDoor(p){
   if(!p||!p.alive||p.bleed>0)return -1;
@@ -53,7 +59,7 @@ export function nearFixDoor(p){
 export function fixDoor(p,k){
   const st=G.doors[k],how=fixAction(k,p);if(!st||!p.alive||p.bleed>0||!how)return false;const r=rooms[k],U=uiFor(p);
   if(how==='barricade'){   // v0.59
-    st.bar=true;st.hp+=BARR.hp;U.feed('กั้นประตูแล้ว');sync(k);sfx.bash(r.dx,r.dz);setTimeout(()=>sfx.bash(r.dx,r.dz),300);makeNoise(r.dx,r.dz,BARR.noise);return true;}
+    st.bar=true;st.base=st.hp;st.hp+=furnOf(st);U.feed('กั้นประตูแล้ว');sync(k);sfx.bash(r.dx,r.dz);setTimeout(()=>sfx.bash(r.dx,r.dz),300);makeNoise(r.dx,r.dz,BARR.noise);return true;}
   if(blocked(p,k))return false;
   st.broken=false;st.open=false;st.hp=REBUILT_HP;U.feed('ซ่อมประตูแล้ว · ประตู '+Math.round(st.hp/DOOR_HP*100)+'%');
   sync(k);markMapDirty();sfx.hammer(r.dx,r.dz);setTimeout(()=>sfx.hammer(r.dx,r.dz),180);setTimeout(()=>sfx.hammer(r.dx,r.dz),420);
@@ -63,7 +69,7 @@ export function fixDoor(p,k){
 }
 export function damageDoor(k,dmg){
   const st=G.doors[k];if(!st||st.open)return;
-  const r=rooms[k];st.hp-=dmg;sfx.bash(r.dx,r.dz);if(st.bar&&st.hp<=DOOR_HP){st.bar=false;sync(k);}   // v0.59 the furniture gave way
+  const r=rooms[k];st.hp-=dmg;sfx.bash(r.dx,r.dz);if(st.bar&&st.hp<=baseOf(st)){st.bar=false;st.furn=0;delete st.base;sync(k);}   // v0.59 the furniture gave way, smashed
   r.cutDoor.position.x+=(Math.random()-.5)*.06;r.cutDoor.position.z+=(Math.random()-.5)*.06;   // rattles
   const now=performance.now()/1000;
   for(const p of players)if(p.room===k&&now-(p.doorWarn||0)>8){p.doorWarn=now;}

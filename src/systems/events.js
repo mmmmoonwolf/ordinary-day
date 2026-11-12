@@ -23,6 +23,7 @@ import {nearestPlayerDist,partySize,players} from '../entities/player.js';
 import {partyOf} from '../config/party.js';
 import {makeItem,spawnDrop,reachableSpot} from './drops.js';
 import {sfx} from './audio.js';
+import {OUTBREAK} from '../config/act.js';
 
 // ---------- daily events, from day 2 to the day the army camp opens (v0.8; days 2-7 until v0.46) ----------
 // G.plan is drawn once per game (saved with G): each day gets an airdrop, a horde or a blackout, sometimes two.
@@ -161,7 +162,7 @@ export function strike(x,z){strikeFx(x,z);sfx.strike(x,z);ignite(x,z,STORM.fire.
 // ---------- v0.56 the emergency radio ----------
 // at the minutes of BROADCAST.at each day (day 1 only after the outbreak) everyone hears the day's message
 export function nextCast(min){
-  for(let d=Math.floor(min/1440);;d++)for(const m of BROADCAST.at){const t=d*1440+m;if(t>min&&!(d===0&&m<9*60+30))return t;}
+  for(let d=Math.floor(min/1440);;d++)for(const m of BROADCAST.at){const t=d*1440+m;if(t>min&&!(d===0&&m<OUTBREAK))return t;}
 }
 function updateBroadcast(){
   if(isPvp())return;

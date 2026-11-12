@@ -1,3 +1,4 @@
+import {useOf} from '../entities/use.js';
 import {$,isTouch} from '../core/util.js';
 import {cv,zoom,camera,view} from '../core/renderer.js';
 import {G,isPvp} from '../core/state.js';
@@ -30,7 +31,7 @@ function pingHere(ahead){
   if(x===undefined){const a=view.fps?view.yaw:p.face;x=p.pos.x+Math.sin(a)*PING.ahead;z=p.pos.z+Math.cos(a)*PING.ahead;}
   act('ping',Math.round(x*10)/10,Math.round(z*10)/10);
 }
-function usePick(){if(player.full&&!player.near&&!player.nearDown)openBag();else act('use');}
+function usePick(){const u=useOf(player);if(u&&u.k==='full')openBag();else act('use');}   // a full bag is this device's to sort out; the rest is the host's
 // keyboard / mouse / stick -> the local player's input, once per simulation step (v0.9: the player reads only p.input)
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),mray=new THREE.Raycaster();
 export function pollInput(p){
@@ -59,20 +60,31 @@ export function pollInput(p){
 // ---------- gamepad (v0.59) ----------
 // The standard mapping (Xbox / PlayStation pads in Chrome, Edge, Firefox, Safari): left stick walks (pressed in: run until
 // it is let go), right stick aims (first person: turns the view), RT fires, LT aims down the sights, A takes / opens /
-// gets in, X reloads, B sneaks, Y the bag, LB throws, RB the next weapon, RS the hammer (fix, barricade), D-pad: up the
+// gets in, X reloads, B sneaks, Y the bag (padMenu), LB throws, RB the next weapon, RS the hammer (fix, barricade), D-pad: up the
 // flashlight, down a marker, left heals, right vaults; View the first-person view, Menu pauses. It only takes over once
 // it is touched, and keyboard, mouse and touch keep working beside it.
-const pad={on:false,run:false,prev:[],fire:false};
+const pad={on:false,run:false,prev:[],fire:false,menuPrev:[]};
+const firstPad=()=>{const list=typeof navigator!=='undefined'&&navigator.getGamepads?navigator.getGamepads():null;if(list)for(const x of list)if(x&&x.connected)return x;return null;};
+const held=(g,i)=>!!(g.buttons[i]&&(g.buttons[i].pressed||g.buttons[i].value>.5));
+// The two buttons that open and close screens (Menu: pause, Y: the bag) are read once a frame from the main loop, not
+// with the rest of the pad in pollInput(): that runs inside the simulation, which stops while a screen is open in a
+// game alone, so a pad could open the bag or the pause menu and then never close it.
+export function padMenu(){
+  const g=firstPad();if(!g)return;
+  const tap=i=>{const now=held(g,i),was=pad.menuPrev[i];pad.menuPrev[i]=now;return now&&!was;},menu=tap(9),bag=tap(3);
+  if(!G.running||!(menu||bag))return;
+  pad.on=true;
+  if(menu){if(isSettingsOpen())closeSettings();else if(!$('bag').hidden)closeBag();else togglePause();}
+  else if(!isPauseOpen())$('bag').hidden?openBag():closeBag();
+}
 const DEAD=.2,ax=(g,i)=>{const v=g.axes[i]||0;return Math.abs(v)<DEAD?0:(v-Math.sign(v)*DEAD)/(1-DEAD);};
 function padButtons(){
-  const list=navigator.getGamepads?navigator.getGamepads():null;let g=null;if(list)for(const x of list)if(x&&x.connected){g=x;break;}
+  const g=firstPad();
   if(!g)return null;
-  const b=i=>!!(g.buttons[i]&&(g.buttons[i].pressed||g.buttons[i].value>.5)),tap=i=>{const now=b(i),was=pad.prev[i];pad.prev[i]=now;return now&&!was;};
+  const b=i=>held(g,i),tap=i=>{const now=b(i),was=pad.prev[i];pad.prev[i]=now;return now&&!was;};
   const s={lx:ax(g,0),ly:ax(g,1),rx:ax(g,2),ry:ax(g,3),lt:b(6),rt:b(7)};
   if(!pad.on){if(!(s.lx||s.ly||s.rx||s.ry||g.buttons.some(x=>x&&x.pressed)))return null;pad.on=true;mouse.active=false;}
   const taps=[];for(let i=0;i<16;i++)if(tap(i))taps.push(i);
-  if(taps.includes(9)){if(isSettingsOpen())closeSettings();else if(!$('bag').hidden)closeBag();else togglePause();}
-  if(taps.includes(3)&&!isPauseOpen())$('bag').hidden?openBag():closeBag();
   if(G.paused||!$('bag').hidden||!$('pause').hidden){pad.fire=false;return s;}
   if(taps.includes(0))usePick();if(taps.includes(2))act('reload');if(taps.includes(1))ctl.sneak=!ctl.sneak;
   if(taps.includes(4))act('throw');if(taps.includes(11))act('fix');if(taps.includes(8))toggleFps();

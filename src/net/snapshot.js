@@ -30,9 +30,11 @@ export function encodeWorld(c,me){
   s.pl=players.map(p=>[p.id,r2(p.pos.x),r2(p.pos.z),r2(p.face),Math.ceil(p.hp),p.alive?1:0,r2(p.bleed),r2(p.down),r2(p.moving),curWeapon(p).id,
     p.sneak?1:0,r2(p.reloadT),r2(p.swing),r2(p.swingDur),r2(p.recoil),p.inv>0?1:0,p.away?1:0,r2(p.reviveT),r2(p.airH||0),p.car>=0?p.car:-1,p.frags||0,p.deaths||0,p.light===false?0:1,p.bounty?1:0,p.team||0,p.zed?1:0]);   // v0.51 team, zombie player   // v0.50 light: the flashlight; v0.51 bounty   // v0.47 PvP kills and deaths   // v0.45 car: the one they drive   // v0.30 airH: off the ground, vaulting or hopping
   const who=players.map(p=>[p.id,p.name,p.wear||null]),wj=JSON.stringify(who);if(wj!==c.who){c.who=wj;s.who=who;}   // v0.41 names and clothes, when they change
+  // rf: the roof this player is up on. Their own device moves them itself (client prediction), and without it that
+  // movement collided with the building they stand on and threw them off it on their screen
   const gj=JSON.stringify(me.gear);
   s.me={id:me.id,inf:r2(me.infect),ec:me.endCause,near:me.near?me.near.nid:0,full:me.full?me.full.nid:0,
-    nd:me.nearDoor,fd:me.fixDoor,nl:me.nearLadder??-1,dn:me.nearDown?me.nearDown.id:-1,hp:me.helping?me.helping.id:-1,ht:r2(me.helpT),nb:me.nearBox,sb:me.searching,st:r2(me.searchT),nc:me.nearCar,kb:me.killedBy??-1,pn:r2(me.panic||0),bw:me.bleedW>0?1:0,sk:me.sick>0?1:0};   // v0.54 panic, bleeding, ill   // v0.51 kb: who killed them
+    nd:me.nearDoor,fd:me.fixDoor,nl:me.nearLadder??-1,rf:me.roof??-1,dn:me.nearDown?me.nearDown.id:-1,hp:me.helping?me.helping.id:-1,ht:r2(me.helpT),nb:me.nearBox,sb:me.searching,st:r2(me.searchT),nc:me.nearCar,kb:me.killedBy??-1,pn:r2(me.panic||0),bw:me.bleedW>0?1:0,sk:me.sick>0?1:0};   // v0.54 panic, bleeding, ill   // v0.51 kb: who killed them
   if(gj!==c.gear){c.gear=gj;s.me.gear=me.gear;}
   s.ag=[];s.nw=[];
   for(const a of agents){
@@ -94,7 +96,7 @@ export function applyWorld(s,myId){
   const me=s.me;
   if(me&&player){
     if(me.gear)player.gear=me.gear;
-    Object.assign(player,{infect:me.inf,endCause:me.ec,nearDoor:me.nd,fixDoor:me.fd,nearLadder:me.nl??-1,helpT:me.ht,nearBox:me.nb??-1,searching:me.sb??-1,searchT:me.st||0,nearCar:me.nc??-1,killedBy:me.kb??-1,panic:me.pn||0,bleedW:me.bw?1:0,sick:me.sk?1:0,
+    Object.assign(player,{infect:me.inf,endCause:me.ec,nearDoor:me.nd,fixDoor:me.fd,nearLadder:me.nl??-1,roof:me.rf??-1,helpT:me.ht,nearBox:me.nb??-1,searching:me.sb??-1,searchT:me.st||0,nearCar:me.nc??-1,killedBy:me.kb??-1,panic:me.pn||0,bleedW:me.bw?1:0,sick:me.sk?1:0,
       near:dropOf(me.near),full:dropOf(me.full),nearDown:players.find(q=>q.id===me.dn)||null,helping:players.find(q=>q.id===me.hp)||null});
   }
   // people and zombies

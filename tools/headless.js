@@ -1,5 +1,13 @@
 // Headless browser stand-in for the game's tests (tools/smoke-test.js, tools/net-test.js): THREE.js and the DOM
 // are replaced by stubs, so the game modules in src/ load and run in Node. Import this before any game module.
+// Repeatable runs: Math.random is seeded before any game module loads, so a test that fails keeps failing until it is
+// fixed. SEED=<number> picks another run, SEED=random a fresh one; a run that fails prints the seed it used.
+const asked = process.env.SEED;
+export const seed = asked === 'random' ? (Date.now() ^ (process.pid << 8)) >>> 0 : Number.isFinite(+asked) && asked !== undefined && asked !== '' ? +asked >>> 0 : 20261020;
+{ let a = seed;
+  Math.random = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+process.on('exit', code => { if (code) console.log('seed ' + seed + ' (run again with SEED=' + seed + ')'); });
 // stub that accepts any property access, call or construction
 function any() {
   const f = function () {};

@@ -1,9 +1,9 @@
 import {wpick,rnd} from '../core/util.js';
 import {G} from '../core/state.js';
 import {DAY_START,DUSK_WARN,isNightTod} from '../config/time.js';
-import {isSpecial,RISE,SCREAMER,HUNTER} from '../config/zombies.js';
+import {isSpecial,RISE,SCREAMER,HUNTER,ELITE} from '../config/zombies.js';
 import {isPvp} from '../core/state.js';
-import {ACT,ACT2} from '../config/act.js';
+import {OUTBREAK} from '../config/act.js';
 import {fireFx} from './effects.js';
 import {agents,becomeZombie,setKind,zombies,spawnEdge} from '../entities/agents.js';
 import {d2} from '../entities/movement.js';
@@ -11,6 +11,7 @@ import {players,nearestPlayerDist,partySize} from '../entities/player.js';
 import {partyOf} from '../config/party.js';
 import {fillDay,fillNight,takeByOthers} from './drops.js';
 import {restockBoxes} from './search.js';
+import {restoreFurniture} from './doors.js';
 import {planDaily} from './events.js';
 import {REFILL,refillScale} from '../config/loot.js';
 import {sfx} from './audio.js';
@@ -41,19 +42,17 @@ function farScream(){const p=players[0],a=Math.random()*Math.PI*2;sfx.scream(p.p
 // v0.42 the first morning is told only by what happens (no words): someone running past bleeding, a scream far off, the
 // outbreak, the rain
 export const EVENTS=[
-  {t:9*60+12,fn:bloodyRunner},
-  {t:9*60+24,fn:farScream},
-  {t:9*60+30,fn:startOutbreak},
+  {t:OUTBREAK-18,fn:bloodyRunner},   // 09:12 in the first town
+  {t:OUTBREAK-6,fn:farScream},       // 09:24
+  {t:OUTBREAK,fn:startOutbreak},     // 09:30 (config/act.js; the second town: the same morning, three hours later)
   {t:11*60,fn:()=>{G.rainTarget=1;}},
   {t:13*60+20,fn:()=>{G.rainTarget=0;}},
 ];
-// v0.66 the second town: the same morning, three hours later (the bitten escapee arrives at ACT2.outbreak)
-if(ACT===2){const d=ACT2.outbreak-(9*60+30);for(const e of EVENTS)if(e.t<=9*60+30)e.t+=d;}
 function onNight(){
   G.phase='night';sfx.night();
   for(const z of zombies())if(z.kind==='walker')setKind(z,'zombie');
-  G.armorNight=Math.random()<.6;G.armorNext=G.min+30;G.armorAnnounced=false;G.armorCount=0;
-  G.tyrantPending=Math.random()<.4;G.tyrantAt=G.min-(G.min%1440)+1440;
+  G.armorNight=Math.random()<ELITE.armor.chance;G.armorNext=G.min+ELITE.armor.first;G.armorAnnounced=false;G.armorCount=0;
+  G.tyrantPending=Math.random()<ELITE.tyrant.chance;G.tyrantAt=G.min-(G.min%1440)+1440;
   G.nightSpawnNext=G.min+15;
   G.huntAt=!isPvp()&&Math.floor(G.min/1440)+1>=HUNTER.from?G.min+HUNTER.after:0;   // v0.57 the Hunters come later in the night
   if(isBlood()){const mid=G.min-(G.min%1440)+1440;G.bloodHordes=BLOOD.hordes.map(m=>mid+m);sfx.roar(0,0,2);}   // v0.52 the last night: hordes at set times
@@ -71,6 +70,7 @@ function onDay(){
   for(const z of zs)if(z.kind==='hunter'){z.gone=true;fireFx(z.pos.x,z.pos.z,.8,2.5);}
   if(G.outbreak&&!isPvp()&&day>=SCREAMER.from)for(let k=0;k<SCREAMER.day;k++)spawnEdge('screamer');
   restockBoxes();   // v0.15
+  restoreFurniture();   // v0.59 smashed barricades can be built again
   planDaily(day);   // v0.18 random events for the day
   takeByOthers(players);
   fillDay(Math.min(1,REFILL.day*refillScale(day)*partyOf(partySize(),'loot')));
@@ -85,8 +85,8 @@ export function runEvents(now){
   if(ph==='night'&&G.outbreak){
     // v0.52 the blood night: more often, more of them
     if(G.min>=G.nightSpawnNext){const blood=isBlood();G.nightSpawnNext+=blood?BLOOD.spawnEvery:45;const n=Math.max(1,Math.min(4,2+Math.floor((day-1)/2))+diffOf(G).spawn+partyOf(partySize(),'spawn')+(blood?BLOOD.extra:0));const mix=nightMix();for(let k=0;k<n;k++)spawnEdge(wpick(mix));}
-    if(G.armorNight&&G.min>=G.armorNext&&!(tod>=300&&tod<DAY_START)){G.armorNext+=60;
-      if(G.armorCount<6){const a=spawnEdge('armor');if(a){G.armorCount++;if(!G.armorAnnounced){G.armorAnnounced=true;}}}}   // Q05: at most 6 per night
+    if(G.armorNight&&G.min>=G.armorNext&&!(tod>=300&&tod<DAY_START)){G.armorNext+=ELITE.armor.every;
+      if(G.armorCount<ELITE.armor.max){const a=spawnEdge('armor');if(a){G.armorCount++;if(!G.armorAnnounced){G.armorAnnounced=true;}}}}   // Q05: at most 6 per night
     if(G.huntAt&&G.min>=G.huntAt){G.huntAt=0;const n=Math.round(rnd(HUNTER.count[0]-.49,HUNTER.count[1]+.49));   // v0.57 the Hunters: they know where the players are
       for(let k=0;k<n;k++){const h=spawnEdge('hunter');if(!h)continue;let q=null,qd=1e9;for(const p of players)if(p.alive&&!p.away){const d=Math.hypot(p.pos.x-h.pos.x,p.pos.z-h.pos.z);if(d<qd){qd=d;q=p;}}
         if(q)h.heard={x:q.pos.x,z:q.pos.z,t:60};if(k===0)sfx.howl(h.pos.x,h.pos.z);}}

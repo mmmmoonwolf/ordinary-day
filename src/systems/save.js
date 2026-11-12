@@ -1,3 +1,4 @@
+import {applyCars} from './vehicles.js';
 import {ACT} from '../config/act.js';
 import {camTarget} from '../core/renderer.js';
 import {G,isPvp} from '../core/state.js';
@@ -6,7 +7,7 @@ import {applyTraps} from './camp.js';
 import {DEF} from '../config/items.js';
 import {ZC} from '../config/zombies.js';
 import {lootSpots} from '../world/city.js';
-import {agents,makeAgent,removeAgent,styleZombie} from '../entities/agents.js';
+import {agents,makeAgent,removeAgent,styleZombie,keepNid} from '../entities/agents.js';
 import {player,players} from '../entities/player.js';
 import {drops,spawnDrop,removeDrop} from './drops.js';
 import {freshGear,tidyBag} from './inventory.js';
@@ -23,7 +24,7 @@ import {applyEvents} from './events.js';
 // The city is rebuilt from its seed, so loot spots are stored by index; bump SAVE_VERSION when that or the format changes.
 const SAVE_KEY='ordinary-day.save'+(ACT===2?'.2':''),SAVE_VERSION=2;   // v0.66 the second town keeps its own save   // 2 (v0.9): players[] with their own gear; 1 still loads (one player)
 const AUTOSAVE_EVERY=15;   // real seconds while playing
-const AGENT_KEYS=['state','kind','face','phase','node','prev','jx','jz','walk','panic','tx','tz','wait','vendor','hp','maxHp','feed','atk','spd','stuckT','lost','turnT','heard','fuse','wind','retreat','shrieked','march','rise','from','nextBrood','screamT','burst','npc','gun','home','lead'];   // v0.62 survivors and bandits   // v0.57 nests and their brood
+const AGENT_KEYS=['nid','state','kind','face','phase','node','prev','jx','jz','walk','panic','tx','tz','wait','vendor','hp','maxHp','feed','atk','spd','stuckT','lost','turnT','heard','fuse','wind','retreat','shrieked','march','rise','from','nextBrood','screamT','burst','npc','gun','home','lead'];   // v0.62 survivors and bandits   // v0.57 nests and their brood
 let sinceSave=0;
 
 const validItem=it=>it&&DEF[it.id];
@@ -56,7 +57,8 @@ export function loadGame(){
   for(const e of EVENTS)e.done=G.min>=e.t;
   G.searched=G.searched||[];   // before v0.15 nothing was searched
   G.broken=G.broken||[];applyBroken(G.broken);G.blown=G.blown||[];applyTanks();clearFires();G.traps=G.traps||[];applyTraps();   // v0.23 cylinders already blown
-  applyDoors(G.doors);applyEvents();   // saves from before v0.6 have no doors (all open), before v0.8 no events
+  applyDoors(G.doors);applyEvents();
+  applyCars();   // the cars' models and collision boxes go where the save has them (and a save from before the motorbikes gets them)   // saves from before v0.6 have no doors (all open), before v0.8 no events
   s.players.forEach((o,i)=>{
     const p=i?addPlayer():player,g=o.gear||{},eq=g.eq||{};
     p.gear=Object.assign(freshGear(),{bag:(g.bag||[]).filter(validItem),cap:g.cap||6,active:g.active||'melee'});
@@ -70,6 +72,7 @@ export function loadGame(){
   for(const o of s.agents){
     if(o.state==='zombie'&&!ZC[o.kind])continue;
     const a=makeAgent(o.x,o.z,o.look);for(const k of AGENT_KEYS)if(k in o)a[k]=o[k];
+    if('nid' in o)keepNid(o.nid);else delete a.from;   // a save from before the numbers were kept: its brood no longer knows its nest
     if(a.state==='zombie')styleZombie(a);
     agents.push(a);
   }

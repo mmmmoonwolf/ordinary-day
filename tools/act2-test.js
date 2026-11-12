@@ -20,6 +20,15 @@ if (ss.has('ordinary-day.carry')) fail('the carried bag was not used up');
 me.inv = 1e9; G.min = 10 * 60; step(30); if (G.outbreak) fail('outbreak before ' + ACT2.outbreak);
 G.min = ACT2.outbreak + 1; step(30); if (!G.outbreak) fail('no outbreak at ' + ACT2.outbreak);
 G.min = 20 * 60; step(120); G.min = 1440 + 7 * 60; step(120);
+// B8: a PvP game in this town starts the minute before this town's outbreak, with its first horde and crate after it
+// (they were clock times of the first town: three in-game hours of an empty, calm town before anything happened)
+{ const { startPvp } = await import('../src/systems/pvp.js'), { PVP } = await import('../src/config/pvp.js'), { nextCast } = await import('../src/systems/events.js');
+  startPvp('ffa'); G.running = true;
+  if (G.min !== ACT2.outbreak - 1) fail('PvP starts at minute ' + G.min + ', the outbreak here is at ' + ACT2.outbreak);
+  if (G.pvpHorde !== ACT2.outbreak + PVP.horde.first || G.pvpDrop !== ACT2.outbreak + PVP.drop.first) fail('PvP horde ' + G.pvpHorde + ' crate ' + G.pvpDrop + ' are not timed from the outbreak');
+  for (const p of P.players) p.inv = 1e9; step(600);                               // ten seconds
+  if (!G.outbreak) fail('ten seconds into a PvP game and no outbreak (minute ' + G.min.toFixed(0) + ')');
+  if (nextCast(0) < ACT2.outbreak) fail('the emergency radio speaks at ' + nextCast(0) + ', before the outbreak'); }
 console.log('act 2: city ' + buildings.length + ' buildings (' + sig.split(' ').slice(0, 3).join(' ') + ' …), calm until ' + Math.floor(ACT2.outbreak / 60) + ':' + String(ACT2.outbreak % 60).padStart(2, '0') + ', bag carried, a night run');
 console.log(errs.length ? `FAILED: ${errs.length} runtime errors\n` + errs.slice(0, 3).join('\n---\n') : 'PASSED: the second town');
 process.exit(errs.length ? 1 : 0);

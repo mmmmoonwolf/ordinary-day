@@ -12,14 +12,14 @@ import {sfx} from './audio.js';
 
 // ---------- the director (v0.52) ----------
 // Paces the zombies against how the players are doing (config/director.js), and runs the blood night. Host, every
-// step of a survival game after the outbreak.
-let t=0;
+// step of a survival game after the outbreak. Its timer G.dirT and the quiet time G.calm are part of the game (saved,
+// and reset with it).
 export const isBlood=()=>!isPvp()&&G.phase==='night'&&nightsSurvived(G.min)===GOAL_NIGHTS-1;
 export function updateDirector(dt){
   if(isPvp()||!G.outbreak)return;
   G.blood=isBlood();
   if(G.blood&&G.bloodHordes&&G.bloodHordes.length&&G.min>=G.bloodHordes[0]){G.bloodHordes.shift();horde(BLOOD.size);sfx.roar(0,0,2);}
-  if((t+=dt)<DIRECTOR.every)return;t=0;
+  if((G.dirT=(G.dirT||0)+dt)<DIRECTOR.every)return;G.dirT=0;
   const here=players.filter(p=>p.alive&&!p.away);if(!here.length)return;
   const hp=here.reduce((s,p)=>s+p.hp/p.maxHp,0)/here.length;
   const chasing=agents.filter(a=>a.state==='zombie'&&!a.gone&&a.seenP&&here.includes(a.seenP)).length;

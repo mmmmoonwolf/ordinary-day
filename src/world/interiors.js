@@ -213,7 +213,7 @@ export function showRoom(k){
 }
 // door look for a state {open, broken}
 export function setDoorLook(k,st){const r=rooms[k];r.extDoor.visible=!st.open;r.extHole.visible=st.open;r.cutDoor.visible=!st.open;r.cutBroken.visible=!!st.broken;
-  const boards=st.open?0:Math.ceil((st.hp-DOOR_HP)/PLANK_HP);r.cutPlanks.forEach((m,i)=>{m.visible=i<boards;});}
+  const boards=st.open?0:Math.ceil((st.hp-(st.bar?st.base??DOOR_HP:DOOR_HP))/PLANK_HP);r.cutPlanks.forEach((m,i)=>{m.visible=i<boards;});}
 // is a wall between these two points? Only checked when one of them is inside a room, so outdoor sight works as before
 export function walledOff(ax,az,bx,bz){
   const ra=roomAt(ax,az),rb=roomAt(bx,bz);if(ra===rb)return false;

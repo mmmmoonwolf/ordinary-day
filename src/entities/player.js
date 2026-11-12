@@ -66,7 +66,7 @@ export function updatePlayer(p,dt){
     if(p.down<=0){p.hp=p.maxHp;p.inv=3;for(const z of agents){if(z.state!=='zombie')continue;const dx=z.pos.x-p.pos.x,dz=z.pos.z-p.pos.z,d=Math.hypot(dx,dz);if(d<4&&d>1e-3){z.pos.x+=dx/d*3;z.pos.z+=dz/d*3;collide(z.pos,z.rad);z.feed=1;}}}
     return;}
   if(p.bleed>0){updateDowned(p,dt);return;}
-  if(p.car>=0&&!(p.bleed>0)){driveStep(p,dt);p.near=p.full=p.nearDown=null;p.nearDoor=p.fixDoor=p.nearBox=-1;p.nearCar=p.car;p.input.fireQ=0;if(p.cool>0)p.cool-=dt;return;}   // v0.45 driving
+  if(p.car>=0&&!(p.bleed>0)){driveStep(p,dt);p.near=p.full=p.nearDown=null;p.nearDoor=p.fixDoor=p.nearBox=p.nearLadder=-1;p.nearCar=p.car;p.input.fireQ=0;if(p.cool>0)p.cool-=dt;return;}   // v0.45 driving
   if(p.vault){updateVault(p,dt);if(p.cool>0)p.cool-=dt;return;}   // v0.30 going over a low obstacle
   const I=p.input,mag=I.mag;
   updateBody(p,dt);   // v0.54 wounds, illness, panic
@@ -122,7 +122,7 @@ export function updatePlayer(p,dt){
 // ---------- downed and helping up (v0.10) ----------
 // A downed player can only crawl; the clock runs down (hits take more off, see hurtPlayer) and at 0 they die.
 function updateDowned(p,dt){
-  const I=p.input;I.fireQ=0;p.near=p.full=p.nearDown=null;p.nearDoor=p.fixDoor=p.nearBox=p.searching=-1;
+  const I=p.input;I.fireQ=0;p.near=p.full=p.nearDown=null;p.nearDoor=p.fixDoor=p.nearBox=p.nearLadder=p.searching=-1;
   if(I.face!==null)p.face=I.face;
   if(I.mag>.08&&!(p.reviveT>0))moveAgent(p,I.mx,I.mz,CRAWL_SPEED*Math.min(1,I.mag),dt,false);else p.moving=0;   // held still while a teammate helps
   p.moving=Math.min(p.moving,.4);

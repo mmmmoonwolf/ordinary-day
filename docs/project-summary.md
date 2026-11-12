@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.67 | `tools/lint.js`, `tools/run-tests.js` + `tools/tests/*.test.js` + `setup.js`, seed ใน `tools/headless.js`, `ELITE` (`config/zombies.js`), `entities/use.js` `useOf(p)`, `padMenu()` (`ui/input.js`), `restoreFurniture()` + `st.base` / `st.furn` (`systems/doors.js`), `resetG()` + `G.dirT` (`core/state.js`), `keepNid()` + `nid` ในเซฟ, `OUTBREAK` (`config/act.js`), `PVP.start` / `horde.first` / `drop.first` นับจากการระบาด, `rf` ใน snapshot |
 | v0.66 | `config/act.js` `ACT` `SEED` `ACT2` `goTo()` `takeCarry()` `setRejoin()` `takeRejoin()`, `rand` ใช้ `SEED`, `travel()` `bringCarry()` `arrival` ใน `systems/game.js`, `#bTravel`, เซฟ `ordinary-day.save.2`, `tools/act2-test.js` |
 | v0.65 | `predict()` `PRED` ใน `net/client.js`, `ease(a,dt,f,pred)`, `p.room` บนเครื่องเพื่อน |
 | v0.64 | `BIKE` ใน `config/vehicles.js`, `addBike()` `placeBikes()` ใน `world/vehicles.js` (`r.kind` 'bike' `r.half`), `specOf(i)` ใน `systems/vehicles.js` |
@@ -1182,6 +1183,34 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **เทสต์** `tools/act2-test.js` (อยู่ใน `npm test`): โหลดแบบเมืองที่สองพร้อมกระเป๋าที่พามา ตรวจว่าตึกไม่เหมือนเมืองแรก ไม่ระบาดก่อน 12:30 ระบาดหลัง 12:30 ของมาครบ เดินหนึ่งคืนไม่มี error
 - **PLACEHOLDER:** `SEED` ของเมืองที่สอง `ACT2.outbreak`
 - **ยังไม่ได้ทำ:** หน้าตาเมืองที่ต่างไปมากกว่าผังตึก (ป้าย สีโทน ไฟยังเปิดครบ คนเดินเยอะ), ผู้รอดชีวิตที่โดนกัดเดินเข้าเมืองให้เห็น, พาเพื่อนทั้งห้องเดินทางพร้อมกัน, เมืองที่สาม
+
+## เก็บงานพื้นฐาน: เทสต์และบั๊ก (v0.67)
+
+ระยะ 0 และ 1 ของแผน refactor ที่ผู้สร้างอนุมัติ ไม่มีฟีเจอร์ใหม่ ไม่มีค่าที่ยืนยันแล้วถูกเปลี่ยน
+
+**ระยะ 0 เครื่องมือ**
+
+- **`tools/lint.js`** (ขั้นแรกของ `npm test`): ทุกไฟล์ใน `src/` `tools/` และ `sw.js` ต้อง parse ได้ และบรรทัดที่มีโค้ดอยู่หลัง `//` กลางบรรทัดจะถูกจับ (บั๊กแบบนี้เกิดมาแล้ว 4 ครั้ง) ใส่ `lint-ok` ในคอมเมนต์ถ้าต้องยกโค้ดมาอ้างจริง ๆ ตัวตรวจทดสอบตัวเองทุกครั้งที่รัน
+- **เทสต์สุ่มแบบมี seed** (`tools/headless.js`): `Math.random` ถูกแทนด้วยตัวสุ่มที่มี seed (ค่าเริ่มต้น 20261020) รันกี่ครั้งก็ได้ผลเดิม `SEED=<เลข>` เปลี่ยนชุด `SEED=random` สุ่มใหม่ ถ้าพังจะพิมพ์ seed
+- **เทสต์แยกต่อระบบ** (`tools/tests/*.test.js` รันด้วย `tools/run-tests.js` ไฟล์ละ process): ย้ายเทสต์ของ v0.47–v0.64 ออกจาก `smoke-test.js` 17 ไฟล์ และเพิ่มใหม่ 6 ไฟล์ (`spec-lock` `save-cars` `gamepad` `use-order` `new-game-state` และส่วนเพิ่มใน `barricade` `npc`) เทสต์ของระบบใหม่ให้เพิ่มที่นี่
+- **`spec-lock.test.js`**: ล็อกค่าที่ยืนยันแล้ว (HP ซอมบี้ทุกคลาส คะแนน DMG / FIRE RATE % ฟื้นของยา เงื่อนไข Armor Walker / Tyrant ดรอปการันตี Walker ไม่ไล่ตอนกลางวัน) ถ้าใครเปลี่ยนเทสต์จะแดง เงื่อนไข Armor Walker / Tyrant ย้ายจากเลขในโค้ดไปเป็น `ELITE` ใน `config/zombies.js` (ค่าเดิม)
+
+**ระยะ 1 บั๊ก** (ทุกข้อมีเทสต์ที่พังเมื่อไม่มีตัวแก้)
+
+| รหัส | อาการ | แก้ที่ |
+| --- | --- | --- |
+| B1 | ผู้รอดชีวิต / โจรที่กลายเป็นซอมบี้ ยิง ตี ระเบิดไม่เข้า | `becomeZombie()` ล้าง `a.npc` `a.lead` `a.alert` |
+| B2 | โหลดเซฟแล้วรถอยู่ที่จุดเริ่ม (สถานะมาแต่กล่องชนและโมเดลไม่มา) เซฟก่อนมีมอเตอร์ไซค์ไม่มีมอเตอร์ไซค์ | `loadGame()` เรียก `applyCars()` |
+| B3 | เพื่อนออนไลน์ที่อยู่บนหลังคา ตัวกระตุกบนจอตัวเอง | snapshot ส่ง `rf` (หลังคาที่ยืน) ให้เจ้าตัว |
+| B4 | จอยเกมเปิดกระเป๋า / เมนูหยุดเกมได้แต่ปิดไม่ได้ | `padMenu()` ทำงานทุกเฟรมแม้เกมหยุด |
+| B5 | ใกล้บันไดและประตูพร้อมกัน ปุ่มเขียนว่า ปิดประตู แต่กด E แล้วปีน | `useOf(p)` ใน `entities/use.js` เป็นตัวตัดสินลำดับที่เดียว (ช่วยเพื่อน > กระเป๋าเต็ม > เก็บของ > บันได > ประตู > ค้น > รถ) ทั้งปุ่มและ `ACTIONS.use` ใช้ตัวเดียวกัน |
+| B6 | กั้นประตูซ้ำได้ทุกครั้งที่ซอมบี้ทุบที่กั้นหลุด (+80 ทุกครั้ง ประตูไม่มีวันพัง) | ประตูเก็บ HP ของตัวเอง (`st.base`) แยกจากที่กั้น รื้อเองแล้วกั้นใหม่ได้เท่าที่เหลือ (`st.furn`) ถูกทุบพังแล้วกั้นใหม่ไม่ได้จนถึง 06:00 (`restoreFurniture()`) |
+| B7 | เริ่มเกมใหม่ในหน้าเดิมแล้วค่าที่ระบบเพิ่มใน `G` ทีหลังยังค้าง (`nested` `calm` `exitSaid`): เกมที่สองไม่มีรังซอมบี้ ไม่มีไซเรนค่ายทหาร · ตัวจับเวลาของผู้กำกับไม่ถูกรีเซ็ตและไม่ถูกเซฟ · โหลดเซฟแล้วรังนับลูกของตัวเองไม่ได้ | `resetG()` ลบทุก field ก่อนใส่ค่าเริ่มต้น · `G.dirT` · เซฟเก็บ `nid` และ `keepNid()` |
+| B8 | PvP ในเมืองที่สองเริ่ม 09:29 ทั้งที่เมืองนั้นระบาด 12:30 (เมืองว่าง 3 ชั่วโมงในเกม) วิทยุฉุกเฉินพูดก่อนระบาด | `OUTBREAK` ใน `config/act.js` เป็นค่าเดียว เหตุการณ์ตอนเช้า จุดเริ่ม PvP ฝูงแรก กล่องแรก และวิทยุครั้งแรกนับจากค่านี้ เวลาของเมืองแรกเท่าเดิม |
+
+- **PLACEHOLDER ใหม่:** กติกา ที่กั้นที่ถูกทุบพังกั้นใหม่ได้ตอน 06:00 (`restoreFurniture()`; ค่า `BARR` เดิม)
+- **รูปแบบเซฟ:** เพิ่ม `nid` ต่อตัวละคร `dirT` ใน `G` และ `base` / `furn` ต่อประตู เซฟเก่าโหลดได้ตามเดิม (ไม่ได้เพิ่ม `SAVE_VERSION`)
+- **ยังไม่ได้ทำ:** งาน refactor ที่เหลือในแผน (ทางเดียวของดาเมจ W1, เทสต์เซฟไปกลับ S2, ตารางพื้นที่ A1, นาฬิกาและตัวตั้งเวลา T1 / T2 ฯลฯ) และงานที่รอผู้สร้างตัดสินใจ (ความยาววัน ของเริ่มต้น ดาบ ข้อยกเว้นกฎกลางวัน / loot ยาปฏิชีวนะ งบประสิทธิภาพ)
 
 ## ระบบ loot
 

@@ -13,6 +13,8 @@ export const STUB_H=1;           // height of the cut-away walls while the playe
 // door boarded up in an older save shows
 export const PLANK_HP=40,REBUILT_HP=60,HAMMER_NOISE=18;
 // v0.58.1/v0.59 from inside, with the door shut, the furniture can be dragged against it (B / 🔨): the door takes `hp` more
-// (shown as boards) and cannot be opened from outside; opening it from inside pulls it away; dragging is loud (PLACEHOLDERS)
+// (shown as boards) and cannot be opened from outside; opening it from inside pulls it away, keeping what is left of it
+// for next time; once the zombies have smashed it the room has nothing to barricade with until the next morning (06:00);
+// dragging is loud (PLACEHOLDERS, the morning rule included)
 export const BARR={hp:80,noise:14};
 export const SCENT_AFTER=90,SCENT_EVERY=45,SCENT_RANGE=40,SCENT_MAX=3;

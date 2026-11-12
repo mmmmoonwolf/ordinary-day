@@ -1,6 +1,6 @@
 import {$,pick} from '../core/util.js';
 import {scene,camTarget} from '../core/renderer.js';
-import {G,freshG} from '../core/state.js';
+import {G,resetG} from '../core/state.js';
 import {lootSpots} from '../world/city.js';
 import {agents,removeAgent,spawnPopulation} from '../entities/agents.js';
 import {player,players,setPlayer,makePlayer} from '../entities/player.js';
@@ -34,7 +34,7 @@ export function clearWorld(){
   for(const m of blood){scene.remove(m);m.geometry.dispose();}blood.length=0;
   while(drops.length)removeDrop(drops[0]);clearThrows();
   restoreObstacles();
-  Object.assign(G,freshG());G.cars=freshCars();applyCars();applyTanks();clearFires();clearFireFx();restoreDoors();resetEvents();applyTraps();   // v0.23 every gas cylinder back, v0.26 every trap
+  resetG();G.cars=freshCars();applyCars();applyTanks();clearFires();clearFireFx();restoreDoors();resetEvents();applyTraps();   // v0.23 every gas cylinder back, v0.26 every trap
   for(const e of EVENTS)e.done=false;
 }
 export function reset(){
