@@ -13,8 +13,8 @@ import {rides,placeRide,CAR_HALF as CAR_H} from '../world/vehicles.js';
 import {pumpSpots} from '../world/highway.js';
 import {agents} from '../entities/agents.js';
 import {players} from '../entities/player.js';
-import {hurtZombie,makeNoise} from '../entities/ai.js';
-import {hurtPlayer} from './combat.js';
+import {makeNoise} from '../entities/ai.js';
+import {damage} from './damage.js';
 import {sfx,sfxFor} from './audio.js';
 import {uiFor} from '../ui/hud.js';
 
@@ -103,12 +103,12 @@ function move(i,c,dt,driver){const CAR=specOf(i),CAR_HALF=CAR.half||CAR_H;
     for(const z of agents){if(z.state!=='zombie'||z.carT>0)continue;const dx=z.pos.x-c.x,dz=z.pos.z-c.z,along=dx*s+dz*co,lat=dx*co-dz*s;
       if(Math.abs(along)>CAR_HALF[1]+.4||Math.abs(lat)>CAR_HALF[0]+(z.rad||.34))continue;
       const k=Math.min(1,Math.abs(c.v)/CAR.max);z.carT=.7;
-      hurtZombie(z,CAR.hitDmg*k,s*dir,co*dir,2.6*k,false,false,driver);sfx.hit(z.pos.x,z.pos.z,'blunt');
+      damage(z,CAR.hitDmg*k,{dx:s*dir,dz:co*dir,kb:2.6*k,by:driver});sfx.hit(z.pos.x,z.pos.z,'blunt');
       const big=z.kind==='tyrant'||z.kind==='armor';c.hp-=CAR.hitCost*(big?5:1);c.v*=big?.25:.82;}
     // v0.49 PvP: other players too, the kill counting for the driver
     if(isPvp())for(const q of players){if(q===driver||!q.alive||q.car>=0||q.carT>0)continue;const dx=q.pos.x-c.x,dz=q.pos.z-c.z,along=dx*s+dz*co,lat=dx*co-dz*s;
       if(Math.abs(along)>CAR_HALF[1]+.4||Math.abs(lat)>CAR_HALF[0]+.34)continue;
-      const k=Math.min(1,Math.abs(c.v)/CAR.max);q.carT=.7;hurtPlayer(q,CAR.hitP*k,driver);sfx.hit(q.pos.x,q.pos.z,'blunt');
+      const k=Math.min(1,Math.abs(c.v)/CAR.max);q.carT=.7;damage(q,CAR.hitP*k,{by:driver});sfx.hit(q.pos.x,q.pos.z,'blunt');
       q.pos.x+=s*dir*2.2*k;q.pos.z+=co*dir*2.2*k;c.hp-=CAR.hitCost;c.v*=.8;}}
   if(c.hp<=0){c.hp=0;c.v=0;sfx.crack();const d=driverOf(i);if(d){uiFor(d).feed('รถพังแล้ว','warn');leaveCar(d);}}
   placeRide(rides[i],c.x,c.z,c.a,c.hp);

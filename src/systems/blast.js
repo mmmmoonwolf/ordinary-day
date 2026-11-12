@@ -1,4 +1,3 @@
-import {hurtNpc} from './npc.js';
 import {G} from '../core/state.js';
 import {BLAST,FIRE} from '../config/blast.js';
 import {solids} from '../world/collision.js';
@@ -7,8 +6,8 @@ import {props} from '../world/prop-models.js';
 import {rooms,walledOff,doorDist} from '../world/interiors.js';
 import {agents} from '../entities/agents.js';
 import {players} from '../entities/player.js';
-import {hurtZombie,makeNoise} from '../entities/ai.js';
-import {hurtPlayer} from './combat.js';
+import {makeNoise} from '../entities/ai.js';
+import {damage,kindOf} from './damage.js';
 import {damageDoor} from './doors.js';
 import {boom,addBlood,fireFx} from './effects.js';
 import {sfx} from './audio.js';
@@ -22,11 +21,11 @@ export const fires=[];   // {x, z, r, t (seconds left)}
 export function blast(x,z,o,by){
   boom(x,1,z,.45,10);sfx.explode(x,z);makeNoise(x,z,o.noise);
   for(let i=0;i<5;i++)addBlood(x+(Math.random()*2-1)*o.r*.5,z+(Math.random()*2-1)*o.r*.5);
-  for(const p of players){if(!p.alive)continue;const d=Math.hypot(p.pos.x-x,p.pos.z-z);if(d<o.r&&!walledOff(x,z,p.pos.x,p.pos.z))hurtPlayer(p,Math.round(o.pdmg*(1-d/o.r*.5)),by);}   // v0.47 by: whose it was (PvP)
+  for(const p of players){if(!p.alive)continue;const d=Math.hypot(p.pos.x-x,p.pos.z-z);if(d<o.r&&!walledOff(x,z,p.pos.x,p.pos.z))damage(p,Math.round(o.pdmg*(1-d/o.r*.5)),{by});}   // v0.47 by: whose it was (PvP)
   for(let k=0;k<rooms.length;k++)if(doorDist(k,x,z)<o.r)damageDoor(k,o.door);
-  for(const a of agents){if(a.state!=='zombie'&&!(a.npc&&a.state==='human'))continue;const d=Math.hypot(a.pos.x-x,a.pos.z-z);if(d>o.r||walledOff(x,z,a.pos.x,a.pos.z))continue;
-    if(a.npc){hurtNpc(a,o.zdmg*(1-d/o.r*.5),by,(a.pos.x-x)/(d||1),(a.pos.z-z)/(d||1));continue;}   // v0.62 people with guns too
-    hurtZombie(a,o.zdmg*(1-d/o.r*.5),(a.pos.x-x)/(d||1),(a.pos.z-z)/(d||1),1.4,false,true,by);}
+  // zombies, and people with guns too (v0.62): whatever damage() knows how to hurt; townspeople are not one of them
+  for(const a of agents){if(!kindOf(a))continue;const d=Math.hypot(a.pos.x-x,a.pos.z-z);if(d>o.r||walledOff(x,z,a.pos.x,a.pos.z))continue;
+    damage(a,o.zdmg*(1-d/o.r*.5),{by,dx:(a.pos.x-x)/(d||1),dz:(a.pos.z-z)/(d||1),kb:1.4,silent:true});}
   for(let i=0;i<tanks.length;i++)if(!G.blown.includes(i)&&!pending.some(q=>q.i===i)&&Math.hypot(tanks[i].x-x,tanks[i].z-z)<o.r*.8)pending.push({i,t:.18,by});   // a chain
   if(o.fire)ignite(x,z,o.fire[0],o.fire[1]);
 }
@@ -52,8 +51,8 @@ export function updateFires(dt){
   for(let i=pending.length-1;i>=0;i--){const q=pending[i];q.t-=dt;if(q.t<=0){pending.splice(i,1);blowTank(q.i,q.by);}}
   for(let i=fires.length-1;i>=0;i--){
     const f=fires[i];f.t-=dt;if(f.t<=0){fires.splice(i,1);continue;}
-    for(const a of agents)if(a.state==='zombie'&&Math.hypot(a.pos.x-f.x,a.pos.z-f.z)<f.r){a.burn=(a.burn||0)+FIRE.zdps*dt;if(a.burn>=7){hurtZombie(a,a.burn,0,0,0,false,true,null);a.burn=0;}}   // in bites, not every step
-    for(const p of players){if(!p.alive||Math.hypot(p.pos.x-f.x,p.pos.z-f.z)>=f.r){continue;}p.burn=(p.burn||0)+FIRE.pdps*dt;if(p.burn>=1){const n=Math.floor(p.burn);p.burn-=n;hurtPlayer(p,n);}}
+    for(const a of agents)if(a.state==='zombie'&&Math.hypot(a.pos.x-f.x,a.pos.z-f.z)<f.r){a.burn=(a.burn||0)+FIRE.zdps*dt;if(a.burn>=7){damage(a,a.burn,{silent:true});a.burn=0;}}   // in bites, not every step
+    for(const p of players){if(!p.alive||Math.hypot(p.pos.x-f.x,p.pos.z-f.z)>=f.r){continue;}p.burn=(p.burn||0)+FIRE.pdps*dt;if(p.burn>=1){const n=Math.floor(p.burn);p.burn-=n;damage(p,n);}}
     for(let k=0;k<tanks.length;k++){if(G.blown.includes(k)||Math.hypot(tanks[k].x-f.x,tanks[k].z-f.z)>f.r+.4)continue;f.heat[k]=(f.heat[k]||0)+dt;if(f.heat[k]>FIRE.ignite&&!pending.some(q=>q.i===k))pending.push({i:k,t:0,by:null});}
   }
 }

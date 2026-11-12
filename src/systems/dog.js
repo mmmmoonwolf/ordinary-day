@@ -8,7 +8,8 @@ import {freeAt} from '../world/collision.js';
 import {agents} from '../entities/agents.js';
 import {players} from '../entities/player.js';
 import {moveAgent} from '../entities/movement.js';
-import {hurtZombie,makeNoise} from '../entities/ai.js';
+import {makeNoise} from '../entities/ai.js';
+import {damage} from './damage.js';
 import {sfx} from './audio.js';
 import {uiFor} from '../ui/hud.js';
 
@@ -47,7 +48,7 @@ export function updateDog(dt){
   if(tgt&&d.hp>DOG.hp*DOG.flee){
     d.state='chase';
     if(td>DOG.reach)moveAgent(d,tgt.pos.x-d.pos.x,tgt.pos.z-d.pos.z,DOG.speed,dt);
-    else{d.moving=0;d.face=Math.atan2(tgt.pos.x-d.pos.x,tgt.pos.z-d.pos.z);if(d.atk<=0){d.atk=DOG.biteEvery;const l=td||1;hurtZombie(tgt,DOG.bite,(tgt.pos.x-d.pos.x)/l,(tgt.pos.z-d.pos.z)/l,.15,false,true,o);tgt.feed=Math.max(tgt.feed||0,.25);sfx.growl2(d.pos.x,d.pos.z);}}
+    else{d.moving=0;d.face=Math.atan2(tgt.pos.x-d.pos.x,tgt.pos.z-d.pos.z);if(d.atk<=0){d.atk=DOG.biteEvery;const l=td||1;damage(tgt,DOG.bite,{dx:(tgt.pos.x-d.pos.x)/l,dz:(tgt.pos.z-d.pos.z)/l,kb:.15,silent:true,by:o});tgt.feed=Math.max(tgt.feed||0,.25);sfx.growl2(d.pos.x,d.pos.z);}}
     return;}
   d.state='follow';
   if(od>DOG.follow)moveAgent(d,o.pos.x-d.pos.x,o.pos.z-d.pos.z,od>8?DOG.speed:DOG.walk,dt);else d.moving=0;

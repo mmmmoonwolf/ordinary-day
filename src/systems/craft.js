@@ -3,7 +3,8 @@ import {DEF} from '../config/items.js';
 import {RECIPES,TRAP} from '../config/craft.js';
 import {agents} from '../entities/agents.js';
 import {players} from '../entities/player.js';
-import {makeNoise,hurtZombie} from '../entities/ai.js';
+import {makeNoise} from '../entities/ai.js';
+import {damage} from './damage.js';
 import {addStack,tidyBag} from './inventory.js';
 import {sfx,sfxFor} from './audio.js';
 import {uiFor} from '../ui/hud.js';
@@ -41,6 +42,6 @@ export function updateTraps(dt){
     if(!hit&&t.k==='tripwire'&&isPvp()&&owner)for(const q of players){if(!q.alive||q===owner||sideOf(q)===sideOf(owner))continue;if(Math.hypot(q.pos.x-t.x,q.pos.z-t.z)<TRAP.reach){hit=q;break;}}
     if(!hit)continue;T.splice(i,1);
     if(t.k==='tripwire'){sfx.clamp(t.x,t.z);sfx.carAlarm?sfx.glass(t.x,t.z):0;makeNoise(t.x,t.z,TRAP.noise);if(owner)uiFor(owner).feed('กับดักลวดดัง','warn');}
-    else{sfx.clamp(t.x,t.z);if(hit.state==='zombie'){hurtZombie(hit,TRAP.dmg,0,0,0,false,true,owner);if(hit.state==='zombie')hit.trapT=TRAP.hold;}}
+    else{sfx.clamp(t.x,t.z);if(hit.state==='zombie'){damage(hit,TRAP.dmg,{silent:true,by:owner});if(hit.state==='zombie')hit.trapT=TRAP.hold;}}
   }
 }

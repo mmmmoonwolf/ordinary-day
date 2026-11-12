@@ -10,8 +10,8 @@ import {freeAt,rayWall} from '../world/collision.js';
 import {agents,makeAgent} from '../entities/agents.js';
 import {players} from '../entities/player.js';
 import {moveAgent,lerpAng} from '../entities/movement.js';
-import {hurtZombie,makeNoise} from '../entities/ai.js';
-import {hurtPlayer} from './combat.js';
+import {makeNoise} from '../entities/ai.js';
+import {damage} from './damage.js';
 import {makeItem,spawnDrop,reachableSpot} from './drops.js';
 import {tracer,impact,addBlood} from './effects.js';
 import {sfx} from './audio.js';
@@ -41,7 +41,7 @@ export function placeBandits(x,z){
   return out;
 }
 export function updateNpcs(){if(!isClient()&&G.outbreak&&!G.npcPlaced)placeSurvivors();}
-// a bandit hit by a player (guns, blows, blasts and fire: systems/combat.js, blast.js)
+// a person with a gun is hurt. Only systems/damage.js calls this (v0.68): everything else says damage(target, n, hit)
 export function hurtNpc(a,dmg,by,dx=0,dz=0){
   if(a.state!=='human')return false;
   a.hp-=dmg;a.hitT=.18;if(by&&by.pos)a.alert={x:by.pos.x,z:by.pos.z,t:10};impact(a.pos.x,a.pos.z,dx,dz,a.hp<=0?1:0,by&&by.state==='player'?by.id:-1,false);
@@ -60,7 +60,8 @@ function shoot(a,t,hit,dmg){
   const ox=a.pos.x+dx/l*.6,oz=a.pos.z+dz/l*.6,ok=Math.random()<hit,ang=ok?0:rnd(-.25,.25),ux=Math.sin(a.face+ang),uz=Math.cos(a.face+ang),end=Math.min(l,rayWall(ox,oz,ux,uz,l+1));
   tracer(ox,oz,ox+ux*end,oz+uz*end);
   if(!ok||end<l-.6)return;
-  if(t.state==='player')hurtPlayer(t,dmg);else hurtZombie(t,dmg,dx/l,dz/l,.2,true,false,a.lead>=0?players.find(q=>q.id===a.lead)||null:null);
+  // a zombie it shoots for the player it follows learns where that player is; a player it shoots is hurt as by the world (the difficulty scales it)
+  damage(t,dmg,{dx:dx/l,dz:dz/l,kb:.2,gun:true,by:t.state!=='player'&&a.lead>=0?players.find(q=>q.id===a.lead)||null:null});
 }
 const sees=(a,t,r)=>{const d=Math.hypot(t.pos.x-a.pos.x,t.pos.z-a.pos.z);return d<r&&!walledOff(a.pos.x,a.pos.z,t.pos.x,t.pos.z)&&rayWall(a.pos.x,a.pos.z,(t.pos.x-a.pos.x)/(d||1),(t.pos.z-a.pos.z)/(d||1),d)>=d-.3?d:0;};
 function nearestZombie(a,r){let best=null,bd=1e9;for(const z of agents){if(z.state!=='zombie'||z.kind==='nest'&&r<9)continue;const d=sees(a,z,r);if(d&&d<bd){bd=d;best=z;}}return best;}

@@ -2,7 +2,7 @@ import {INFECTION} from '../config/zombies.js';
 import {G} from '../core/state.js';
 import {RATE,SPEEDS} from '../config/time.js';
 import {INFECT_MINUTES} from '../config/zombies.js';
-import {hurtPlayer} from './combat.js';
+import {damage} from './damage.js';
 import {sfxFor} from './audio.js';
 import {uiFor} from '../ui/hud.js';
 
@@ -20,5 +20,5 @@ export function updateInfection(p,dt){
   p.infect=Math.min(1,p.infect+dt*RATE*SPEEDS[G.speedIdx]/INFECT_MINUTES);
   if(p.infect>=.5&&p.infWarn<1){p.infWarn=1;sfxFor(p).infect();}
   if(p.infect>=.8&&p.infWarn<2){p.infWarn=2;sfxFor(p).infect();}
-  if(p.infect>=1){p.endCause='infected';p.inv=0;hurtPlayer(p,p.hp+999);}
+  if(p.infect>=1){p.endCause='infected';p.inv=0;damage(p,p.hp+999);}
 }
