@@ -19,7 +19,9 @@ import {applyCars} from '../systems/vehicles.js';
 // looks of new characters, doors, broken obstacles, loot and the client's own gear only go out when they change.
 const ST=['human','infected','zombie','dead'];
 const r2=v=>Math.round((v||0)*100)/100;
-export function freshSent(){return {seen:new Set(),doors:'',broken:-1,drops:'',gear:'',drop:'',searched:'',who:''};}
+// rows: the last row sent for each character (v0.68.3). Only the rows that changed go out, with the numbers of those
+// that are gone; the link is reliable and ordered (net/link.js), and a friend who joins again starts from freshSent()
+export function freshSent(){return {seen:new Set(),rows:new Map(),doors:'',broken:-1,drops:'',gear:'',drop:'',searched:'',who:''};}
 export function encodeWorld(c,me){
   const s={t:'s',g:{min:r2(G.min),ph:G.phase,rt:G.rainTarget,ob:G.outbreak,bo:G.blackout,ov:G.over,k:G.kills,kb:G.killsBy,df:G.diff,ec:G.endCause,fg:G.fog,st:G.site,bl:G.blown,tr:G.traps,md:G.mode,pr:G.pvpRule||'ffa',hl:G.hill||0,pe:G.pvpEnd||0,pg:(G.pings||[]).map(q=>[q.x,q.z,q.k,q.by,r2(q.life)]),pt:(G.ptraps||[]).map(t=>[t.k,t.x,t.z]),sm:G.storm||0,dg:G.dog?[r2(G.dog.pos.x),r2(G.dog.pos.z),r2(G.dog.face),Math.ceil(G.dog.hp),G.dog.state,r2(G.dog.moving),G.dog.sit?1:0]:0}};   // v0.60 the dog   // v0.56 storm   // v0.55 traps put down   // v0.53 markers   // v0.51 PvP rule, hill, round result   // v0.23 blown gas cylinders   // fog / heat / event site (v0.18)
   const dj=JSON.stringify(G.doors);if(dj!==c.doors){c.doors=dj;s.doors=G.doors;}
@@ -36,12 +38,14 @@ export function encodeWorld(c,me){
   s.me={id:me.id,inf:r2(me.infect),ec:me.endCause,near:me.near?me.near.nid:0,full:me.full?me.full.nid:0,
     nd:me.nearDoor,fd:me.fixDoor,nl:me.nearLadder??-1,rf:me.roof??-1,dn:me.nearDown?me.nearDown.id:-1,hp:me.helping?me.helping.id:-1,ht:r2(me.helpT),nb:me.nearBox,sb:me.searching,st:r2(me.searchT),nc:me.nearCar,kb:me.killedBy??-1,pn:r2(me.panic||0),bw:me.bleedW>0?1:0,sk:me.sick>0?1:0};   // v0.54 panic, bleeding, ill   // v0.51 kb: who killed them
   if(gj!==c.gear){c.gear=gj;s.me.gear=me.gear;}
-  s.ag=[];s.nw=[];
+  s.ag=[];s.nw=[];s.ad=1;const now=new Set();
   for(const a of agents){
     if(a.gone)continue;
-    s.ag.push([a.nid,ST.indexOf(a.state),a.kind||0,r2(a.pos.x),r2(a.pos.z),r2(a.face),r2(a.moving),a.state==='zombie'?Math.ceil(a.hp):0,r2(a.fuse),r2(a.wind),a.hitT>0?1:0,a.panic>0?1:0,a.rise>0?2:a.state==='infected'&&a.turnT<RISE.fall?1:0]);   // v0.27 getting up / down before turning
+    const row=[a.nid,ST.indexOf(a.state),a.kind||0,r2(a.pos.x),r2(a.pos.z),r2(a.face),r2(a.moving),a.state==='zombie'?Math.ceil(a.hp):0,r2(a.fuse),r2(a.wind),a.hitT>0?1:0,a.panic>0?1:0,a.rise>0?2:a.state==='infected'&&a.turnT<RISE.fall?1:0];   // v0.27 getting up / down before turning
+    now.add(a.nid);const rj=row.join();if(c.rows.get(a.nid)!==rj){c.rows.set(a.nid,rj);s.ag.push(row);}
     if(!c.seen.has(a.nid)){c.seen.add(a.nid);s.nw.push([a.nid,a.look]);}
   }
+  const gone=[];for(const nid of c.rows.keys())if(!now.has(nid)){gone.push(nid);c.rows.delete(nid);}if(gone.length)s.ag0=gone;
   const key=drops.map(d=>d.nid).join(',');if(key!==c.drops){c.drops=key;s.dr=drops.map(d=>[d.nid,d.item,r2(d.x),r2(d.z)]);}
   return s;
 }
@@ -101,9 +105,11 @@ export function applyWorld(s,myId){
   }
   // people and zombies
   for(const [nid,look] of s.nw||[])looks.set(nid,look);
-  const live=new Set();
+  // s.ad: only the rows that changed, and the numbers of those gone in s.ag0 (v0.68.3); without it, every row
+  const live=s.ad?null:new Set();
+  for(const nid of s.ag0||[]){const a=byNid.get(nid);if(!a)continue;byNid.delete(nid);removeAgent(a);const i=agents.indexOf(a);if(i>=0)agents.splice(i,1);}
   for(const r of s.ag){
-    const [nid,st,kind,x,z,face,moving,hp,fuse,wind,hit,panic,pose]=r;live.add(nid);
+    const [nid,st,kind,x,z,face,moving,hp,fuse,wind,hit,panic,pose]=r;if(live)live.add(nid);
     let a=byNid.get(nid);
     if(!a){a=makeAgent(x,z,looks.get(nid));a.nid=nid;a.face=face;byNid.set(nid,a);agents.push(a);}
     const state=ST[st]||'human';
@@ -114,5 +120,5 @@ export function applyWorld(s,myId){
     if(state==='dead'&&a.state!=='dead'){a.state='dead';a.deadT=0;}else if(state!=='dead')a.state=state;
     want(a,x,z);a.nface=face;a.moving=moving;a.fuse=fuse;a.wind=wind;a.panic=panic?1:0;if(hit)a.hitT=.18;if(hp)a.hp=hp;a.rise=pose===2?1:0;a.turnT=pose===1?0:9;
   }
-  for(let i=agents.length-1;i>=0;i--){const a=agents[i];if(!live.has(a.nid)){byNid.delete(a.nid);removeAgent(a);agents.splice(i,1);}}
+  if(live)for(let i=agents.length-1;i>=0;i--){const a=agents[i];if(!live.has(a.nid)){byNid.delete(a.nid);removeAgent(a);agents.splice(i,1);}}
 }
