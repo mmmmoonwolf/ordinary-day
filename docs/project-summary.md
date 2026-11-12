@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.68 | `systems/damage.js` (`damage()` `kindOf()` `targetsOf()` `hittable()` `foesOf()` `bulletRad()` `MISS` / `HIT` / `ARMORED`), ตารางพื้นที่ใน `world/collision.js` (`dyn:true` `movedBoxes()`), `dayOf()` `todOf()` `midnightOf()` ใน `config/time.js`, `tools/perf.js`, เทสต์ `damage` `save-roundtrip` `grid` |
 | v0.67 | `tools/lint.js`, `tools/run-tests.js` + `tools/tests/*.test.js` + `setup.js`, seed ใน `tools/headless.js`, `ELITE` (`config/zombies.js`), `entities/use.js` `useOf(p)`, `padMenu()` (`ui/input.js`), `restoreFurniture()` + `st.base` / `st.furn` (`systems/doors.js`), `resetG()` + `G.dirT` (`core/state.js`), `keepNid()` + `nid` ในเซฟ, `OUTBREAK` (`config/act.js`), `PVP.start` / `horde.first` / `drop.first` นับจากการระบาด, `rf` ใน snapshot |
 | v0.66 | `config/act.js` `ACT` `SEED` `ACT2` `goTo()` `takeCarry()` `setRejoin()` `takeRejoin()`, `rand` ใช้ `SEED`, `travel()` `bringCarry()` `arrival` ใน `systems/game.js`, `#bTravel`, เซฟ `ordinary-day.save.2`, `tools/act2-test.js` |
 | v0.65 | `predict()` `PRED` ใน `net/client.js`, `ease(a,dt,f,pred)`, `p.room` บนเครื่องเพื่อน |
@@ -1211,6 +1212,26 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **PLACEHOLDER ใหม่:** กติกา ที่กั้นที่ถูกทุบพังกั้นใหม่ได้ตอน 06:00 (`restoreFurniture()`; ค่า `BARR` เดิม)
 - **รูปแบบเซฟ:** เพิ่ม `nid` ต่อตัวละคร `dirT` ใน `G` และ `base` / `furn` ต่อประตู เซฟเก่าโหลดได้ตามเดิม (ไม่ได้เพิ่ม `SAVE_VERSION`)
 - **ยังไม่ได้ทำ:** งาน refactor ที่เหลือในแผน (ทางเดียวของดาเมจ W1, เทสต์เซฟไปกลับ S2, ตารางพื้นที่ A1, นาฬิกาและตัวตั้งเวลา T1 / T2 ฯลฯ) และงานที่รอผู้สร้างตัดสินใจ (ความยาววัน ของเริ่มต้น ดาบ ข้อยกเว้นกฎกลางวัน / loot ยาปฏิชีวนะ งบประสิทธิภาพ)
+
+## เก็บงานพื้นฐาน ชุดที่ 2: ดาเมจ เซฟ การชน นาฬิกา (v0.68)
+
+งาน refactor ที่ไม่ต้องรอการตัดสินใจ (W1 S2 A1 T1 ของแผน) ไม่มีฟีเจอร์ใหม่และไม่มีพฤติกรรมเปลี่ยน: ผลของเทสต์ทั้งชุดแบบมี seed (เกม 2 วัน เทสต์ต่อระบบ เมืองที่สอง ออนไลน์) เท่าเดิมทุกบรรทัดก่อนและหลังแต่ละงาน
+
+- **ทางทำดาเมจเหลือที่เดียว** (`systems/damage.js`): เดิมอาวุธ ระเบิด กับดัก ไฟ รถ หมา และซอมบี้ เลือกเองระหว่าง `hurtPlayer` / `hurtZombie` / `hurtNpc` รวม 22 จุด เป้าหมายชนิดใหม่ต้องไปเพิ่มทุกจุด (จุดที่ลืมคือบั๊ก B1) ตอนนี้ทุกจุดเรียก `damage(เป้า, จำนวน, {by, dx, dz, kb, gun, silent, melee})` แล้วชนิดของเป้า (`kindOf()`: player / zombie / npc) เป็นตัวตัดสิน คืนค่า `MISS` `HIT` หรือ `ARMORED` · `targetsOf(p)` คือสิ่งที่อาวุธของผู้เล่นโดนได้ (ซอมบี้ โจร และอีกฝ่ายใน PvP) ปืน อาวุธประชิด และ aim assist ที่เคยมีลูปคู่กันอย่างละ 2 ชุดเหลือชุดเดียว · `hurtPlayer` / `hurtZombie` / `hurtNpc` ยังอยู่ในฐานะกติกาของแต่ละชนิด เรียกจาก `damage.js` เท่านั้น (เทสต์ `damage` ตรวจว่าไม่มีไฟล์ไหนใน `src/` เรียกตรง)
+- **เซฟไปกลับ** (`tools/tests/save-roundtrip.test.js`): เล่นถึงคืนที่ 2 (ตัวละคร 57 ตัว รังและลูก ผู้รอดชีวิต ผู้เล่น 2 คน ของ 123 ชิ้น) ถ่ายค่าทุก field ของ `G` ตัวละคร และผู้เล่น เซฟ เริ่มเกมใหม่ โหลด แล้วเทียบ field ที่ต่างต้องอยู่ในรายการ `ALLOW` พร้อมเหตุผล (23 field ชั่วขณะ เช่นทิศเลี้ยว ตัวจับเวลาเสียง) field ใหม่ที่ลืมเซฟจะทำให้เทสต์แดง · ไม่มีการแก้โค้ด: เซฟตอนนี้ไม่ทำอะไรหายนอกจากรายการนั้น
+- **ตารางพื้นที่** (`world/collision.js`): profile ฝูง 150 ตัวพบว่า `collide()` ใช้ 38% และ `rayWall()` 14% ของเวลาทั้งหมด เพราะดูกล่องชนทั้ง 1,064 กล่องทุกครั้ง ตอนนี้กล่องถูกจดตามช่อง 4 ม. ที่มันแตะ คำถามแต่ละครั้งดูเฉพาะช่องที่ไปถึง คำตอบเท่าเดิมทุกหลัก (`collide()` ยังดันออกตามลำดับที่กล่องถูกเพิ่ม `rayWall()` เดินช่องตามแนวรังสี) `solids` ยังเป็นรายการเดียว `push` / `splice` ทำให้ตารางถูกจดใหม่เอง · **กล่องที่มุมเปลี่ยนหลังเพิ่ม (รถ ไม้กั้นค่ายทหาร) ต้องสร้างด้วย `dyn:true`** `movedBoxes()` หาตัวที่ลืม · เทสต์ `grid` เทียบกับลูปเดิมที่ 46,000 จุด ทั้งเกมใหม่และหลังประตู รถ รถที่ถูกทุบ ไม้กั้น และกล่องเสบียงเปลี่ยนกล่องชน
+
+  | AI + separate ต่อ step (ms จาก 16.7) | ก่อน | หลัง |
+  | --- | --- | --- |
+  | ซอมบี้ 150 ตัว บนถนน | 2.57 | 1.00 |
+  | ซอมบี้ 150 ตัว ผู้เล่นในตึก | 3.69 | 0.99 |
+  | ซอมบี้ 250 ตัว บนถนน | 5.16 | 2.35 |
+  | ซอมบี้ 250 ตัว ผู้เล่นในตึก | 7.24 | 2.42 |
+
+  วัดด้วย `node tools/perf.js` (ไม่มีการวาดภาพ ไม่อยู่ใน `npm test` เพราะตัวเลขขึ้นกับเครื่อง) ที่เหลือส่วนใหญ่คือ `separate()` ซึ่งยังเทียบทุกคู่
+- **นาฬิกา** (`config/time.js`): `dayOf(min)` `todOf(min)` `midnightOf(min)` แทนสูตร `Math.floor(G.min/1440)+1` ฯลฯ ที่เขียนซ้ำ 22 จุดใน 8 ไฟล์
+- **PLACEHOLDER:** ไม่มีค่าใหม่ (ขนาดช่อง 4 ม. ของตารางเป็นค่าทางเทคนิค ไม่มีผลต่อกติกา)
+- **ยังไม่ได้ทำ:** ตัวตั้งเวลาตาม `G.min` (T2; ยังมี `setTimeout` 4 จุดในตรรกะเกม) เทสต์สถิติ loot และ id ของจุดเกิดของ (L2 L3) โมดูลย้ายของในกระเป๋า (I1) state machine ของซอมบี้ (A2) คิวเสียง (A3) snapshot แบบส่งเฉพาะที่เปลี่ยน (S3) `separate()` แบบไม่เทียบทุกคู่ และงานที่รอผู้สร้างตัดสินใจ
 
 ## ระบบ loot
 
