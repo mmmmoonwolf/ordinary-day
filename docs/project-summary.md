@@ -46,6 +46,7 @@ Oct 20, 2026 · @Moonwolf
 | v0.42 | แก้ `spawnPopulation()` ที่ถูกคอมเมนต์ทับใน `reset()` และทางดินฟาร์ม, smoke test ตรวจโค้ดในคอมเมนต์ทั้ง `src/`, ลบ `config/needs.js` `systems/needs.js` `ui/tips.js` `ui/objective.js`, ไอเท็ม `canned` `water` `planks` `bottle`, ซ่อมประตูไม่ใช้ไม้ (`fixDoor()`), `config/health.js` `REGEN`, ตารางของใหม่ (`CAT_W` `INDOOR_W` `PLACE_W` `BOX` `RESTOCK` `THROW_W`), HUD ไม่มีนาฬิกา ตัวนับ ปุ่มความเร็ว ปุ่ม 🍴 ข้อความ `say()` เล่าเรื่อง |
 | v0.43 | ปืน Police / Military มีโมเดลของตัวเอง (`DEF[id].look` → `q_*` ใน `GUN` ของ `world/item-models.js`, `weaponModel(model,look)`), กล่องกระสุน (`ITEM` `w_am9` `w_am12` `w_amrifle`, 5.56 ย้อมเขียว), อาวุธประชิด `cleaver_c` `dagger_c` `hockey_c` `poker_c` `nunchucks_c` (`POOLS.civ.melee`), เสียง Kenney Impact Sounds (`FILES` `stepc` `stepg` `blunt` `blade` `metal` `wood` `plank`, `sfx.hit(x,z,kind)` `sfx.bash` `sfx.hammer` `sfx.clamp`, เสียงเท้านอกตึก) |
 | v0.44 | เสียงปืนเป็นเสียงจริงทั้งหมด (`GUN_REC` ไม่มีเสียงสังเคราะห์ `shot_rifle` 3 เทค `shot_sniper` `shot_lmg`, โหลดเสียงปืนก่อน, `sfx.empty` เสียงโลหะ), `chordsPlayed()`, เอาท่าหมอบ / นอนราบออก (`STANCE` → `SNEAK` `EYE` ใน `config/handling.js`, `ctl.sneak`, ปุ่ม `bStance` และ `p.stance` หาย snapshot ส่ง `sneak` แทน), เดินชนของเตี้ยแล้วข้ามเอง (`VAULT.push` `p.pushT`), แสงตามช่วงเวลา (`SKY` `light(tod)` ใน `systems/weather.js`) |
+| v0.68.2 | `spotId()` `spotOf()` ใน `systems/save.js`, `tools/tests/save-spots.test.js` |
 | v0.68.1 | `last` ของ `loop()` เริ่มจาก timestamp ของเฟรมแรก (`main.js`), `tools/tests/slow-machine.test.js`, `tools/tests/loot-stats.test.js` |
 | v0.68 | `systems/damage.js` (`damage()` `kindOf()` `targetsOf()` `hittable()` `foesOf()` `bulletRad()` `MISS` / `HIT` / `ARMORED`), ตารางพื้นที่ใน `world/collision.js` (`dyn:true` `movedBoxes()`), `dayOf()` `todOf()` `midnightOf()` ใน `config/time.js`, `tools/perf.js`, เทสต์ `damage` `save-roundtrip` `grid` |
 | v0.67 | `tools/lint.js`, `tools/run-tests.js` + `tools/tests/*.test.js` + `setup.js`, seed ใน `tools/headless.js`, `ELITE` (`config/zombies.js`), `entities/use.js` `useOf(p)`, `padMenu()` (`ui/input.js`), `restoreFurniture()` + `st.base` / `st.furn` (`systems/doors.js`), `resetG()` + `G.dirT` (`core/state.js`), `keepNid()` + `nid` ในเซฟ, `OUTBREAK` (`config/act.js`), `PVP.start` / `horde.first` / `drop.first` นับจากการระบาด, `rf` ใน snapshot |
@@ -1240,6 +1241,15 @@ v0.33 ลองทำเมืองไทยแล้ว ผู้สร้า�
 - **สถิติ loot** (`loot-stats.test.js`, งาน L2): สุ่ม 10,000 ครั้งต่อแหล่ง (ถนน จุดในตึก ลานจอด กลางวันและกลางคืน ลานตำรวจ / ทหาร ดรอปการันตี ตู้และรถทุกชนิด) ตรวจกฎที่ยืนยันแล้ว: กลางวันไม่มีอาวุธหรือกระสุน Police / Military กลางคืนไม่มีอาวุธ Civilian และสัดส่วน Police : Military ตามตาราง น้ำหนักยา ไม่มี Painkiller / First Aid กลางวัน ไม่มี Antibiotic ตอนปิดระบบติดเชื้อ ดรอปการันตีเป็นอาวุธเกรดนั้นกระสุนเต็มพร้อมกระสุน · สัดส่วนแต่ละหมวดเทียบกับตารางใน `config/loot.js` (คลาด 4 ส่วนเบี่ยงเบนมาตรฐาน) ปรับน้ำหนัก PLACEHOLDER แล้วเทสต์ไม่แดง แต่ถ้าตัวสุ่มพังจะแดง
 - **ข้อยกเว้นของกฎ Police / Military เฉพาะกลางคืน** ที่มีอยู่ตอนนี้ถูกระบุชื่อและนับในเทสต์ (ถ้ามีแหล่งใหม่โผล่เทสต์จะแดง): ค้นรถตำรวจ และค่ายผู้รอดชีวิตตอนกลางวัน (ของที่เจอในค่าย 26% เป็น Police / Military) รอผู้สร้างตัดสินว่าจะคงไว้หรือไม่
 - **PLACEHOLDER:** ไม่มีค่าใหม่
+
+## เซฟ: จุดเกิดของจำด้วยตำแหน่ง (v0.68.2)
+
+งาน L3 ของแผน refactor
+
+- เดิมของที่วางบนจุดเกิดของ (`lootSpots`) ถูกเซฟเป็นลำดับในรายการ เพิ่มจุดใหม่ก่อนท้ายรายการเมื่อไร ลำดับหลังจากนั้นเลื่อนหมด ต้องเพิ่ม `SAVE_VERSION` ทิ้งเซฟเก่า (ไม่อย่างนั้นของไปผูกผิดจุด)
+- ตอนนี้เซฟเก็บ `โซน@x,z` (ละเอียด 10 ซม. จุดทั้ง 156 จุดไม่ซ้ำกัน) `spotOf()` รับได้ทั้งแบบใหม่และแบบลำดับของเซฟเดิม จึงไม่ต้องเพิ่ม `SAVE_VERSION`
+- เทสต์ `save-spots`: เซฟ แล้วเพิ่มจุดเกิดของหนึ่งจุดที่หัวรายการ แล้วโหลด ของทั้ง 106 ชิ้นต้องอยู่จุดเดิม และเซฟแบบลำดับยังโหลดได้
+- **ยังเป็นลำดับอยู่:** `G.doors` (ห้อง) `G.searched` (ตู้) `G.broken` (สิ่งกีดขวาง) `G.blown` (ถังแก๊ส) `G.cars` (รถ) ถ้าลำดับการสร้างของพวกนี้เปลี่ยนยังต้องเพิ่ม `SAVE_VERSION` ตามกติกาเดิม
 
 ## ระบบ loot
 
