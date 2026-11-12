@@ -32,6 +32,8 @@ function makeBody(look){
 export const agents=[];
 // nid: a number that names the same character on every device (v0.12, net/snapshot.js)
 let nextNid=1;
+// a loaded game gives its characters the numbers they had (the nests' brood point at their nest by it); new ones go on after
+export function keepNid(n){if(n>=nextNid)nextNid=n+1;}
 export function makeAgent(x,z,look){
   look=look||{shirt:pick(SHIRTS),pants:pick(PANTS),skin:pick(SKINS),hair:pick(HAIR)};
   const b=makeBody(look);
