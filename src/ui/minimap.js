@@ -1,6 +1,6 @@
 import {$} from '../core/util.js';
 import {G,isPvp,sideOf} from '../core/state.js';
-import {DAY_START} from '../config/time.js';
+import {DAY_START,todOf} from '../config/time.js';
 import {RC,areaAt,beyond} from '../config/world.js';
 import {EXIT,exitOpen} from '../config/goal.js';
 import {solids} from '../world/collision.js';
@@ -45,7 +45,7 @@ function draw(now){
     else{const kit=lootSpots.some(sp=>sp.zone==='ambulance'&&sp.drop);const [u,v]=xy(p.x,p.z),r=2.6*s;
       g.fillStyle=kit?'#f2f0ea':'rgba(242,240,234,.35)';g.fillRect(u-r,v-r,r*2,r*2);g.fillStyle='#c9473a';g.fillRect(u-r*.2,v-r*.75,r*.4,r*1.5);g.fillRect(u-r*.75,v-r*.2,r*1.5,r*.4);}
   }
-  const tod=G.min%1440;
+  const tod=todOf(G.min);
   // v0.46 the way out: the army camp's far side, once it is open
   if(exitOpen(G.min)){const [u,v]=xy(EXIT.x,EXIT.z);g.beginPath();g.arc(u,v,(4+Math.sin(now/250))*s,0,Math.PI*2);g.lineWidth=1.6*s;g.strokeStyle='#e2a64a';g.stroke();}
   if(G.site){const [u,v]=xy(G.site.x,G.site.z),r=(2.6+.7*Math.sin(now/170))*s;g.beginPath();g.moveTo(u,v-r);g.lineTo(u+r,v);g.lineTo(u,v+r);g.lineTo(u-r,v);g.closePath();g.fillStyle={stash:'#b77dff',truck:'#ffa43a',crash:'#66B0FF'}[G.site.kind]||'#fff';g.fill();g.lineWidth=dpr;g.strokeStyle='#16130d';g.stroke();}   // a random event's place (v0.18)

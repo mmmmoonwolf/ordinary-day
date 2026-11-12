@@ -115,9 +115,13 @@ if(arrival.now){arrival.now=false;$('overlay').hidden=true;G.running=true;}   //
 loadSkins(s=>{const n=$('skinNote');n.hidden=s.ready;n.textContent=s.failed?'โหลดตัวละครไม่ได้ ใช้ตัวละครแบบเรียบแทน':'กำลังโหลดตัวละคร '+s.loaded+'/'+s.total;});
 // guns, items and cars too (v0.14)
 loadProps().then(()=>{if(props.ready)refreshItems();});
-let last=performance.now(),frame=0,acc=0;
+// `last` starts at the first frame's own timestamp, not at performance.now(): the two share an origin in a browser, but
+// under the tests the frames carry a made-up clock, and measuring it against the real one made the first frames of a
+// test run a different number of steps on a slower machine (none at all for a while, when loading took over a second)
+let last=-1,frame=0,acc=0;
 function loop(now){
   requestAnimationFrame(loop);
+  if(last<0)last=now;
   const real=Math.min(.25,(now-last)/1000),dt=Math.min(.05,real);last=now;frame++;
   padMenu();   // a gamepad's Menu and bag buttons, also while the game is stopped by one of those screens
   if(!G.paused){

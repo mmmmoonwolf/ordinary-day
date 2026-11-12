@@ -1,3 +1,4 @@
+import {dayOf,todOf} from '../config/time.js';
 import {isTouch,rnd,clamp} from '../core/util.js';
 import {scene,sun,hemi,flash,camTarget,view} from '../core/renderer.js';
 import {G} from '../core/state.js';
@@ -47,7 +48,7 @@ const rainLines=new THREE.LineSegments(rainGeo,rainMat);rainLines.frustumCulled=
 let bolt=-1e9,nextBolt=0;
 const roadBase=new THREE.Color('#ffffff'),roadWet=new THREE.Color('#8f959b');
 export function updateSky(dt,now){
-  const tod=G.min%1440,a=(tod-360)/780*Math.PI,sunH=Math.sin(a);
+  const tod=todOf(G.min),a=(tod-360)/780*Math.PI,sunH=Math.sin(a);
   const day=clamp(sunH*2.2+.12,0,1);G.night=1-day;
   G.rain+=(G.rainTarget-G.rain)*Math.min(1,dt*.35);G.wet=clamp(G.wet+(G.rain>.3?.12:-.015)*dt,0,1);
   const lt=light(tod);if(G.blood){lt.sky.lerp(BLOODSKY,.55*G.night);lt.hemi.lerp(BLOODSKY,.6*G.night);lt.sun.lerp(BLOODMOON,.7*G.night);}   // v0.52 the blood night
@@ -65,7 +66,7 @@ export function updateSky(dt,now){
   const bt=now-bolt;if(bt<380){const k=bt<90?1:bt<170?.15:bt<260?.75:.3*(1-(bt-260)/120);hemi.intensity+=k*(1.4+G.night*1.6);}
   const lampsOn=G.blackout?0:clamp((G.night-.3)/.3,0,1);   // blackout night (v0.8): no street lights or windows
   // v0.56 the power fails a little more each day (POWER): whole buildings go dark, then street lights, in a fixed order
-  const d=Math.max(0,Math.floor(G.min/1440)),winOn=POWER.windows[Math.min(d,POWER.windows.length-1)],lampOn=POWER.lamps[Math.min(d,POWER.lamps.length-1)];
+  const d=Math.max(0,(dayOf(G.min)-1)),winOn=POWER.windows[Math.min(d,POWER.windows.length-1)],lampOn=POWER.lamps[Math.min(d,POWER.lamps.length-1)];
   wallMats.forEach((m,i)=>{m.emissiveIntensity=G.night*(G.blackout?.08:(i*.6180339887)%1<winOn?1.15:.08);});
   lampHeadMat.emissiveIntensity=lampsOn*2.2;glowMat.opacity=lampsOn*.6;
   // failing street lights (v0.16): mostly on, with bursts of stutter and short blackouts; v0.56 the next to fail stutter too

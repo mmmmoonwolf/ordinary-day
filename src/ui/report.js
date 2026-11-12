@@ -1,6 +1,6 @@
 import {$,isTouch} from '../core/util.js';
 import {G} from '../core/state.js';
-import {SPEEDS} from '../config/time.js';
+import {SPEEDS,dayOf} from '../config/time.js';
 import {VERSION,REPO} from '../config/version.js';
 import {diffOf} from '../config/difficulty.js';
 import {agents} from '../entities/agents.js';
@@ -22,7 +22,7 @@ export function reportInfo(){
   const zs=agents.filter(a=>a.state==='zombie'),ppl=agents.filter(a=>a.state==='human').length,p=player,g=p.gear;
   return [
     'เวอร์ชัน: '+VERSION,
-    'ในเกม: วันที่ '+(Math.floor(G.min/1440)+1)+' '+hhmm(G.min)+' · '+(G.phase==='night'?'NIGHT':'DAY')+' · '+diffOf(G).name+' · ×'+SPEEDS[G.speedIdx],
+    'ในเกม: วันที่ '+(dayOf(G.min))+' '+hhmm(G.min)+' · '+(G.phase==='night'?'NIGHT':'DAY')+' · '+diffOf(G).name+' · ×'+SPEEDS[G.speedIdx],
     'ผู้เล่น: HP '+Math.round(p.hp)+' · ติดเชื้อ '+Math.round((p.infect||0)*100)+'%'+(p.room>=0?' · อยู่ในตึก '+p.room:''),
     'กระเป๋า: '+g.bag.length+'/'+g.cap+' · ถือ '+(g.eq[g.active]?g.eq[g.active].id:'fist')+' · '+g.bag.map(e=>e.id+(e.n?'×'+e.n:'')).join(', '),
     'ผู้เล่น: '+players.length+' คน'+(players.length>1?' ('+players.map(q=>!q.alive?'x':q.bleed>0?'ล้ม':q.away?'หลุด':Math.round(q.hp)).join('/')+')':'')+' · ออนไลน์: '+(bus.role==='off'?'ไม่ได้ต่อ':bus.role==='host'?'เปิดห้อง '+room.conns.length+' คนเชื่อมต่อ':'อยู่ในห้องเพื่อน'),

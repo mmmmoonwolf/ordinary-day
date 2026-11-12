@@ -20,7 +20,7 @@ export function addRide(x,z,a,id,paint){
   const boxes=[part(body,1.9,1,4.2,0,.62,0),part(glass,1.7,.7,2.2,0,1.45,-.2)];
   for(const s of [-1,1])for(const t of [-1,1])boxes.push(part(darkMetal,.25,.6,.6,s*.95,.3,t*1.35));
   const lamps=[part(lamp,.4,.16,.06,-.6,.72,2.12),part(lamp,.4,.16,.06,.6,.72,2.12)];   // headlights, lit while someone drives at night
-  const r={x,z,a,id,paint,g,boxes,model:null,lamps,lampMat:lamp,body,box:{x0:0,x1:0,z0:0,z1:0,low:true,ride:rides.length}};
+  const r={x,z,a,id,paint,g,boxes,model:null,lamps,lampMat:lamp,body,box:{x0:0,x1:0,z0:0,z1:0,low:true,dyn:true,ride:rides.length}};
   solids.push(r.box);rides.push(r);placeRide(r,x,z,a,1);return r;
 }
 // moves a ride's look and its collision box (axis-aligned around the turned car)
@@ -38,7 +38,7 @@ export function addBike(x,z,a,paint){
   const part=(m,w,h,d,px,py,pz)=>{const o=box(m,w,h,d,px,py,pz);scene.remove(o);g.add(o);return o;};
   const boxes=[part(darkMetal,.16,.5,1.5,0,.55,0),part(body,.34,.26,.6,0,.86,.3),part(darkMetal,.3,.12,.62,0,.86,-.3),part(darkMetal,.12,.64,.64,0,.34,.78),part(darkMetal,.12,.64,.64,0,.34,-.78),part(darkMetal,.7,.06,.06,0,1.12,.66)];
   const lamps=[part(lamp,.18,.16,.06,0,.98,.98)];
-  const r={x,z,a,id:'bike',kind:'bike',half:[.42,1.1],paint,g,boxes,model:null,lamps,lampMat:lamp,body,box:{x0:0,x1:0,z0:0,z1:0,low:true,ride:rides.length}};
+  const r={x,z,a,id:'bike',kind:'bike',half:[.42,1.1],paint,g,boxes,model:null,lamps,lampMat:lamp,body,box:{x0:0,x1:0,z0:0,z1:0,low:true,dyn:true,ride:rides.length}};
   solids.push(r.box);rides.push(r);placeRide(r,x,z,a,1);return r;
 }
 

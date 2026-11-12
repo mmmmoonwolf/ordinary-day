@@ -33,7 +33,7 @@ export function buildArmyCamp(){
     const boom=new THREE.Group();boom.position.set(G-.2,1.1,-H-.7);
     for(let i=0;i<6;i++){const m=box(i%2?post:red,.16,.16,(2*H+1.4)/6,0,0,(i+.5)*(2*H+1.4)/6);scene.remove(m);boom.add(m);}
     scene.add(boom);army.boom=boom;
-    army.gate={x0:G-.5,x1:G+.5,z0:-H-1.05,z1:H+1.05};army.shut={...army.gate};solids.push(army.gate);}
+    army.gate={x0:G-.5,x1:G+.5,z0:-H-1.05,z1:H+1.05,dyn:true};army.shut={...army.gate};solids.push(army.gate);}
   // two watchtowers just inside, and where the soldiers stand
   for(const s of [-1,1]){const x=G+4.5,z=s*10.5,legs=[],top=[];
     for(const a of [-1,1])for(const b of [-1,1])legs.push([unitBox,M(x+a*1.1,1.9,z+b*1.1,.22,3.8,.22)]);

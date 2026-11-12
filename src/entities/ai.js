@@ -17,7 +17,7 @@ import {lerpAng,moveAgent,wander,d2} from './movement.js';
 import {players,targets} from './player.js';
 import {addBlood,warnRing,boom,impact} from '../systems/effects.js';
 import {makeItem,spawnDrop,dropGuaranteed} from '../systems/drops.js';
-import {hurtPlayer} from '../systems/combat.js';
+import {damage} from '../systems/damage.js';
 import {wound} from '../systems/body.js';
 import {infectPlayer} from '../systems/infection.js';
 import {sfx} from '../systems/audio.js';
@@ -42,17 +42,17 @@ function explode(a){
   const R0=4.2;a.state='dead';a.deadT=0;a.b.root.visible=false;a.deadT=24;
   boom(a.pos.x,1,a.pos.z,.4,9);sfx.explode(a.pos.x,a.pos.z);
   for(let i=0;i<6;i++)addBlood(a.pos.x+rnd(-2,2),a.pos.z+rnd(-2,2));
-  for(const p of players){const dp=Math.hypot(p.pos.x-a.pos.x,p.pos.z-a.pos.z);if(dp<R0&&!walledOff(a.pos.x,a.pos.z,p.pos.x,p.pos.z))hurtPlayer(p,Math.round(45*(1-dp/R0*.5)));}
+  for(const p of players){const dp=Math.hypot(p.pos.x-a.pos.x,p.pos.z-a.pos.z);if(dp<R0&&!walledOff(a.pos.x,a.pos.z,p.pos.x,p.pos.z))damage(p,Math.round(45*(1-dp/R0*.5)));}
   for(let k=0;k<rooms.length;k++)if(doorDist(k,a.pos.x,a.pos.z)<R0)damageDoor(k,60);   // PLACEHOLDER blast damage to a closed door
   for(const o of agents){if(o===a)continue;const d=Math.hypot(o.pos.x-a.pos.x,o.pos.z-a.pos.z);if(d>R0)continue;
-    if(o.state==='zombie')hurtZombie(o,60,(o.pos.x-a.pos.x)/(d||1),(o.pos.z-a.pos.z)/(d||1),1.2,false,true);
+    if(o.state==='zombie')damage(o,60,{dx:(o.pos.x-a.pos.x)/(d||1),dz:(o.pos.z-a.pos.z)/(d||1),kb:1.2,silent:true});
     else if(o.state==='human'){o.state='infected';o.turnT=rnd(3,6);o.panic=5;}}
   makeNoise(a.pos.x,a.pos.z,30);
 }
 function slam(a){
   const R0=3.2;warnRing.material.opacity=0;boom(a.pos.x,.4,a.pos.z,.3);sfx.thud(a.pos.x,a.pos.z);
   for(const p of players){const dx=p.pos.x-a.pos.x,dz=p.pos.z-a.pos.z,d=Math.hypot(dx,dz);
-    if(d<R0&&p.alive&&!walledOff(a.pos.x,a.pos.z,p.pos.x,p.pos.z)){hurtPlayer(p,ZC.tyrant.dmg);p.pos.x+=dx/(d||1)*2.4;p.pos.z+=dz/(d||1)*2.4;collide(p.pos,.34);}}
+    if(d<R0&&p.alive&&!walledOff(a.pos.x,a.pos.z,p.pos.x,p.pos.z)){damage(p,ZC.tyrant.dmg);p.pos.x+=dx/(d||1)*2.4;p.pos.z+=dz/(d||1)*2.4;collide(p.pos,.34);}}
   a.feed=.9;
 }
 export function updateZombie(a,dt){
@@ -98,7 +98,7 @@ export function updateZombie(a,dt){
     if(isP){
       if(a.kind==='boomer'){a.fuse=1.2;sfx.swell(a.pos.x,a.pos.z);return;}
       if(a.kind==='tyrant'){if(a.atk<=0){a.atk=2.2;a.wind=.85;sfx.roar(a.pos.x,a.pos.z,.8);}return;}
-      if(a.atk<=0){a.atk=C.rate;a.swingT=.5;if(hurtPlayer(tgt,C.dmg)){wound(tgt);if(Math.random()<(C.infect||0)*diffOf(G).infect)infectPlayer(tgt);}if(a.kind==='sprinter')a.feed=1.3;}
+      if(a.atk<=0){a.atk=C.rate;a.swingT=.5;if(damage(tgt,C.dmg)){wound(tgt);if(Math.random()<(C.infect||0)*diffOf(G).infect)infectPlayer(tgt);}if(a.kind==='sprinter')a.feed=1.3;}
     } else if(tgt.npc&&(a.atk>0||(a.atk=C.rate,a.swingT=.5,tgt.hp-=C.dmg,addBlood(tgt.pos.x,tgt.pos.z),tgt.hp>0))){}   // v0.62 an armed person fights it off a while
     else {tgt.state='infected';tgt.turnT=rnd(6,11);tgt.panic=6;tgt.tx=tgt.pos.x-a.pos.x;tgt.tz=tgt.pos.z-a.pos.z;a.feed=1.4;addBlood(tgt.pos.x,tgt.pos.z);sfx.scream(tgt.pos.x,tgt.pos.z);}   // v0.19
     return;
@@ -126,6 +126,7 @@ export function updateDead(a,dt){a.deadT+=dt;const k=Math.min(1,a.deadT*2.2);a.b
 export function makeNoise(x,z,r){if(G.phase==='night')r*=1.5;if(G.storm>G.min)r*=STORM.hear;   // v0.56 the storm covers sounds
   const k=roomAt(x,z);if(k>=0&&G.doors[k]&&!G.doors[k].open)r*=INDOOR_NOISE;for(const a of agents){if(a.state!=='zombie'||a.kind==='walker')continue;const dx=a.pos.x-x,dz=a.pos.z-z;if(dx*dx+dz*dz<r*r)a.heard={x:x+rnd(-2,2),z:z+rnd(-2,2),t:8};}}
 // `by` is the player who hit it: unless silent, the zombie turns toward where they stand
+// Only systems/damage.js calls this (v0.68): everything else says damage(target, n, hit)
 export function hurtZombie(z,dmg,dx,dz,kb,isGun,silent,by){
   let armored=false;
   // armor only covers the front: a bullet travelling the way the zombie faces hits its back for full damage (v0.5)

@@ -1,7 +1,8 @@
 import {jobOf} from '../config/jobs.js';
-import {hurtNpc} from './npc.js';
-// v0.62 what a player's weapons hit: zombies, and bandits (people with a.npc 'bandit', still alive)
-export const shootable=z=>z.state==='zombie'||z.npc==='bandit'&&z.state==='human';
+import {damage,targetsOf,bulletRad,hittable,foesOf,ARMORED} from './damage.js';
+// what a player's weapons hit, and who else they can hurt in PvP, live in systems/damage.js (v0.68); kept under the
+// old names for the tests and anything outside that still asks combat.js
+export {hittable as shootable,foesOf};
 import {rnd} from '../core/util.js';
 import {muzzle} from '../core/renderer.js';
 import {G,isPvp,sideOf} from '../core/state.js';
@@ -17,10 +18,9 @@ import {rayWall} from '../world/collision.js';
 import {breakables} from '../world/props.js';
 import {DAILY} from '../config/events.js';
 import {walledOff} from '../world/interiors.js';
-import {agents} from '../entities/agents.js';
 import {players} from '../entities/player.js';
-import {hurtZombie,makeNoise} from '../entities/ai.js';
-import {addBlood,tracer,impact} from './effects.js';
+import {makeNoise} from '../entities/ai.js';
+import {addBlood,tracer} from './effects.js';
 import {tankOnRay,blowTank} from './blast.js';
 import {curWeapon,countAmmo,takeAmmo} from './inventory.js';
 import {spawnDrop,reachableSpot} from './drops.js';
@@ -33,6 +33,7 @@ import {shieldDriver,leaveCar} from './vehicles.js';
 // ---------- combat ----------
 // returns false when the hit did not land (dead, knocked back by a Kit, invulnerable). The game ends when no player is left standing.
 // v0.47 `by`: the player whose gun, blow or blast it was (PvP); their damage is not scaled by the difficulty
+// Only systems/damage.js calls this (v0.68): everything else says damage(target, n, hit)
 export function hurtPlayer(p,n,by){
   if(!p.alive||p.inv>0||p.down>0)return false;
   const foe=by&&by!==p&&by.state==='player'?by:null;n*=foe?PVP.dmg:diffOf(G).dmg;
@@ -83,18 +84,14 @@ export function die(p,by){
   if(!players.some(standing))for(const q of players)if(q.alive){q.endCause=q.endCause||'hurt';die(q);return;}
   if(!players.some(q=>q.alive)){clearSave();setTimeout(gameOver,1800);}
 }
-// v0.47 who else a player can hurt: in PvP everyone else still up and in the game
-export const foesOf=p=>isPvp()?players.filter(q=>q!==p&&q.alive&&!q.away&&!(q.inv>0)&&sideOf(q)!==sideOf(p)):[];   // v0.51 not the same side
-function hitFoe(p,q,dmg,dx,dz,melee){if(hurtPlayer(q,dmg,p))impact(q.pos.x,q.pos.z,dx,dz,q.alive?0:1,p.id,melee);}
-// turns the player toward the best zombie in front, unless they aim with a mouse
+const seen=[];   // scratch list for targetsOf(): filled and read inside one call, never kept
+// turns the player toward the best target in front (zombies, bandits, the other players in PvP), unless they aim with a mouse
 export function aimAssist(p,def){
   if(p.input.aim)return;
   const range=def.gun?def.range*.85:def.range+1.6,cone=def.gun?.8:.4;
   const fx=Math.sin(p.face),fz=Math.cos(p.face);let best=null,bs=-9;
-  for(const z of agents){if(!shootable(z)||z.retreat)continue;const dx=z.pos.x-p.pos.x,dz=z.pos.z-p.pos.z,d=Math.hypot(dx,dz);if(d>range||d<1e-3)continue;if(walledOff(p.pos.x,p.pos.z,z.pos.x,z.pos.z))continue;
+  for(const z of targetsOf(p,seen)){if(z.retreat)continue;const dx=z.pos.x-p.pos.x,dz=z.pos.z-p.pos.z,d=Math.hypot(dx,dz);if(d>range||d<1e-3)continue;if(walledOff(p.pos.x,p.pos.z,z.pos.x,z.pos.z))continue;
     const dot=(dx*fx+dz*fz)/d;if(dot<cone&&d>2.2)continue;const s=dot-d/range*.6;if(s>bs){bs=s;best=z;}}
-  for(const q of foesOf(p)){const dx=q.pos.x-p.pos.x,dz=q.pos.z-p.pos.z,d=Math.hypot(dx,dz);if(d>range||d<1e-3)continue;if(walledOff(p.pos.x,p.pos.z,q.pos.x,q.pos.z))continue;   // v0.47 the other players in PvP
-    const dot=(dx*fx+dz*fz)/d;if(dot<cone&&d>2.2)continue;const s=dot-d/range*.6;if(s>bs){bs=s;best=q;}}
   if(best)p.face=Math.atan2(best.pos.x-p.pos.x,best.pos.z-p.pos.z);
 }
 export function startReload(p){
@@ -123,11 +120,10 @@ export function fireGun(p,w,def){
     const sp=spreadOf(p,def),ang=p.face+rnd(-sp,sp),dx=Math.sin(ang),dz=Math.cos(ang);
     let wall=rayWall(ox,oz,dx,dz,def.range);const tank=tankOnRay(ox,oz,dx,dz,wall+.6);if(tank)wall=Math.min(wall,tank[0]);   // v0.23 a gas cylinder stops the bullet, and goes off
     const hits=[];
-    for(const z of agents){if(!shootable(z))continue;const rx=z.pos.x-ox,rz=z.pos.z-oz,t=rx*dx+rz*dz;if(t<-.3||t>wall)continue;if(Math.abs(rx*dz-rz*dx)<.45+(z.rad-.34))hits.push([Math.max(t,0),z]);}
-    for(const q of foesOf(p)){const rx=q.pos.x-ox,rz=q.pos.z-oz,t=rx*dx+rz*dz;if(t<-.3||t>wall)continue;if(Math.abs(rx*dz-rz*dx)<.42)hits.push([Math.max(t,0),q]);}   // v0.47 PvP
+    for(const z of targetsOf(p,seen)){const rx=z.pos.x-ox,rz=z.pos.z-oz,t=rx*dx+rz*dz;if(t<-.3||t>wall)continue;if(Math.abs(rx*dz-rz*dx)<bulletRad(z))hits.push([Math.max(t,0),z]);}
     hits.sort((a,b)=>a[0]-b[0]);
     const n=Math.min(hits.length,def.pierce||1);let end=n?hits[n-1][0]:wall,armor=false;
-    for(let k=0;k<n;k++){const [t,z]=hits[k];if(z.state==='player'){hitFoe(p,z,def.falloff?pd*(1-t/def.range*.6):pd,dx,dz,false);continue;}if(z.npc){hurtNpc(z,def.falloff?pd*(1-t/def.range*.6):pd,p,dx,dz);continue;}if(hurtZombie(z,def.falloff?pd*(1-t/def.range*.6):pd,dx,dz,def.pellets?.12:.25,true,false,p))armor=true;}
+    for(let k=0;k<n;k++){const [t,z]=hits[k];if(damage(z,def.falloff?pd*(1-t/def.range*.6):pd,{by:p,dx,dz,kb:def.pellets?.12:.25,gun:true})===ARMORED)armor=true;}
     tracer(ox,oz,ox+dx*end,oz+dz*end,armor?'#a9d4ff':null);
     if(!G.alarm&&!n)carAlarm(ox,oz,dx,dz,end);   // v0.52 a stray bullet into a parked car sets its alarm off
     if(tank&&hits.length<(def.pierce||1))blowTank(tank[1],p);
@@ -144,16 +140,18 @@ export function backstab(p,z){
   const dx=p.pos.x-z.pos.x,dz=p.pos.z-z.pos.z,d=Math.hypot(dx,dz)||1;
   return (dx*Math.sin(z.face)+dz*Math.cos(z.face))/d<-BACKSTAB.arc;
 }
-function blow(p,z,def,dx,dz){if(z.npc){hurtNpc(z,def.dmg,p,dx,dz);return;}if(backstab(p,z)){hurtZombie(z,z.hp+1,dx,dz,.1,false,true,p);p.stabs=(p.stabs||0)+1;}else{hurtZombie(z,def.dmg,dx,dz,def.kb,false,false,p);if(def.stun&&z.state==='zombie')z.feed=Math.max(z.feed||0,def.stun);}}   // v0.55 stun: the extinguisher
+// one blow on one target. A zombie caught from behind dies of it, silently (v0.50); the extinguisher stuns (v0.55)
+function blow(p,z,def,dx,dz){
+  if(z.state==='zombie'&&backstab(p,z)){damage(z,z.hp+1,{by:p,dx,dz,kb:.1,silent:true,melee:true});p.stabs=(p.stabs||0)+1;return;}
+  damage(z,def.dmg,{by:p,dx,dz,kb:def.kb,melee:true});
+  if(def.stun&&z.state==='zombie')z.feed=Math.max(z.feed||0,def.stun);
+}
 export function meleeHit(p,def){
   const fx=Math.sin(p.face),fz=Math.cos(p.face);let best=null,bd=1e9;
-  for(const z of agents){if(!shootable(z))continue;const dx=z.pos.x-p.pos.x,dz=z.pos.z-p.pos.z,d=Math.hypot(dx,dz);
+  for(const z of targetsOf(p)){const dx=z.pos.x-p.pos.x,dz=z.pos.z-p.pos.z,d=Math.hypot(dx,dz);
     if(d-(z.rad-.34)>def.range||d<1e-3)continue;if((dx*fx+dz*fz)/d<def.arc)continue;if(walledOff(p.pos.x,p.pos.z,z.pos.x,z.pos.z))continue;   // no hitting through a wall
     if(def.cleave){blow(p,z,def,dx/d,dz/d);best=best||z;}else if(d<bd){bd=d;best=z;}}
-  for(const q of foesOf(p)){const dx=q.pos.x-p.pos.x,dz=q.pos.z-p.pos.z,d=Math.hypot(dx,dz);   // v0.47 PvP
-    if(d>def.range||d<1e-3)continue;if((dx*fx+dz*fz)/d<def.arc)continue;if(walledOff(p.pos.x,p.pos.z,q.pos.x,q.pos.z))continue;
-    if(def.cleave){hitFoe(p,q,def.dmg,dx/d,dz/d,true);best=best||q;}else if(d<bd){bd=d;best=q;}}
-  if(best&&!def.cleave){const dx=best.pos.x-p.pos.x,dz=best.pos.z-p.pos.z,d=Math.hypot(dx,dz);if(best.state==='player')hitFoe(p,best,def.dmg,dx/d,dz/d,true);else blow(p,best,def,dx/d,dz/d);}
+  if(best&&!def.cleave){const dx=best.pos.x-p.pos.x,dz=best.pos.z-p.pos.z,d=Math.hypot(dx,dz);blow(p,best,def,dx/d,dz/d);}
   if(best){
     const front=best.kind==='armor'&&(p.pos.x-best.pos.x)*Math.sin(best.face)+(p.pos.z-best.pos.z)*Math.cos(best.face)>0;   // v0.43 sound only: the blow rings on its armour
     sfx.hit(best.pos.x,best.pos.z,front?'metal':def===DEF.fist?'fist':BLADE.has(def.model)?'blade':'blunt');wearMelee(p,def);}

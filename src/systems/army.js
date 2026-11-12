@@ -2,7 +2,8 @@ import {G} from '../core/state.js';
 import {ARMY,exitOpen} from '../config/goal.js';
 import {army,setGateOpen} from '../world/army.js';
 import {agents} from '../entities/agents.js';
-import {hurtZombie,makeNoise} from '../entities/ai.js';
+import {makeNoise} from '../entities/ai.js';
+import {damage} from './damage.js';
 import {figureModel,skins} from '../entities/skins.js';
 import {HOLD} from '../entities/player.js';
 import {weaponModel} from '../world/item-models.js';
@@ -24,7 +25,7 @@ export function updateArmy(dt){
     g.cool=ARMY.cool[0]+Math.random()*(ARMY.cool[1]-ARMY.cool[0]);
     const dx=z.pos.x-g.x,dz=z.pos.z-g.z,d=Math.hypot(dx,dz)||1;g.face=Math.atan2(dx,dz);
     sfx.shot('rifle',g.x,g.z);tracer(g.x+dx/d*.6,g.z+dz/d*.6,z.pos.x,z.pos.z);
-    if(Math.random()<ARMY.hit)hurtZombie(z,ARMY.dmg,dx/d,dz/d,.4,true,false,null);
+    if(Math.random()<ARMY.hit)damage(z,ARMY.dmg,{dx:dx/d,dz:dz/d,kb:.4,gun:true});
     g.noiseT=(g.noiseT||0)-1;if(g.noiseT<=0){g.noiseT=6;makeNoise(g.x,g.z,ARMY.noise);}
   }
 }

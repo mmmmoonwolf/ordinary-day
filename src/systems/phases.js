@@ -1,6 +1,6 @@
 import {wpick,rnd} from '../core/util.js';
 import {G} from '../core/state.js';
-import {DAY_START,DUSK_WARN,isNightTod} from '../config/time.js';
+import {DAY_START,DUSK_WARN,isNightTod,dayOf,midnightOf,todOf} from '../config/time.js';
 import {isSpecial,RISE,SCREAMER,HUNTER,ELITE} from '../config/zombies.js';
 import {isPvp} from '../core/state.js';
 import {OUTBREAK} from '../config/act.js';
@@ -52,15 +52,15 @@ function onNight(){
   G.phase='night';sfx.night();
   for(const z of zombies())if(z.kind==='walker')setKind(z,'zombie');
   G.armorNight=Math.random()<ELITE.armor.chance;G.armorNext=G.min+ELITE.armor.first;G.armorAnnounced=false;G.armorCount=0;
-  G.tyrantPending=Math.random()<ELITE.tyrant.chance;G.tyrantAt=G.min-(G.min%1440)+1440;
+  G.tyrantPending=Math.random()<ELITE.tyrant.chance;G.tyrantAt=midnightOf(G.min)+1440;
   G.nightSpawnNext=G.min+15;
-  G.huntAt=!isPvp()&&Math.floor(G.min/1440)+1>=HUNTER.from?G.min+HUNTER.after:0;   // v0.57 the Hunters come later in the night
-  if(isBlood()){const mid=G.min-(G.min%1440)+1440;G.bloodHordes=BLOOD.hordes.map(m=>mid+m);sfx.roar(0,0,2);}   // v0.52 the last night: hordes at set times
-  fillNight(Math.min(1,REFILL.night*refillScale(Math.floor(G.min/1440)+1)*partyOf(partySize(),'loot')));
+  G.huntAt=!isPvp()&&dayOf(G.min)>=HUNTER.from?G.min+HUNTER.after:0;   // v0.57 the Hunters come later in the night
+  if(isBlood()){const mid=midnightOf(G.min)+1440;G.bloodHordes=BLOOD.hordes.map(m=>mid+m);sfx.roar(0,0,2);}   // v0.52 the last night: hordes at set times
+  fillNight(Math.min(1,REFILL.night*refillScale(dayOf(G.min))*partyOf(partySize(),'loot')));
 }
 function onDay(){
   G.phase='day';sfx.dawn();sfx.bell();   // v0.34 the church bell at first light
-  const day=Math.floor(G.min/1440)+1;
+  const day=dayOf(G.min);
   const zs=zombies();
   for(const z of zs){if(z.kind==='zombie')setKind(z,'walker');else if(isSpecial(z.kind))z.retreat=true;}
   const walkers=zs.filter(z=>z.kind==='walker').sort((a,b)=>nearestPlayerDist(b.pos.x,b.pos.z)-nearestPlayerDist(a.pos.x,a.pos.z));
@@ -75,10 +75,10 @@ function onDay(){
   takeByOthers(players);
   fillDay(Math.min(1,REFILL.day*refillScale(day)*partyOf(partySize(),'loot')));
 }
-function nightMix(){const day=Math.floor(G.min/1440)+1;return {zombie:Math.max(40,65-(day-1)*5),sprinter:20+(day-1)*3,boomer:15+(day-1)*2,screamer:day>=SCREAMER.from?SCREAMER.night:0};}   // v0.57 Screamers
+function nightMix(){const day=dayOf(G.min);return {zombie:Math.max(40,65-(day-1)*5),sprinter:20+(day-1)*3,boomer:15+(day-1)*2,screamer:day>=SCREAMER.from?SCREAMER.night:0};}   // v0.57 Screamers
 export function runEvents(now){
   for(const e of EVENTS){if(!e.done&&G.min>=e.t){e.done=true;if(e.fn)e.fn();}}
-  const tod=G.min%1440,day=Math.floor(G.min/1440)+1;
+  const tod=todOf(G.min),day=dayOf(G.min);
   const ph=isNightTod(tod)?'night':'day';
   if(ph!==G.phase){if(ph==='night')onNight();else onDay();}
   if(ph==='day'&&tod>=DUSK_WARN&&G.duskDay!==day){G.duskDay=day;sfx.alarm();}

@@ -1,7 +1,7 @@
 import {rnd,pick} from '../core/util.js';
 import {scene} from '../core/renderer.js';
 import {G} from '../core/state.js';
-import {isNightTod} from '../config/time.js';
+import {isNightTod,todOf} from '../config/time.js';
 import {groundY,areaAt,beyond} from '../config/world.js';
 import {ZC} from '../config/zombies.js';
 import {S,part,eyeMat,vestMat} from '../world/materials.js';
@@ -68,7 +68,7 @@ function nestLook(a){
   a.b.root.add(g);a.b.nest=g;a.b.root.scale.set(1,1,1);
 }
 export function becomeZombie(a,kind){
-  a.state='zombie';a.kind=kind||(isNightTod(G.min%1440)?'zombie':'walker');a.hp=ZC[a.kind].hp;a.maxHp=a.hp;
+  a.state='zombie';a.kind=kind||(isNightTod(todOf(G.min))?'zombie':'walker');a.hp=ZC[a.kind].hp;a.maxHp=a.hp;
   a.vendor=false;a.panic=0;a.node=nearestNode(a.pos);a.prev=null;a.spd=rnd(.9,1.1);a.retreat=false;a.rise=0;
   // an armed person who turned is a zombie like any other: while a.npc stayed set, guns, blows and blasts were still
   // routed to hurtNpc(), which ignores anything that is not a living person, so nothing could kill it
