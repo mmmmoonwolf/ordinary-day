@@ -8,7 +8,8 @@ import { els, errs, step, key, store, T, P, I, finish } from './setup.js';
   els.bAgain.fire('click'); T.G.running = true; step(2); S.saveGame(); const kept = S.readSave().G.min;
   Pv.startPvp(); T.G.running = true; const p2 = Gm.addPlayer(); step(12);
   const p1 = T.player, zs = () => T.agents.filter(a => a.state === 'zombie' && !a.gone).length;
-  if (T.G.mode !== 'pvp' || !(Math.abs(T.G.min - PC.start) < 2)) vfail('PvP did not start a new game at the outbreak: ' + T.G.mode + ' ' + T.G.min);
+  if (T.G.mode !== 'pvp' || !(Math.abs(T.G.min - (9 * 60 + 29)) < 2)) vfail('PvP did not start a new game at the outbreak: ' + T.G.mode + ' ' + T.G.min);
+  if (T.G.pvpHorde !== 10 * 60 + 20 || T.G.pvpDrop !== 10 * 60 + 50) vfail('the first horde / crate moved: ' + T.G.pvpHorde + ' ' + T.G.pvpDrop);   // the first town's times, as before B8
   for (const p of [p1, p2]) if (!p.gear.eq.secondary || p.gear.eq.secondary.id !== PC.kit.gun || !p.gear.bag.some(e => e.id === PC.kit.ammo[0])) vfail(p.name + ' has no starting gun or ammo');
   const apart = Math.hypot(p1.pos.x - p2.pos.x, p1.pos.z - p2.pos.z);
   if (Sn.encodeWorld(Sn.freshSent(), p1).g.md !== 'pvp') vfail('the snapshot does not carry the mode');

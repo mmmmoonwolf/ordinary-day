@@ -17,6 +17,7 @@ import {sfx} from './audio.js';
 import {addStack} from './inventory.js';
 import {cureInfection} from './infection.js';
 import {reset} from './game.js';
+import {OUTBREAK} from '../config/act.js';
 import {uiFor,gameOver} from '../ui/hud.js';
 
 // ---------- PvP mode (v0.47) ----------
@@ -28,7 +29,7 @@ import {uiFor,gameOver} from '../ui/hud.js';
 export const RULES={ffa:'ทุกคนฆ่ากัน',team:'ทีม',infect:'ติดเชื้อ',hill:'ยึดพื้นที่'};   // v0.51
 export function startPvp(rule){
   const r=RULES[rule]?rule:RULES[G.pvpRule]?G.pvpRule:'ffa';
-  reset();G.mode='pvp';G.dog=null;G.pvpRule=r;G.min=PVP.start;G.pvpHorde=PVP.horde.first;G.pvpDrop=PVP.drop.first;G.pvpT=0;G.hill=null;G.hillMove=0;G.pvpEnd=null;
+  reset();G.mode='pvp';G.dog=null;G.pvpRule=r;G.min=OUTBREAK+PVP.start;G.pvpHorde=OUTBREAK+PVP.horde.first;G.pvpDrop=OUTBREAK+PVP.drop.first;G.pvpT=0;G.hill=null;G.hillMove=0;G.pvpEnd=null;
   for(const e of EVENTS)if(e.t<G.min)e.done=true;   // no bleeding runner or far scream: it starts at the outbreak
   for(const d of drops.slice())if(d.item.id==='resurrect')removeDrop(d);   // v0.49 no Resurrection Kit: dying costs nothing to undo
 }

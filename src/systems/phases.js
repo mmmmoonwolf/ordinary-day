@@ -3,7 +3,7 @@ import {G} from '../core/state.js';
 import {DAY_START,DUSK_WARN,isNightTod} from '../config/time.js';
 import {isSpecial,RISE,SCREAMER,HUNTER,ELITE} from '../config/zombies.js';
 import {isPvp} from '../core/state.js';
-import {ACT,ACT2} from '../config/act.js';
+import {OUTBREAK} from '../config/act.js';
 import {fireFx} from './effects.js';
 import {agents,becomeZombie,setKind,zombies,spawnEdge} from '../entities/agents.js';
 import {d2} from '../entities/movement.js';
@@ -42,14 +42,12 @@ function farScream(){const p=players[0],a=Math.random()*Math.PI*2;sfx.scream(p.p
 // v0.42 the first morning is told only by what happens (no words): someone running past bleeding, a scream far off, the
 // outbreak, the rain
 export const EVENTS=[
-  {t:9*60+12,fn:bloodyRunner},
-  {t:9*60+24,fn:farScream},
-  {t:9*60+30,fn:startOutbreak},
+  {t:OUTBREAK-18,fn:bloodyRunner},   // 09:12 in the first town
+  {t:OUTBREAK-6,fn:farScream},       // 09:24
+  {t:OUTBREAK,fn:startOutbreak},     // 09:30 (config/act.js; the second town: the same morning, three hours later)
   {t:11*60,fn:()=>{G.rainTarget=1;}},
   {t:13*60+20,fn:()=>{G.rainTarget=0;}},
 ];
-// v0.66 the second town: the same morning, three hours later (the bitten escapee arrives at ACT2.outbreak)
-if(ACT===2){const d=ACT2.outbreak-(9*60+30);for(const e of EVENTS)if(e.t<=9*60+30)e.t+=d;}
 function onNight(){
   G.phase='night';sfx.night();
   for(const z of zombies())if(z.kind==='walker')setKind(z,'zombie');
